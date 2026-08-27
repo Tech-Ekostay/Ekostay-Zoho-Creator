@@ -157,6 +157,27 @@ class Payment extends Model
     }
 
     /** Forward payments only — excludes reversing entries. */
+    /** The approval records for this payment — §8.2's Pending_Approval. */
+    public function pendingApprovals(): HasMany
+    {
+        return $this->hasMany(PendingApproval::class);
+    }
+
+    /**
+     * Compare a status without being defeated by casing.
+     *
+     * NOT a bare `===`. Addendum §10 records Creator disagreeing with itself —
+     * `Payment InProgress` is spelled two ways in the same codebase, `Paid` and
+     * `paid` both occur (36,586 and 4 rows), and three spellings of
+     * Submit/Send/Sent for Approval are all in the picklist. An equality test silently
+     * misses part of the data, which is the defect this method exists to avoid. Bill
+     * carries the same method for the same reason.
+     */
+    public function statusIs(string $candidate): bool
+    {
+        return strcasecmp(trim((string) $this->status), trim($candidate)) === 0;
+    }
+
     public function scopeForward(Builder $query): Builder
     {
         return $query->whereNull('reverses_payment_id');

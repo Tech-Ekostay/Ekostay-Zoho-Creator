@@ -41,6 +41,18 @@ const VENDOR_REPORTS = new Set(['vendor_master', 'all_vendor_masters']);
  * button's tooltip, so "not built" is never mistaken for "broken".
  */
 const NOT_BUILT_REASON = {
+  /*
+   * ACCOUNTS IS NOT A REPORT. Husain, 27-Aug-2026: it is a DASHBOARD built
+   * externally, not a Creator form or list. So it is not on the screenshot list with
+   * the other unbuilt screens and it is not something to replicate column by column
+   * — whatever renders it lives outside Creator.
+   *
+   * What that means for the rebuild is still open, and the two answers differ a lot:
+   * if it is embedded in Creator (an iframe or widget) the rebuild hosts the same
+   * embed; if it is a separate application the rail merely links out to it. Asked,
+   * not assumed.
+   */
+  accounts: 'A dashboard built externally, not a Creator report — so there is no column order to replicate. Whether the rebuild embeds it or links to it is still open.',
   all_approvals: 'Fully specified in addendum §11 — amount-banded approver matrix. Next in line.',
   block_payment_date: 'The singleton exists, but addendum §16 found its cutoff is enforced NOWHERE server-side. Building the screen before the enforcement would imply a guard that does not exist.',
   auto_numbers: 'The counter is live and seeded (payment no. 20938). A screen that lets it be edited by hand would let payment numbers collide — §7.6.',
