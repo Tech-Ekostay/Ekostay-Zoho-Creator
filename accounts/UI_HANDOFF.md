@@ -199,7 +199,7 @@ picture. Faults this loop caught that static review did not:
 | `PaymentsModule.jsx` | Payments — list, detail, form, reverse dialog | column set assumed, see below |
 | `PendingApprovalsModule.jsx` | Pending Approvals — 24 cols, detail, form | |
 | `PaymentRequestsModule.jsx` | Payment Requests — 3 views | |
-| `BackendExpensesModule.jsx` | Backend Expenses — 31 cols, 135 fields | corrected this session |
+| `BackendExpensesModule.jsx` | Backend Expenses — **32** cols, 136 fields seen | **report + detail verified 27-Aug-2026**, addendum §4 |
 | `BackendPaymentsModule.jsx` | Backend Payments — **form only** | list not captured |
 | `BillsModule.jsx` | Bills | from v1, needs the §3 chrome corrections |
 | `VendorMasterModule.jsx` | Vendor Master | from v1, same |

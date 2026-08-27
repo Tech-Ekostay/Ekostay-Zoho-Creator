@@ -126,46 +126,231 @@ splits and §13 observations, so `Nature` splits its expenses three ways.
 
 ---
 
-## 4. Backend Expenses — corrections
+## 4. Backend Expenses — verified 27-Aug-2026
 
-The existing module's 30-column order and all 135 fields were correct. Three fixes:
+**Sixteen screenshots of All Backend Expenses arrived 27-Aug-2026** — the full report
+scrolled horizontally to its last column, and the detail panel scrolled top to bottom.
+The edit form was deliberately not sent: "almost all textboxes which are the same",
+which is consistent with §13B's finding that 136 of 140 fields are declared `text`.
 
-1. **The report shows `multipe_hccc_names` twice** — populated, then blank. One of
-   three duplicate field pairs.
-2. **`receiver_details` renders empty for every row** although the record holds
-   `upi://pay?pa=…`. The column is bound to the dead member of the pair.
-   `[TODO]` which member of each pair is canonical: report order says the
-   populated one is declared first, detail-panel order says second.
-3. Footer is `Showing 1000 of ###`; rows are content-height, driven by
-   `assets_path` wrapping over several lines.
+This section was previously **corrections**. It is now **verified**, with one
+`[TODO]` closed, one column added, and five new findings.
 
-**From the field dump**
+### 4.1 The report column order is confirmed — and there are 32, not 31
 
-- `duplicate_date` is `0001-01-01T00:00:00Z` — **Go zero time**. The source system
-  is Go and unset dates are year 1, so `duplicate_date < X` matches everything
-- **A second approval engine**, ~30 fields: `lvl_one_amt` 1000 / `lvl_two_amt`
-  3000 / `lvl_three_amt` 5000 / `lvl_four_amt` 0, each with `_msg` and `_name`,
-  plus `verify_by_lvl_*`, `verify_lvl_*`, `lvl_*_approve_msg`/`_time`,
-  `verification_lvl`, `verification_option`, `verification_type`,
-  `lvl_verification_status`. Amount-banded multi-level approval, unaware of the
-  Settings `Approval` matrix that does the same job with different bands
-- **Nine `cron_event_*` idempotency flags**; only `cron_event_paid` is set.
-  `cron_event_duplicate_bill` is 0 alongside `dup_checked: false` and an empty
-  `dup_key` — duplicate detection exists and has never run
-- **Seven amount fields**, and the authoritative-sounding one is empty:
-  `dr_amount` 1700 is real, `tr_total_amount` blank, the other five 0. Totals must
-  use `dr_amount` gated on `transaction_type == "DR"`
-- `balance` holds a running wallet balance; `lat`/`long` capture where the
-  transaction happened (15.5191541, 73.7747725 = North Goa, matching the villa).
-  Nothing uses either
-- **`multipe_hccc_names` will not join to the villa master.** Format is
-  `group-property` with an inconsistent group: `Alibaug-CASA ROYALE`,
-  `Lonavala-Lonavala`, `Central Office-Central Office`, `EKOSTAY-Avante Villa`,
-  `6bhk kihim-6bhk kihim`, `Goa-General`. And the names differ in case and suffix
-  from Settings (`CASA ROYALE` vs `Casa Royale`, `LAKEFRONT` vs `Lakefront Villa`,
-  `Avante Villa` vs `Avante Villa- Calangute`). **This needs a mapping table, not
-  a normalisation function**
-- `receiver_name` is literally `User` on some records
+Every column in §13B's list appears in exactly the recorded order, and `tr_location`
+is confirmed last (the horizontal scrollbar reaches its end). One column was missing
+from the list:
+
+```
+ 8  multipe_hccc_names     populated   "Nama (Tropicana)-EKOSTAY"
+ 9  multipe_hccc_names     BLANK       <- this one was not in the list
+10  remark_cat_name
+```
+
+The two sit **adjacent**. §4 already recorded that the report shows the field twice;
+§13B's column list did not include the second. **32 columns.**
+
+### 4.2 `[TODO]` CLOSED — the textarea copy is canonical, the text copy is dead
+
+The question was: of the three duplicate pairs (`multipe_hccc_names`, `remark_txt`,
+`receiver_details`, each declared once as `text` and once as `textarea`), which member
+is canonical — "report order says the populated one is declared first, detail-panel
+order says second".
+
+**Answered, on one record, for all three pairs at once.** Record
+`292482000010971002` shows:
+
+| field | early copy | late copy |
+|---|---|---|
+| `multipe_hccc_names` | blank | `Nama (Tropicana)-EKOSTAY` |
+| `remark_txt` | blank | `Electrical Works - namah villa electrical material approve by subhash sir` |
+| `receiver_details` | blank | `upi://pay?pa=paytmqr72irlg@ptys&pn=Paytm` |
+
+**The late copy carries the data in all three cases. The early copy is dead.**
+
+And the reasoning in the old `[TODO]` was wrong on one point, which is why it looked
+unresolvable: **report column order is not evidence of declaration order.** A report's
+columns are ordered by whoever built the report. The detail panel is in *form field
+order*, so it is the only one of the two that testifies to declaration order. Once the
+report is set aside there is no conflict — the populated copy is the later one.
+
+**This is the cause of §4's defect 2.** `receiver_details` renders empty on every
+report row because the report binds the **early, dead** copy at column 5. The report
+binds the *live* copy for `multipe_hccc_names` at column 8 and the dead one at 9. So
+the report mixes the two members of the pair, per field, with no pattern.
+
+### 4.3 The detail panel is not alphabetical — it is three blocks
+
+§13B says the panel "lists fields alphabetically, confirming no layout was ever
+applied". That is right about the bulk and wrong about the shape. It is **form field
+order**, and the form was built in three batches:
+
+| block | contents | order |
+|---|---|---|
+| **A** | `approve_status` → `verify_lvl_two` (+ unseen tail, incl. `webhook_resp`) | alphabetical |
+| **B** | `approval_txt`, `approve_by`, then `lvl_{one..four}_approve_msg`/`_time` | alphabetical |
+| **C** | `assets_path`, `business_name`, `Payment`, `time_stamp_date`, `multipe_hccc_names`, `remark_txt`, `receiver_details`, `Matched Payments`, `dup_checked`, `dup_key` | **not** alphabetical |
+
+Two alphabetical runs, then a hand-added tail. That is a more useful reading than "no
+layout": blocks A and B were generated (from the provider payload and from the
+approval-engine scaffold), block C was **added by hand afterwards** — it holds every
+Creator-native field (`Payment`, `Matched Payments`, `business_name`, `dup_checked`,
+`dup_key`) and all three live textarea copies. Which independently supports §4.2:
+the live copies are in the hand-added block.
+
+**136 field labels counted across the three blocks**, against §13B's DS count of 140.
+The four unaccounted-for sit in gaps the screenshots cannot prove contiguous — after
+`duplicate_date`, after `transactor_id`, and after `verify_lvl_two`, where §13B's
+`webhook_resp` must fall and was not captured. Not a discrepancy; a known blind spot.
+
+### 4.4 The approval bands are static config replicated onto every row
+
+§4 recorded `lvl_one_amt` 1000 / `lvl_two_amt` 3000 / `lvl_three_amt` 5000 /
+`lvl_four_amt` 0 from one record. **The same four values appear on this record**,
+whose `dr_amount` is ₹860 — a different amount, an earlier record, identical bands.
+
+So the `lvl_*_amt` fields are not per-record: they are the provider's threshold
+configuration **stamped onto each transaction at ingest**. §13B inferred "thresholds
+not amounts" from a ₹3500 band on a ₹200 row; that is now confirmed and sharpened —
+they are *constant*, so a rebuild reads them from configuration once and does not
+store them 140,000 times. `lvl_four_amt` 0 means level 4 is unbounded or disabled.
+
+### 4.5 NEW — money moved without the verification the record says was required
+
+On a transaction with `tr_status` = `paid` and `cron_event_paid` = 1:
+
+```
+is_verify_require        1        <- verification IS required
+verification_lvl         1
+verification_option      4
+verification_type        2
+verify_lvl_one..four     0 0 0 0  <- nothing verified
+verify_by_lvl_one..four  0 0 0 0  <- by nobody
+lvl_verification_status  0
+approve_status           0
+approve_by               (blank)
+lvl_*_approve_msg/time   (all blank)
+```
+
+**Every approval and verification field is empty on a settled, paid transaction.**
+This is the same shape as §5's Pending Approvals finding — every row `Approved` and
+`Paid` with the `Approved` checkbox unchecked. Two independent screens, two
+independent approval engines, the same conclusion: **the approval state is not what
+gates the money; it is written after, or not at all.**
+
+Stated as an observation about the live system, not a rebuild instruction. But it is
+the single most important thing in this section, because §13B.2's recommendation
+("read-only except `Payment`, `Matched_Payments`, `dup_checked`") assumes the approval
+fields are inert. They are — and that is a finding, not an assumption.
+
+### 4.6 NEW — the ingestion lag is measurable, 2 to 10 minutes
+
+`date` is the provider's timestamp and `Added Time` is Creator's platform stamp, so
+the gap between them is how long ingestion took. Four consecutive rows:
+
+| `date` | `Added Time` | lag |
+|---|---|---|
+| 2026-08-27 19:36:30 | 27-Aug-2026 19:45:59 | 9m 29s |
+| 2026-08-27 19:56:59 | 27-Aug-2026 19:59:30 | 2m 31s |
+| 2026-08-27 19:37:37 | 27-Aug-2026 19:39:30 | 1m 53s |
+| 2026-08-27 19:28:11 | 27-Aug-2026 19:36:06 | 7m 55s |
+
+**Rows do not arrive in `date` order** — 19:56:59 was ingested before 19:37:37. So a
+reconciliation window keyed on `date` must be at least ~15 minutes wide and must not
+assume monotonicity. This also confirms handoff §61's exception: **`date` really does
+render `2026-08-27 19:36:30`**, not `dd-MMM-yyyy`, while `Added Time` renders
+`27-Aug-2026 19:45:59` in Creator's own format. Two date formats, one row.
+
+`duplicate_date` renders `0001-01-01T00:00:00Z` — Go zero time, **confirmed on a third
+record**, and note it keeps its ISO `Z` while `date` does not. Three serialisations.
+
+### 4.7 NEW — `fk_m_hccc_id` is the live key; `fk_hccc_id` is always 0
+
+The report carries both. Across four rows `fk_m_hccc_id` is 6417 / 4849 / 1057 / 1022
+and `fk_hccc_id` is `0` on every one. **Join on `fk_m_hccc_id`.** `fk_order_id` and
+`fk_safe_id` are 0 too.
+
+Likewise `remark_icon_id` is a stable id per remark category — 2542 for Electrical
+Works on two different rows, 2104 Staff fuel, 1575 Water Tanker, 2589 stafffuel again.
+**`remark_icon_id` is the joinable key for the remark category, not `remark_cat_name`.**
+
+### 4.8 NEW — the `multipe_hccc_names` separator is itself inconsistent
+
+§4 established the format is `group-property` with an inconsistent group and that it
+needs a mapping table. Four new rows make it worse:
+
+```
+Nama (Tropicana)-EKOSTAY     property (qualifier) - group    <- group LAST
+General -Panchgani           note the SPACE before the hyphen
+EKOSTAY-Chestnut Villa       group FIRST
+Lonavala-BLANCO              location - property, uppercased
+```
+
+Three new failure modes on top of the recorded ones: the group appears on **either
+side** within the same four rows; a property can carry a **parenthesised qualifier**
+(`Nama (Tropicana)`); and the **separator is not stable** — `General -Panchgani` has a
+space before the hyphen. Splitting this string was already unsafe because villa names
+contain hyphens. It is now unsafe on the delimiter as well.
+
+And the same villa is spelled two ways **inside one record**: `Nama` in
+`multipe_hccc_names`, `namah villa` in `remark_txt`. **The mapping table is not
+optional and cannot be derived from this field alone.**
+
+### 4.9 NEW — smaller items, all first sightings
+
+- **`business_name` = `EKOSTAY HOSPITALITY LLP`** — entity attribution per
+  transaction, not called out in §13B. Matters because Settings COA carries entity
+  accounts and `EKOSTAY IDFC LLP` exists twice with different record ids
+- **`txn_option` = `virtual_ac`** — the payout rail, a value not previously seen
+- **`tai_cost` 2, `tai_gst` 2, `tai_tds` 0** on an ₹860 row. These are **not money** —
+  they are codes or flags. §4's "seven amount fields" list should not include them
+- **`tai_invoice_number`** is blank here but `415522`, `488` and `503139` on other
+  rows — wildly different widths, so not a formatted series. Optional free text
+- `transactor_id` 15181 with `transactor_avtar` (an S3 avatar URL), `receiver_pusid`
+  and `public_tr_id` — provider-side actor identity, three opaque ids.
+  **`transactor_avtar` is misspelled in the source; preserve it**
+- `bill_upload` is the string `"true"` and `assets_path` holds 2 S3 URLs, yet
+  `cron_event_bill_upload` and `cron_event_bill_verified` are both 0 and
+  `hard_copy_bill` is 0. Confirms the cron flags are not maintained
+- `bank_payout_details` is the literal `"na"` — confirmed on all four rows
+- `dr_amount` 860 with `balance` 7200; `tr_total_amount` **blank** again, and
+  `cb_amount` / `cr_amount` / `pr_amount` / `sr_amount` / `total_paid_amount` all 0.
+  Third record confirming: **totals use `dr_amount` gated on `transaction_type == "DR"`**
+- `time_stamp_date` is blank in the detail panel *and* in all four report rows.
+  Likely always blank
+- Roughly a third of the 136 fields carry any value at all. `reject_reason`,
+  `paid_by`, `payment_mode`, `payout_via`, `payout_resp`, `payout_change_via`,
+  `pg_order_id`, `pg_payment_id`, `rzp_payout_id`, `rbl_trn_id`, `bbps_txn_ref_id`,
+  `dyn_qr_ref_id`, `circle_code`, `code_title`, `tag_name`, `check_in_date`,
+  `check_out_date`, `invoice_bill_date`, `invoice_receipt_url` are all empty
+
+### 4.10 URGENT — the Haewaya counter is 207 behind live
+
+Not a Backend Expenses finding as such, but the screenshots are what exposed it.
+
+The `Payment` links on these rows read `EKS/Haewaya/33499`, `33501`, `33497`, `33493`,
+and their `date` is **today, 27-Aug-2026**. Our counter:
+
+```
+auto_numbers.haewaya_no = 33294        (reconciled earlier this session)
+live, from the screenshots            >= 33501
+```
+
+**Our counter is at least 207 behind, and live is still minting.** This is precisely
+the collision that minted `EKS/PY/21305` over a real ₹1,00,000 payment — the same
+mistake, a second series, caught before it fired this time only because nothing
+allocates from `haewaya_no` yet.
+
+Two things follow, and the first is a question that must be answered before any write:
+
+1. **Who owns the Haewaya series?** If the Haewaya backend mints the number and pushes
+   it in, our counter must **track, never allocate** — and `AutoNumber::allocate()`
+   must refuse it. If Creator mints it, then reconciliation has to run against live
+   immediately before every allocation, not once at import.
+2. Reconciling it once is not enough. `EKS/PY` went 21307 → 21309 during this session
+   from our own test allocations, and Haewaya moves ~200 a day from a system we do not
+   control. **A counter reconciled at import time is stale by definition.**
 
 ---
 
