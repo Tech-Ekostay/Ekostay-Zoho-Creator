@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Payments;
 
 use App\Models\AutoNumber;
+use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -66,12 +67,76 @@ final class PaymentNumber
 
         $number = (int) $auto->payment_no;
 
+        /*
+         * THE STALENESS GUARD. See the class docblock and the migration of
+         * 27-Aug-2026: our counter is 312 behind live, and issuing from it would
+         * re-mint numbers Creator has already given to real payments. This refuses
+         * while that is true, because saying so in a comment did not stop it before.
+         */
+        $observed = $auto->live_payment_no_observed;
+
+        if ($observed !== null && $number <= (int) $observed) {
+            throw new RuntimeException(sprintf(
+                'Refusing to allocate %s: the live Auto_Numbers counter was read as %d on %s '
+                .'and ours stands at %d, so this number is %d behind and belongs to a payment '
+                .'Creator has already issued. Minting EKS/PY/21305 over a live '
+                .'₹1,00,000 payment is what this guard exists to prevent. Creator owns the '
+                .'series until cutover — see addendum §6.6 for the two safe designs.',
+                self::format($auto->payment_series, $number),
+                (int) $observed,
+                $auto->live_observed_at?->toDateString() ?? 'an unrecorded date',
+                $number,
+                (int) $observed - $number + 1,
+            ));
+        }
+
+        /*
+         * THE CLASH GUARD, which Creator has and this did not — `Accounts.ds:20517`
+         * checks `Payment[Payment_No == BkngNo]` and steps once past a taken number,
+         * adding "Payment_No was already taken - advanced to ...".
+         *
+         * Reproduced, and then improved on one point: Creator steps exactly ONCE, so
+         * two consecutive taken numbers still collide. This walks until the number is
+         * free. Deviation D9 — it cannot issue a number Creator would have issued,
+         * only skip further than Creator would skip, so it never widens the range.
+         *
+         * The bound is a backstop, not a policy: a counter far behind live produces
+         * hundreds of consecutive hits, and silently walking through them would hide
+         * exactly the drift the guard above exists to surface.
+         */
+        $skipped = 0;
+
+        while (Payment::withTrashed()
+            ->where('payment_no', self::format($auto->payment_series, $number))
+            ->exists()
+        ) {
+            if (++$skipped > self::MAX_CLASH_SKIP) {
+                throw new RuntimeException(sprintf(
+                    'Refusing to allocate: %d consecutive payment numbers from %s are already '
+                    .'taken. That is a stale counter rather than a collision, and walking '
+                    .'further would hide it. Reconcile against live before issuing.',
+                    $skipped,
+                    self::format($auto->payment_series, (int) $auto->payment_no),
+                ));
+            }
+
+            $number++;
+        }
+
         // Increment through the locked row, not through a re-read.
         $auto->payment_no = $number + 1;
         $auto->save();
 
         return self::format($auto->payment_series, $number);
     }
+
+    /**
+     * How far the clash guard will walk before treating the miss as staleness.
+     *
+     * Small on purpose. A real collision is one or two numbers — 239 duplicate
+     * payment numbers exist in live data, but they cluster, they do not run.
+     */
+    public const MAX_CLASH_SKIP = 25;
 
     /**
      * Join series and counter. No padding — see the docblock.

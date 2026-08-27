@@ -266,6 +266,23 @@ via `docs/parse_permissions.py`; employees (475) from `All_Employee_Masters.csv`
 auto_numbers (1) from `Auto_Numbers.json` — the payment counter, which **must** be
 the real 20938 and not a fresh 1.
 
+**The payment counter is now GUARDED, and the guard lives in the seeder too.**
+Husain confirmed 27-Aug-2026 that `EKS/PY` comes from `Auto_Numbers`, and the live
+screenshot read `Payment No` **21621** against our 21309 — 312 numbers that
+already belong to real payments. `PaymentNumber::allocate()` now REFUSES while our
+counter sits at or below `auto_numbers.live_payment_no_observed`, and steps past any
+number already taken (Creator has that check at `Accounts.ds:20517`; we did not).
+
+`AutoNumberSeeder` carries the reading as `LIVE_PAYMENT_NO` / `LIVE_HAEWAYA_NO` /
+`LIVE_OBSERVED_AT`. **Update them when a fresh Auto Numbers screenshot arrives** —
+the master export is 12-Aug and cannot supply them. A `migrate:fresh --seed` without
+them silently disarms the guard, which is how the hole was found. Addendum §6.10-6.15.
+
+There are **four** series in that one row, and the report shows three: `Payment`,
+`Haewaya`, `Books_Payment` (never used, counter still 1) and **`External_Payment`**,
+which no screen displays and `Accounts.ds:20502` allocates from. Unobserved and
+unguarded — a reading of it is needed before anything touches it.
+
 **§17 steps 3–6 — done.** Roles and permissions are first-class tables (no string
 matching anywhere in the authorisation path, asserted), the Bills schema and its
 two child grids exist, and the split allocator/validator carry §6.3's

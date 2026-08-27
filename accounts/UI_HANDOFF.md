@@ -224,6 +224,9 @@ App Preferences · Payment Requests *(3 views)* · Zoho app pointers - Payment A
 **Backbend** Payments *(rail spells it Backbend, the form says Backend)* ·
 Preferred Approver · Ekostay …
 
+**Auto Numbers captured 27-Aug-2026** — four series in one singleton row, only three
+of them report columns, and the counter 312 behind live. Addendum §6.10-6.15.
+
 ---
 
 ## 6. Still outstanding from Husain

@@ -675,6 +675,160 @@ money is involved in *this* pair.
   30th by design. Payment Requests can be built against our seeded masters today
   without a mapping table — unlike Backend Expenses (§4.8)
 
+### 6.10 Auto Numbers captured 27-Aug-2026 — §6.6 ANSWERED, and enforced
+
+Husain, plainly: **"EKS/PY series comes from Auto Numbers."** So §6.6's open question
+— who owns the series — has an answer. Creator's `Auto_Numbers` singleton is the one
+allocator, and the screenshot gives its live contents:
+
+```
+Payment Series        EKS/PY        Payment No           21621
+Books Payment Series  EKS/BPY       Books Payment No         1
+Haewaya Series        EKS/Haewaya   Haewaya No           33507
+ID                    292482000000132217
+```
+
+**Our `creator_id` matches that ID exactly** — same record, and the counters do not
+agree:
+
+| | ours | live | drift |
+|---|---|---|---|
+| `payment_no` | 21309 | **21621** | **312 behind** |
+| `haewaya_no` | 33294 | **33507** | **213 behind** |
+| `books_payment_no` | 1 | 1 | in step |
+
+`books_payment_no` at 1 means **the `EKS/BPY` series has never issued a number** — the
+Zoho Books push has never run. §17's instruction not to implement it is confirmed as
+describing something dormant rather than something in use.
+
+### 6.11 The stored value is the NEXT number, not the last issued
+
+A ±1 that lands on real money, so it was read rather than assumed.
+`Accounts.ds:20502`:
+
+```deluge
+nextSeries = ifnull(autoRec.External_Payment_No,1);
+Series = nextSeries.toString();
+...
+BkngNo = prefix + "/" + Series;
+```
+
+The variable is named `nextSeries` and is used **directly** to build the number. So
+live holding `21621` means 21621 is still to come, and a counter standing *at* 21621
+is already a collision rather than a near miss. Pinned by
+`PaymentNumberGuardTest::the_boundary_is_inclusive_because_the_stored_value_is_the_NEXT_number`.
+
+This also confirms the `max + 1` reconciliation was arithmetically right. It was the
+*freshness* that was wrong.
+
+### 6.12 CREATOR HAS A CLASH GUARD AND WE DID NOT — `Accounts.ds:20517`
+
+```deluge
+BkngNo = prefix + "/" + Series;
+clash = null;
+for each px in Payment[Payment_No == BkngNo] { clash = px; break; }
+if (clash != null)
+{
+    nextSeries = nextSeries + 1;
+    ...
+    warnings.add("Payment_No was already taken - advanced to " + BkngNo);
+}
+```
+
+Creator checks whether the number is taken and steps past it. **`PaymentNumber` had
+no such check** — it had the row lock Creator lacks, which is a different protection
+entirely: the lock stops two of *our* writers racing, and does nothing about a number
+Creator already issued.
+
+Now reproduced, with one improvement: **Creator steps exactly once**, so two
+consecutive taken numbers still collide. Ours walks until the number is free, bounded
+by `MAX_CLASH_SKIP = 25`. **Deviation D9** — it can only skip *further* than Creator
+would, never issue a number Creator would have issued, so it cannot widen the range.
+
+The bound matters. A counter far behind live produces hundreds of consecutive hits,
+and walking silently through them would hide exactly the drift §6.6 is about. Past 25
+it refuses and says "that is a stale counter rather than a collision".
+
+Also confirmed again here: the zero-padding branches (`< 10`, `< 100`, `< 1000`) are
+**dead code**, since the counter is at 21621. Third sighting, §7.6's D3 stands.
+
+### 6.13 The drift is now a hard block, because a comment was not enough
+
+`auto_numbers` gains `live_payment_no_observed`, `live_haewaya_no_observed` and
+`live_observed_at` — **a watermark, not a counter** — and
+`PaymentNumber::allocate()` refuses while `payment_no` is at or below it:
+
+```
+Refusing to allocate EKS/PY/21309: the live Auto_Numbers counter was read as 21621
+on 2026-08-27 and ours stands at 21309, so this number is 313 behind and belongs to
+a payment Creator has already issued.
+```
+
+**Why a schema change rather than a note.** `EKS/PY/21305` was minted over a live
+₹1,00,000 payment once. That was fixed to `max + 1` and written up, and the write-up
+is what failed — two days later the same staleness was back, unchanged, because
+nothing enforced it. Documenting "nothing may allocate from `payment_no`" did not
+stop it. This does.
+
+**The counters are deliberately NOT advanced to 21621/33507.** Advancing them would
+make allocation look safe while Creator carries on issuing from the same range — two
+allocators, one series. Which of the two owns `EKS/PY` until cutover is still a
+decision for Husain, and §6.6's two safe designs stand:
+
+1. Creator keeps the series until cutover; our allocator refuses (**this is now what
+   happens**, as a consequence rather than a promise)
+2. We take it over at cutover, seeded from a live read with Creator's writes stopped
+
+A null watermark leaves the guard inert, so a fresh install is not punished for a
+reading nobody has taken.
+
+**AND THE GUARD HAD A HOLE, CAUGHT BY ITS OWN TEST.** The migration wrote the
+watermark as data; `AutoNumberSeeder` then reran on the next `migrate:fresh --seed`
+and left it **null**, silently disarming the guard. The seeder now carries the reading
+as three constants with a comment saying to update them when a fresh Auto Numbers
+screenshot arrives. `PaymentNumberGuardTest::the_live_reading_of_27_aug_2026_is_recorded_on_the_seeded_row`
+exists for exactly this and failed first time round. Ten tests total.
+
+### 6.14 A FOURTH SERIES THAT NO SCREEN SHOWS
+
+The `Auto_Numbers` **form** declares four pairs (`Accounts.ds:234-292`):
+
+```
+Payment_Series          / Payment_No
+Haewaya_Series          / Haewaya_No
+Books_Payment_Series    / Books_Payment_No
+External_Payment_Series / External_Payment_No      <- NOT a report column
+```
+
+The All Auto Numbers report shows the first three. **The fourth is invisible on
+screen and actively allocated from** — `Accounts.ds:20502` reads
+`prefix = ifnull(autoRec.External_Payment_Series,"EXT")` and mints against
+`External_Payment_No`, complete with the same padding and clash guard.
+
+§2's rule biting a third time: **a report, like an export, mirrors its own columns and
+not the form.** Modelled now (`external_payment_series`, `external_payment_no`) so the
+allocator is at least visible in our schema, but **its live values are unknown** — no
+screenshot shows them, and the 12-Aug master export predates the field.
+
+`[TODO]` a reading of `External Payment No` is needed before anything touches it, on
+exactly the same reasoning as `payment_no`. And it is unguarded: the watermark covers
+`payment_no` and `haewaya_no` only, because those are the two we have numbers for.
+
+This is also §4.4's "five origins of a payment number" resolving into something
+countable: `EKS/PY` (Auto Numbers), `EKS/Haewaya` (Auto Numbers), `EKS/BPY` (Auto
+Numbers, never used), `EXT`/`External` (Auto Numbers, unobserved), and
+`REFUND-{product}-{bookingId}` (§7.1, **derived, not allocated**). Four allocators in
+one singleton row plus one derivation.
+
+### 6.15 One row, and a `+` button beside it
+
+The report shows a single record and offers **`+`**. A second `Auto_Numbers` row would
+make Creator's own read — `Auto_Numbers[ID != null]`, no ordering — arbitrary, and
+`Accounts.ds:20489` takes the first row of an unordered loop and `break`s.
+
+Our schema already prevents it: a unique index on `singleton`, documented on the
+model. Worth recording that the live app does not, and that the `+` is one click.
+
 ---
 
 ## 7. Backbend Payments — verified 27-Aug-2026, and it is the REFUNDS channel
