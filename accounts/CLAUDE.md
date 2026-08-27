@@ -399,6 +399,27 @@ names the two tabbed rows separately. The no-trim rule at 328x scale.
 merge *action* is not. And this is the most sensitive read in the app — PANs, GST
 numbers, phone numbers, bank details — with **no authorisation on it**.
 
+### Zoho Books is a THIRD plane, and its contract is already in the DS
+
+Bank was captured 27-Aug-2026 and Husain confirmed its transactions are **fetched
+from Zoho Books**. `Accounts.ds` carries a whole `Books.*` namespace — four
+status-filtered `banktransactions` fetches, plus `COA()`, `GetTaxes()`, `GetTDS()`,
+and a mostly-commented-out write side. Addendum §7B.5.
+
+**`organization_id` is `60040119506` — NOT the Analytics org `60042406851`.** Two
+different Zoho tenants; do not assume one id for the estate. The calls use
+`connection:"books"`, a named Creator Connection, so **no Books credential is
+exposed in these files** (unlike the DoubleTick key).
+
+This also explains three things in our own schema that were never labelled as Books
+artefacts: `coa_accounts.books_account_id` comes from `Books.COA()`, and the `taxes`
+(8) and `tds_rates` (35) masters come from `/settings/taxes`.
+
+Still needed from Husain: the per-account `account_id` list, a read-only Books OAuth
+client, and confirmation the org id is current. **Not** needed: endpoints, filters,
+pagination, the `transaction_id` dedup key, or the `Payment.Books_ID` →
+`Bank_Reconcilation` link — all in the DS.
+
 ### Zoho Analytics read plane wired, 25-Aug-2026
 
 Two documents arrived, both empirical, both from the expense tracker's six months in

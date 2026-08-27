@@ -216,7 +216,9 @@ Masters beyond Vendor Master · App Preferences · Preferred Approver ·
 Zoho app pointers · Ekostay … · the Backend Payments list
 
 ### Nav rail — at least 17 items, not the 11 in v1
-Accounts · Payments · Bank · Bills · Expenses · Schedule Payments ·
+Accounts · **Bank** *(captured 27-Aug-2026 — 30 cols, inline-editable, Print-only
+panel, fed from Zoho Books; addendum §7B)* · Payments · Bills · Expenses ·
+Schedule Payments ·
 Expense Observations · Masters *(Vendor Master, All Vendor Masters)* ·
 Settings *(8 reports, see addendum §2; **All Approvals + the Approvers grid
 captured 27-Aug-2026**, addendum §11.7)* · Backend Expenses · Pending Approvals ·

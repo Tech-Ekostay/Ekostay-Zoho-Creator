@@ -1065,6 +1065,265 @@ would settle it; until then treat `Payment` as the only reliably mandatory field
 
 ---
 
+## 7B. Bank — captured 27-Aug-2026, and the Zoho Books plane
+
+Eight screenshots of `All Bank Transactions` — report scrolled to its last column,
+detail panel end to end. **30 columns**, inline-editable (`*` + `Save Changes` /
+`Remove Changes`), footer `Showing 1000 of ###` plus a **`Show Summary`** control no
+other report has. A **`⌄` chevron beside the title** means multiple views.
+
+Husain: *"all the transactions for all the banks are fetched from … these
+transactions are fetched from zoho books."*
+
+### 7B.1 The detail panel cannot edit or delete — only Print
+
+Every other module's panel offers `Edit` + `Delete` (or `Duplicate`). **This one
+offers `Print` and nothing else.** Which fits a mirror of an external system — but
+the **grid is inline-editable**, so the record is writable from the list and not from
+the panel. Two different answers to "can I change this?" on one screen.
+
+Panel structure, and the first named section seen in any detail panel:
+
+```
+Overview
+  Reference No · Date · Transaction ID · Amount · Bank Charges · Gross Amount ·
+  Account Type · Transaction Type · Status · Source · Debit / Credit · Description ·
+  Matching Transactions · Account Name · Matched Payments · Withdrawal Matched ·
+  Deposit Matched
+
+Matching Transactions          <- a related list; "No records found"
+```
+
+`Matching Transactions` appears **twice** — once as a field in `Overview` and once as
+the related-list heading. Fifth duplicate-label instance in this app (§4.2, §6.3,
+§7.5, and the two `Personal Payment` columns below).
+
+### 7B.2 The colour is semantic, and the direction convention is worth pinning
+
+`Amount` and `Gross Amount` render **green** on some rows and **red** on others, and
+it tracks direction exactly:
+
+| `Debit / Credit` | populated column | colour | example description |
+|---|---|---|---|
+| `debit` | **Deposit** | green | `KOTAKPAYOUT-…`, `AIRPAY TRANSACTION DONE` |
+| `credit` | **Withdrawal** | red | `IB:SENT NEFT …`, `MB:SENT TO …` |
+
+So **`debit` means money IN and `credit` means money OUT** on this screen — the
+bank's own ledger perspective, and the opposite of what someone reading it as the
+company's books would assume. The descriptions confirm it independently: everything
+`SENT` is a credit/withdrawal, and the payment-gateway settlements (Airpay, Kotak
+payout) are debits/deposits.
+
+**Recorded because it is exactly the kind of thing a rebuild inverts.** Any
+sum, any reconciliation and any sign convention must read `Deposit`/`Withdrawal`,
+not `Debit / Credit`, unless it deliberately adopts the bank's sense.
+
+`Bank Charges` is `₹0.00` on every visible row and `Gross Amount` equals `Amount`
+throughout, so the charge leg is never populated.
+
+### 7B.3 `Status` is a five-value vocabulary in three casings
+
+Seen on screen: `uncategorized`, `duplicate`, `Withdrawal Matched`. The DS view
+filters add `matched` (`Accounts.ds:11871`, `14315`), and §7B.5's fetch functions
+imply `Deposit Matched` as the counterpart.
+
+**Two lowercase, one Title Case, in one column.** Added to §8. And `Transaction Type`
+reads `uncategorized` on every row too — a second column carrying the same word for a
+different concept, and unused.
+
+Note what is *good* here, against the pattern everywhere else in this app: the
+unset state is an **explicit `uncategorized`**, not a blank. §11's
+blank-as-real-state problem does not apply to this screen.
+
+### 7B.4 A duplicate that the detection actually caught
+
+```
+row 2   ₹5,00,000.00   KKBKH26213806425   duplicate           (no matched payment)
+row 3   ₹5,00,000.00   KKBKH26213806778   Withdrawal Matched  EKS/PY/21603
+```
+
+Same date, same amount, same description (`IB:SENT NEFT Ekost 10247406007
+IDFC/Internal Tranf`), different reference numbers. One matched, one flagged
+`duplicate`. **So duplicate detection works here** — which is worth saying next to
+§4.9, where Backend Expenses has `dup_checked` false and `cron_event_duplicate_bill`
+0 on every row and the same machinery has never run.
+
+### 7B.5 The Books contract, from the DS — what we have without asking
+
+Husain asked whether the Books context is needed. **The fetch contract is already in
+`Accounts.ds`.** A whole `Books.*` namespace:
+
+**READ**
+
+| function | endpoint / filter |
+|---|---|
+| `Books.GetBankTransactions(AccountID, PageNo)` | `/books/v3/banktransactions … filter_by=Status.Uncategorized` |
+| `Books.GetBankTransactions1` | `filter_by=Status.Categorized` |
+| `Books.GetBankTransactions2` | `filter_by=Status.Matched` |
+| `Books.GetBankTransactionsExcluded` | `filter_by=Status.Excluded` |
+| `Books.manualupdate(AccountID, PageNo, Date1, Date2)` | date-ranged re-pull |
+| `Books.COA()` | `/books/v3/chartofaccounts` |
+| `Books.GetTaxes()` | `/books/v3/settings/taxes` |
+| `Books.GetTDS()` | `/books/v3/settings/taxes?is_tds_request=true` |
+
+**WRITE** — `Books.CreateExpense`, `Books.CreateUpdateExpense`,
+`Books.CreateVendorPayment`, `Books.CreateManualJournal`, `Books.ManualJournal`,
+`Books.UpdateVendors`. Much of `CreateManualJournal` is **commented out**, which
+agrees with `books_payment_no` still standing at 1 (§6.10): the Books **push** is
+dormant, the Books **pull** is live.
+
+Four facts that matter more than the endpoint list:
+
+1. **`organization_id = 60040119506`** — and the Analytics org is **`60042406851`**.
+   **Two different Zoho orgs.** Anything that assumed one id for the whole estate is
+   wrong; the Books plane and the Analytics plane are separate tenants
+2. **`connection: "books"` — a named Creator Connection.** The OAuth token lives in
+   Creator's connection store, **not in the script.** So unlike the DoubleTick key at
+   `Accounts.ds:22851`, **no Books credential is exposed in these files.** Good news,
+   and it means the DS gave us the contract without giving us a secret
+3. **The fetch is per bank account and paginated** — `account_id` + `page`. Nothing in
+   the DS enumerates the account ids; they are passed in by whatever calls it
+4. **The pull is idempotent on `transaction_id`** — `Bank_Transactions[Transaction_ID
+   == rec.get("transaction_id")]` before inserting. That is the right key and we
+   should use the same one
+
+**And this explains three things in our own schema.** `coa_accounts.books_account_id`
+is populated by `Books.COA()`. Our `taxes` (8) and `tds_rates` (35) masters come from
+`/settings/taxes` — which is why the TDS master has 35 rows over 16 distinct
+name+percentage pairs. None of that was documented as a Books artefact before.
+
+### 7B.6 The reconciliation link, and a case-sensitivity worth checking
+
+From `Accounts.ds:15665-15680`, on a newly fetched transaction:
+
+```deluge
+if (rec.get("status") == "matched")
+    if (rec.get("transaction_type") == "vendor_payment")
+        fetPayment = Payment[Books_ID == rec.get("transaction_id")];
+        if (fetPayment.ID != null)  fetPayment.Bank_Reconcilation = true;
+```
+
+So **`Payment.Books_ID` holds the Books transaction id**, and `Bank_Reconcilation` is
+the flag the recon views filter on. That is the join between a payment and its bank
+line, and it is a Books id rather than anything of ours.
+
+**A possible live defect, flagged rather than asserted.** The recon view reads:
+
+```deluge
+"Pending Bank Recon from 1st March" :
+    Bank_Reconcilation == false && Status == "Paid"
+    && !Payment_No.contains("haewaya") && Payment_Date > '28-Feb-2026'
+```
+
+The series is **`EKS/Haewaya`** with a capital H, and the filter tests lowercase
+`"haewaya"`. If Deluge's `contains` is case-sensitive, that exclusion never fires and
+**every Haewaya payment sits in the bank-recon queue permanently.** This is the same
+shape as §13's provisioning case-mismatch and §10's two spellings of
+`Payment InProgress`, so it is a plausible rather than a novel failure — but Deluge's
+string semantics have not been verified, so it is a question, not a finding.
+`[TODO]` worth one look at the live queue: does it contain `EKS/Haewaya/*` rows?
+
+### 7B.7 `Create Payment` from a bank line is another origin — on the same counter
+
+Two of the 30 columns are action buttons that mint or classify:
+
+- **`Personal Payment`** (button) beside **`Personal Payment`** (field, reading `No`)
+- **`Create Payment`** (button)
+- **`Match & UnMatch`** (button — note the header spells it `UnMatch` and the button
+  itself reads `Match & Unmatch`; §8)
+
+Both `Personal Payment` and `Create Payment` render **solid on `uncategorized` rows
+and pale on `duplicate` and `*Matched` rows.** So the actions are gated on the row
+being unclassified. (Both enabled rows in this sample are also *deposits*, so status
+versus direction cannot be fully separated from these screenshots — status is the
+better-supported reading.)
+
+**`Create Payment` here allocates from `EKS/PY`.** The matched payments on screen are
+`EKS/PY/21577`–`21603`, inside the live range (§6.10 puts the counter at 21621). So
+this is another write path into the counter the staleness guard now protects, and it
+strengthens the case for that guard: the series is reachable from Payments, Payment
+Requests **and** Bank.
+
+Every one of those numbers is above our imported maximum of 21308 — the drift, visible
+a third way.
+
+### 7B.8 The audit fields finally carry operational signal
+
+This is the first screen where `Added`/`Modified` are not decoration:
+
+```
+Added Time     27-Aug-2026 16:39:11   (identical on every row)   Added User  husain_ekostay1
+Modified Time  17:49:51 · 17:45:02 · 17:44:58 · 17:07:39 ·
+               17:07:22 · 17:06:31 · 17:05:56                    Modified User  komaltakale28
+```
+
+**Husain imported them in a single batch at 16:39:11; Komal reconciled them through
+the afternoon.** Two conclusions:
+
+- An `Added Time` identical to the second across many rows means the Books pull is a
+  **batch import, not a per-transaction webhook** — so a reconciliation window has to
+  assume bulk arrival
+- It **validates `TracksCreatorAudit`'s design**: `added_*` records the import,
+  `modified_*` records the human work, and they are genuinely different users.
+  `husain_ekostay1` / `komaltakale28` are login handles, consistent with
+  `sanjayprojapati1983` on Payment Requests (§6.9)
+
+### 7B.9 `INTERNAL TRANSFER` confirms the `Disallow Manual Creation` reading
+
+§8 records `Disable` / `Disallow Manual Creation` with a **`[TODO]` confirm**, reading
+it as "stops the category being picked during manual entry while leaving it available
+to the sync and generators", true of `PETTY` and `INTERNAL TRANSFER`.
+
+**Confirmed here.** `Item Category` on the matched rows reads `INTERNAL TRANSFER` —
+one of the two disabled categories — arriving through the bank-matching path. A
+category blocked from manual entry is in active use by a generator. `[TODO]` closed.
+
+### 7B.10 Smaller findings
+
+- **`Reference No` has no single format**: `FOS26213197497756`, `KKBKH26213806425`,
+  `FCM-260801OBMT43`, `IMPS-621312076634`, `MB-998325770792`. Bank and rail prefixes
+  (Kotak, IMPS, mobile banking) with and without hyphens. **Do not parse it**
+- **`Billing Cycles` reads `August - 2026` / `July - 2026`** — the dashed-with-spaces
+  form, which is what `BillingCycle::label()` returns. Fourth screen, and the first to
+  agree with our canonical spelling exactly
+- **`Account Name` is `EKOSTAY HOSPITALITY LLP` on every row** — the same entity as
+  Backend Expenses' `business_name` (§4.9) and Backbend Payments' `Bank Name` = 84 →
+  `coa.ekostay_id` (§7.2). **Three screens, one entity, three representations:** a
+  name, a name, and an integer id
+- `Item Category`, `Location`, `Billing Cycles`, `Reason`, `Source` and
+  `Accounts Remarks` are **blank on unmatched rows and populated on matched ones** —
+  so categorisation comes from the matched payment, not from the bank feed. An
+  unmatched bank line carries no accounting meaning at all
+- **`filter_by=Status.Uncategorized`** on the primary fetch explains why every row
+  arrives `uncategorized`: the pull deliberately asks Books only for the
+  unclassified ones
+- `Withdrawal Matched` and `Deposit Matched` are **booleans** on the panel
+  (`false`/`false`) *and* `Withdrawal Matched` is a `Status` **value**. One name, two
+  types, one screen
+- `testGetBankTransactions` carries hardcoded dates `2026-05-18`..`2026-07-09` and a
+  `test` prefix — a manual helper left in the live file, alongside
+  `Books.manualupdate`. Not dangerous like `DeleteAllRecords()`, but the same habit
+
+### 7B.11 What is still needed from Husain — narrow, because the DS gave us the rest
+
+1. **The `account_id` list**, one per bank account. The fetch is per-account and
+   nothing in the DS enumerates them
+2. **Books OAuth for a separate, read-only client** — scoped
+   `ZohoBooks.banking.READ` and `ZohoBooks.settings.READ`. Same argument as §9 of the
+   Analytics guide: sharing a token means revoking it takes down a live sync. Note the
+   Books credential is **not** in the DS, so this genuinely has to come from him
+3. **Confirmation that org `60040119506` is current** — it differs from the Analytics
+   org `60042406851`, and a stale org id would fail in a way that looks like a
+   permission error
+4. **Whether Books is the only source of bank lines**, or whether any are keyed in by
+   hand. It changes whether `Transaction_ID` can be treated as always present
+
+**Not needed:** the endpoint, the API version, the filters, the pagination shape, the
+dedup key or the reconciliation logic. Those are all in `Accounts.ds` and are recorded
+above.
+
+---
+
 ## 8. Label divergence — pick one per concept
 
 | Concept | Variants seen |
@@ -1079,6 +1338,8 @@ would settle it; until then treat `Payment` as the only reliably mandatory field
 | Disable flag | field `Disable`, label **`Disallow Manual Creation`** |
 | COA visibility flag | field `Hide`(?), label **`COA`** |
 | Module name | `Backend Payments` (form) · `Backbend Payments` (rail) |
+| Bank match action | header **`Match & UnMatch`** · button **`Match & Unmatch`** (Bank, 27-Aug-2026) — one screen, two casings |
+| Bank transaction status | `uncategorized` · `duplicate` · `matched` (DS views) · **`Withdrawal Matched`** — three casings in one column, and `Withdrawal Matched` is also a BOOLEAN field on the same record (§7B.3) |
 | **Billing cycle label** | **`July - 2026`** (`payment_master`) · **`Jul 2026`** (`expenses`) · **`August - 2026`** (All Expenses report) · **`August-2026`** (Backbend Payments, 27-Aug-2026) — four spellings of one cycle. All four ARE aliased in `ZohoImportBills::cycleMap()`, which registers five forms per cycle; a mismatch here cost 26,720 split legs once |
 | **Approval-pending status** | **`Sent for Approval` · `Submit for Approval`** — both live on Payment Requests, on rows that otherwise look alike (27-Aug-2026, §6.5). Two states or two spellings is **unresolved**, and it decides whether a status comparison misses half the queue — exactly the `Payment InProgress` trap in §10 |
 
@@ -1086,7 +1347,10 @@ would settle it; until then treat `Payment` as the only reliably mandatory field
 being picked during manual bill/payment entry while leaving it available to the
 sync and generators. True for `PETTY` and `INTERNAL TRANSFER`, which matches
 §6.2's Bills picker filter. It is a visibility filter on manual paths, not a soft
-delete. `[TODO]` confirm.
+delete. ~~`[TODO]` confirm.~~ **CONFIRMED 27-Aug-2026** — `INTERNAL TRANSFER`, one of
+the two disabled categories, arrives on Bank's matched rows through the
+bank-matching path (§7B.9). A category blocked from manual entry is in active use by
+a generator, which is exactly what the label claims.
 
 ---
 
