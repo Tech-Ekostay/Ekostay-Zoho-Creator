@@ -139,6 +139,21 @@ class VendorSeeder extends Seeder
 
     public function run(): void
     {
+        /*
+         * SKIPPED ON A FRESH CLONE, BY DESIGN. `Vendor_Master.csv` is excluded from
+         * the repository because it carries 8,063 real vendors with PANs, GST registrations and bank details, and git history cannot
+         * practically be cleaned. So this seeder announces the gap instead of
+         * throwing — the other seeders still run and the app still boots.
+         */
+        if (! $this->masterDataExists('Vendor_Master.csv')) {
+            $this->command?->warn('vendors: SKIPPED — master-data/Vendor_Master.csv is not in the repository.');
+            $this->command?->line('   It holds 8,063 real vendors with PANs, GST registrations and bank details, so it is git-ignored on purpose.');
+            $this->command?->line('   Ask Husain for it over a private channel and drop it in master-data/.');
+            $this->command?->line('   The app runs without it; `vendors` stays empty and its pickers are empty with it.');
+
+            return;
+        }
+
         ['header' => $header, 'rows' => $rows] = $this->masterDataCsvPositional('Vendor_Master.csv');
 
         if (count($header) !== self::WIDTH) {

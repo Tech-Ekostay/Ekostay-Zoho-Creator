@@ -31,6 +31,21 @@ class EmployeeSeeder extends Seeder
 
     public function run(): void
     {
+        /*
+         * SKIPPED ON A FRESH CLONE, BY DESIGN. `All_Employee_Masters.csv` is excluded from
+         * the repository because it carries the name, DOB, email and phone of 475 real employees, and git history cannot
+         * practically be cleaned. So this seeder announces the gap instead of
+         * throwing — the other seeders still run and the app still boots.
+         */
+        if (! $this->masterDataExists('All_Employee_Masters.csv')) {
+            $this->command?->warn('employees: SKIPPED — master-data/All_Employee_Masters.csv is not in the repository.');
+            $this->command?->line('   It holds the name, DOB, email and phone of 475 real employees, so it is git-ignored on purpose.');
+            $this->command?->line('   Ask Husain for it over a private channel and drop it in master-data/.');
+            $this->command?->line('   The app runs without it; `employees` stays empty and its pickers are empty with it.');
+
+            return;
+        }
+
         $rows = $this->masterDataCsv('All_Employee_Masters.csv');
         $resolver = new RoleResolver;
 

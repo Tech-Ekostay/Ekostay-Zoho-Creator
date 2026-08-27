@@ -52,6 +52,25 @@ trait ReadsMasterData
      * names carry a leading space and they are real records in the master, not
      * parse artefacts. Verified against All_Villas.csv 22-Aug-2026.
      */
+    /**
+     * Is this export present?
+     *
+     * Two of the nine exports are DELIBERATELY not in the repository because they
+     * carry personal data — `Vendor_Master.csv` (8,063 PANs, GST registrations and
+     * bank details) and `All_Employee_Masters.csv` (475 people's name, DOB, email
+     * and phone). Git history is permanent, so they are excluded rather than
+     * committed-and-later-removed.
+     *
+     * The consequence is that a fresh clone cannot seed those two tables, and the
+     * seeder should SKIP with an explanation rather than throw and abandon the
+     * other fifteen. A new developer getting a working app with two empty tables
+     * and a clear message beats a stack trace on `migrate:fresh --seed`.
+     */
+    protected function masterDataExists(string $file): bool
+    {
+        return is_file(base_path('master-data/'.$file));
+    }
+
     protected function masterDataCsv(string $file): array
     {
         $path = base_path('master-data/'.$file);

@@ -52,13 +52,21 @@ narrower than `bigint` loses precision.
 
 ## Layout
 
+**This app now lives inside a monorepo** — `ekostay-platform/accounts/`, alongside
+`fnb/` (not started). One repo because `F_B.ds` makes 47 cross-app calls into
+`accounts.*` and the Bills form carries an F&B lookup today, so neither can be built
+against a stub of the other. Root `README.md` and `ONBOARDING.md` cover the split;
+`ONBOARDING.md` is written for the second developer joining.
+
+Paths below are relative to `accounts/`.
+
 ```
 README.md                        the original package readme
 UI_HANDOFF.md                    ┐
 ACCOUNTS_CONTEXT_ADDENDUM.md     ├ the three context docs, at root so their
 ACCOUNTS_REBUILD_CONTEXT.md      ┘ cross-references resolve as written
 master-data/                     real Creator exports, 12-Aug-2026 — seed from here
-deluge/                          the three Creator DS exports (git-ignored)
+deluge/                          Accounts.ds + Admin.ds (git-ignored; F_B.ds moved to ../fnb/deluge/)
 reference-ui/                    8 screenshot-verified React replicas
 reference-ui/_do-not-ship/       2 old redesigns, quarantined
 docs/screenshots/                (empty) drop per-module screenshots here
