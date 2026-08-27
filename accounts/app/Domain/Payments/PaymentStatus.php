@@ -24,19 +24,30 @@ final class PaymentStatus
 {
     /** Axis 1, verbatim. Creator's declared init value is "Draft". */
     public const DRAFT = 'Draft';
+
     public const SUBMIT_FOR_APPROVAL = 'Submit for Approval';
+
     public const SENT_FOR_APPROVAL = 'Sent for Approval';
+
     public const SEND_FOR_APPROVAL = 'Send for Approval';   // sic — both are live
+
     public const APPROVED = 'Approved';
+
     public const APPROVAL_REJECTED = 'Approval Rejected';
+
     public const APPROVAL_NOT_REQUIRED = 'Approval Not Required';
+
     public const PAID = 'Paid';
 
     /** Axis 2, verbatim. */
     public const PS_PENDING = 'Pending';
+
     public const PS_PAID = 'paid';                          // sic — lowercase
+
     public const PS_CANCELLED = 'Cancelled';
+
     public const PS_REVERSE = 'Reverse';
+
     public const PS_OPEN = 'Open';                          // undeclared but live
 
     /**

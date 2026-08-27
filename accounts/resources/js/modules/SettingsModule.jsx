@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import ReportBar from '../components/ReportBar';
 import ReportGrid from '../components/ReportGrid';
+import FilterBar from '../components/FilterBar';
 import RecordDetail from '../components/RecordDetail';
 import RecordForm from '../components/RecordForm';
 import { inr } from '../lib/format';
@@ -36,6 +37,24 @@ export default function SettingsModule({ report }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
+  /* Creator-style filters: column + operator + value, applied server-side. */
+  const [filters, setFilters] = useState([]);
+  const [filterError, setFilterError] = useState(null);
+
+  /*
+   * DEPEND ON THE SERIALISED FILTERS, NOT THE ARRAY.
+   *
+   * `filters` is a new array object on every change, so using it as a hook
+   * dependency compares by IDENTITY. That produced an infinite fetch loop: an effect
+   * that both depended on `filters` and called `setFilters([])` re-armed itself
+   * forever, and the browser hammered the API — caught by watching the network log,
+   * not by reading the code.
+   *
+   * A JSON string is stable when the contents are unchanged, which is the comparison
+   * actually wanted here.
+   */
+  const filterKey = JSON.stringify(filters);
+
   const [term, setTerm] = useState('');
 
   /** null = closed · 'new' = add · a number = editing that record. */
@@ -59,11 +78,14 @@ export default function SettingsModule({ report }) {
 
   const load = useCallback(() => {
     setError(null);
-    fetch(`/api/settings/reports/${report}`)
+    fetch(`/api/settings/reports/${report}${filters.length ? `?filters=${encodeURIComponent(JSON.stringify(filters))}` : ''}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then(setData)
+      .then((body) => {
+        if (body.reason === 'bad_filter') { setFilterError(body.message); return; }
+        setData(body);
+      })
       .catch((e) => setError(String(e.message ?? e)));
-  }, [report]);
+  }, [report, filterKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Switching reports must drop the previous one's pending state, or an edit
   // typed on COA would appear to belong to TDS.
@@ -72,10 +94,21 @@ export default function SettingsModule({ report }) {
     setEdits({});
     setEditing(null);
     setViewing(null);
+    setFilterError(null);
     setNotice(null);
     setTerm('');
     load();
   }, [report, load]);
+
+  /*
+   * Filters reset when the REPORT changes, in an effect of their own.
+   *
+   * This used to sit inside the effect that loads the report — which also depends on
+   * the filters — so clearing them re-triggered the load, which cleared them again.
+   * Separating the two is what breaks the cycle; the serialised key alone would not,
+   * because `[]` serialises the same but `setFilters` still queued a render each pass.
+   */
+  useEffect(() => { setFilters([]); }, [report]);
 
   const inline = data?.inline_editable === true;
   const inlineColumns = useMemo(() => new Set(data?.inline_columns ?? []), [data]);
@@ -261,6 +294,18 @@ export default function SettingsModule({ report }) {
         <div style={{ padding: '6px 14px', fontSize: 12, color: notice.kind === 'ok' ? 'var(--ink2)' : 'var(--bad)' }}>
           {notice.text}
         </div>
+      )}
+
+      <FilterBar
+        schema={data?.filter_schema ?? []}
+        filters={filters}
+        onChange={(next) => { setFilters(next); setFilterError(null); }}
+        matched={data?.matched}
+        total={data?.total}
+      />
+
+      {filterError && (
+        <div style={{ padding: '6px 14px', fontSize: 12, color: 'var(--bad)' }}>{filterError}</div>
       )}
 
       {error && <div style={{ padding: 14, color: 'var(--bad)' }}>Failed to load: {error}</div>}

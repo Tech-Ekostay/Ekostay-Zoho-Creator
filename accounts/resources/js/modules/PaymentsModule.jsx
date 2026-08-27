@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import ReportBar from '../components/ReportBar';
 import ReportGrid from '../components/ReportGrid';
 import RecordDetail from '../components/RecordDetail';
+import FilterBar from '../components/FilterBar';
 import PaymentForm from './PaymentForm';
 import { ddMmmYyyy, inr, rupees, sameStatus } from '../lib/format';
 
@@ -39,10 +40,21 @@ export default function PaymentsModule() {
    * not — a payment can be entered directly (Husain, 25-Aug-2026). `options` gates
    * the button because a form with empty pickers is worse than a disabled one.
    */
+  /*
+   * FILTERS REPLACE THE FREE-TEXT SEARCH, and the reason is not cosmetic.
+   *
+   * The old box filtered the rows already in the browser — the first 1,000 of
+   * 52,638. A payment at row 5,000 came back as "no match", which reads as "no such
+   * payment" rather than "not on the page you have". Filters are a server round-trip
+   * against every row, and they are column + operator + value as the live All
+   * Payments screenshot shows.
+   */
+  const [filters, setFilters] = useState([]);
+  const [filterError, setFilterError] = useState(null);
+
   const [adding, setAdding] = useState(false);
   const [options, setOptions] = useState(null);
   const [detail, setDetail] = useState(null);
-  const [term, setTerm] = useState('');
   const [reversing, setReversing] = useState(false);
   const [reason, setReason] = useState('');
   const [notice, setNotice] = useState(null);
@@ -56,11 +68,16 @@ export default function PaymentsModule() {
 
   const load = useCallback(() => {
     setError(null);
-    fetch('/api/payments')
+    fetch(`/api/payments${filters.length ? `?filters=${encodeURIComponent(JSON.stringify(filters))}` : ''}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
-      .then(setData)
+      .then((body) => {
+        // A rejected filter comes back 422 with the allowed columns named. Show it;
+        // a silently unfiltered grid reads as a filtered one.
+        if (body.reason === 'bad_filter') { setFilterError(body.message); return; }
+        setData(body);
+      })
       .catch((e) => setError(String(e)));
-  }, []);
+  }, [filters]);
 
   useEffect(load, [load]);
 
@@ -122,23 +139,22 @@ export default function PaymentsModule() {
       .catch((e) => setNotice({ kind: 'bad', text: String(e.message ?? e) }));
   };
 
-  const rows = useMemo(() => {
-    const all = data?.rows ?? [];
-    const needle = term.trim().toLowerCase();
-    if (needle === '') return all;
-
-    return all.filter((row) =>
-      (data?.columns ?? []).some((label) => String(row[label] ?? '').toLowerCase().includes(needle))
-    );
-  }, [data, term]);
+  /*
+   * NO CLIENT-SIDE FILTERING ANY MORE. This used to lowercase-match the loaded rows,
+   * which quietly meant "search the first 1,000 of 52,638" — a payment at row 5,000
+   * read as absent rather than off-page. The server returns exactly the rows that
+   * match, so the grid renders what it is given.
+   */
+  const rows = data?.rows ?? [];
 
   return (
     <>
       <ReportBar
         title="All Payments"
-        term={term}
-        onTermChange={setTerm}
-        matches={rows.length}
+        searchDisabledReason={
+          'Search is now a FILTER — column, operator and value, as the live report shows. '
+          + 'It runs on the server so it covers all 52,638 rows, not the 1,000 loaded.'
+        }
         /*
          * `+` sends you to Bills rather than opening a form. A payment is NOT typed
          * from scratch: §7.2's Create_Payment is a per-record action ON THE BILLS
@@ -151,10 +167,32 @@ export default function PaymentsModule() {
         extras={<button type="button" className="zc-btn" onClick={load}>Refresh</button>}
       />
 
+      <FilterBar
+        schema={data?.filter_schema ?? []}
+        filters={filters}
+        onChange={(next) => { setFilters(next); setFilterError(null); }}
+        matched={data?.matched}
+        total={data?.total}
+      />
+
+      {filterError && (
+        <div style={{ padding: '6px 14px', fontSize: 12, color: 'var(--bad)' }}>{filterError}</div>
+      )}
+
       {error && <div style={{ padding: 14, color: 'var(--bad)' }}>Failed to load: {error}</div>}
       {!data && !error && <div style={{ padding: 14, color: 'var(--ink3)' }}>Loading…</div>}
 
-      {data && data.rows.length === 0 && (
+      {data && data.rows.length === 0 && filters.length > 0 && (
+        <div style={{ padding: 20, color: 'var(--ink3)' }}>
+          <p style={{ marginTop: 0 }}>No payment matches these filters.</p>
+          <p style={{ fontSize: 12 }}>
+            {data.total} payments exist. This searched all of them, not just a loaded page —
+            so a nil result here means nil, not off-screen.
+          </p>
+        </div>
+      )}
+
+      {data && data.rows.length === 0 && filters.length === 0 && (
         <div style={{ padding: 20, color: 'var(--ink3)' }}>
           <p style={{ marginTop: 0 }}>No payments yet.</p>
           <p style={{ fontSize: 12 }}>
@@ -170,7 +208,7 @@ export default function PaymentsModule() {
         <ReportGrid
           columns={columns}
           rows={rows}
-          total={term ? rows.length : data.total}
+          total={filters.length > 0 ? data.matched : data.total}
           selectedId={selected}
           onSelect={(row) => setSelected(row.id)}
         />

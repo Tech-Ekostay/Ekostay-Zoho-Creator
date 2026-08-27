@@ -7,10 +7,12 @@ namespace App\Http\Controllers\Api;
 use App\Domain\Settings\ReportRegistry;
 use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Add and edit for the Settings masters — the `+` button, the row form, and COA's
@@ -142,7 +144,7 @@ class SettingsRecordController extends Controller
                     $applied[] = $model->getKey();
                 }
             });
-        } catch (\Illuminate\Http\Exceptions\HttpResponseException|\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+        } catch (HttpResponseException|HttpException $e) {
             return response()->json([
                 'message' => $e->getMessage() !== '' ? $e->getMessage() : 'Inline update rejected.',
             ], 422);

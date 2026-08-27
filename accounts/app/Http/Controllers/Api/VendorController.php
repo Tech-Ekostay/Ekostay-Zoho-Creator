@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Reports\ReportFilter;
 use App\Http\Controllers\Controller;
 use App\Models\Vendor;
 use Illuminate\Http\JsonResponse;
@@ -43,6 +44,8 @@ use Illuminate\Http\Request;
  */
 class VendorController extends Controller
 {
+    use Concerns\FiltersReports;
+
     /**
      * The export's own column order, verbatim. `Primary Status`, `Employee` and the
      * two `Time` columns are Creator's labels, not tidied ones.
@@ -86,6 +89,42 @@ class VendorController extends Controller
      */
     private const PAGE = 200;
 
+    /**
+     * Filterable columns.
+     *
+     * THE PII COLUMNS ARE FILTERABLE, deliberately — a PAN or a GST number is exactly
+     * what an accounts user searches by, and withholding them would make the report
+     * useless for its actual purpose. But note what that means: this is the most
+     * sensitive read in the app and it still has NO authorisation on it. Filtering
+     * does not widen the exposure, it makes it easier to exercise. Wiring the §3.3
+     * gate matters more now than before this existed.
+     *
+     * The three `GST No.` columns are offered separately because they hold different
+     * values and disagree on 6 rows.
+     */
+    private function filterable(): ReportFilter
+    {
+        return new ReportFilter([
+            'Vendor Name' => ['column' => 'name', 'type' => 'text'],
+            'Main Primary' => ['column' => 'main_primary', 'type' => 'text'],
+            'Primary Vendor' => ['column' => 'primary_vendor', 'type' => 'text'],
+            'Primary Status' => ['column' => 'is_primary', 'type' => 'boolean'],
+            'Employee' => ['column' => 'is_employee', 'type' => 'boolean'],
+            'Employee Designation' => ['column' => 'employee_designation', 'type' => 'text'],
+            'Email' => ['column' => 'email', 'type' => 'text'],
+            'Phone' => ['column' => 'phone', 'type' => 'text'],
+            'PAN No.' => ['column' => 'pan_no', 'type' => 'text'],
+            'GST No.' => ['column' => 'gst_no_1', 'type' => 'text'],
+            'GST No. (2)' => ['column' => 'gst_no_2', 'type' => 'text'],
+            'GST No. (3)' => ['column' => 'gst_no_3', 'type' => 'text'],
+            'Account Details' => ['column' => 'account_details', 'type' => 'text'],
+            'Location' => ['column' => 'name', 'type' => 'text', 'relation' => 'location'],
+            'Master Category' => ['column' => 'name', 'type' => 'text', 'relation' => 'masterCategory'],
+            'Added User' => ['column' => 'added_user', 'type' => 'text'],
+            'ID' => ['column' => 'creator_id', 'type' => 'text'],
+        ]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -127,6 +166,19 @@ class VendorController extends Controller
             });
         }
 
+        /*
+         * Filters compose WITH the existing `q` and `merged` controls rather than
+         * replacing them: `q` is the broad any-column sweep the user already has, and
+         * the merge scope is a §13A.1 concept rather than a column. A chip narrows
+         * whatever those two produced.
+         */
+        $filter = $this->filterable();
+        $filters = $this->requestedFilters($request);
+
+        if ($error = $this->applyFilters($filter, $query, $filters)) {
+            return response()->json(['message' => $error, 'reason' => 'bad_filter'], 422);
+        }
+
         $matched = (clone $query)->count();
 
         $vendors = $query
@@ -145,6 +197,8 @@ class VendorController extends Controller
             'per_page' => self::PAGE,
             'pages' => max(1, (int) ceil($matched / self::PAGE)),
             'rows' => $vendors->map(fn (Vendor $v): array => $this->row($v))->all(),
+            'filter_schema' => $filter->schema(),
+            'filters' => $filters,
             'counts' => [
                 'all' => Vendor::query()->count(),
                 'active' => Vendor::query()->whereNull('primary_vendor')->count(),

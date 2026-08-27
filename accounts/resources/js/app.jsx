@@ -5,6 +5,7 @@ import ReportBar from './components/ReportBar';
 import BillsModule from './modules/BillsModule';
 import PaymentsModule from './modules/PaymentsModule';
 import SettingsModule from './modules/SettingsModule';
+import ExpensesModule from './modules/ExpensesModule';
 import VendorMasterModule from './modules/VendorMasterModule';
 import { NAV } from './nav';
 
@@ -44,7 +45,6 @@ const NOT_BUILT_REASON = {
   block_payment_date: 'The singleton exists, but addendum §16 found its cutoff is enforced NOWHERE server-side. Building the screen before the enforcement would imply a guard that does not exist.',
   auto_numbers: 'The counter is live and seeded (payment no. 20938). A screen that lets it be edited by hand would let payment numbers collide — §7.6.',
   schedule_payments: 'Gated: depends on §11 versioned payroll configuration with effective dates. Without it, re-running a month silently re-decides old payslips.',
-  expenses: 'Depends on §6 Expenses_Bills generation (§17 step 6), which is not built.',
   expense_observations: 'Spec §13 — needs the observation rules settled first.',
   backend_expenses: '31 columns, 135 fields. Addendum §4 has corrections but the form is unverified.',
   pending_approvals: '24 columns; depends on the approval engine, which §8.5 leaves hand-rolled in Deluge.',
@@ -95,6 +95,13 @@ export default function App() {
            * layout comes from the DS the same way the Villa form's did.
            */
           <PaymentsModule />
+        ) : report === 'expenses' ? (
+          /*
+           * All Expenses — the ledger (§5.2), 66,402 real rows. The ONLY report here
+           * whose column order is verified rather than inferred: twelve screenshots
+           * of the live report covering the full horizontal scroll.
+           */
+          <ExpensesModule />
         ) : VENDOR_REPORTS.has(report) ? (
           /*
            * Both vendor nav keys render the same report. Creator has two and no

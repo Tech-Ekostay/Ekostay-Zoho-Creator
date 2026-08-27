@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Domain\Payments\PaymentStatus;
+use App\Models\Concerns\TracksCreatorAudit;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,12 +26,21 @@ use RuntimeException;
 class Payment extends Model
 {
     use SoftDeletes;
+    /*
+     * Creator's four platform fields — Added/Modified Time and User. Not app
+     * fields: Creator maintains them on every record of every form, and every
+     * report can show them. See the trait for why the user half is null until
+     * authorisation exists, and why imported stamps are never overwritten.
+     */
+    use TracksCreatorAudit;
 
     protected $guarded = [];
 
     protected function casts(): array
     {
         return [
+            'added_time' => 'datetime',
+            'modified_time' => 'datetime',
             'requested_date' => 'date',
             'payment_date' => 'date',
             'due_date' => 'date',

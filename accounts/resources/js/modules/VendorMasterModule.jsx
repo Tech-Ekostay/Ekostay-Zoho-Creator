@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReportBar from '../components/ReportBar';
 import ReportGrid from '../components/ReportGrid';
+import FilterBar from '../components/FilterBar';
 import RecordDetail from '../components/RecordDetail';
 import { ddMmmYyyy } from '../lib/format';
 
@@ -33,6 +34,24 @@ const SCOPES = [
 export default function VendorMasterModule({ navKey }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+
+  /* Creator-style filters: column + operator + value, applied server-side. */
+  const [filters, setFilters] = useState([]);
+  const [filterError, setFilterError] = useState(null);
+
+  /*
+   * DEPEND ON THE SERIALISED FILTERS, NOT THE ARRAY.
+   *
+   * `filters` is a new array object on every change, so using it as a hook
+   * dependency compares by IDENTITY. That produced an infinite fetch loop: an effect
+   * that both depended on `filters` and called `setFilters([])` re-armed itself
+   * forever, and the browser hammered the API — caught by watching the network log,
+   * not by reading the code.
+   *
+   * A JSON string is stable when the contents are unchanged, which is the comparison
+   * actually wanted here.
+   */
+  const filterKey = JSON.stringify(filters);
   const [term, setTerm] = useState('');
   const [scope, setScope] = useState('all');
   const [page, setPage] = useState(1);
@@ -60,17 +79,24 @@ export default function VendorMasterModule({ navKey }) {
     const mine = ++ticket.current;
 
     const query = new URLSearchParams({ merged: scope, page: String(page) });
+    // Filters narrow whatever `q` and the merge scope produced — they compose.
+    if (filters.length) query.set('filters', JSON.stringify(filters));
     if (term.trim() !== '') query.set('q', term.trim());
 
     fetch(`/api/vendors?${query}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((body) => { if (mine === ticket.current) { setData(body); setLoading(false); } })
+      .then((body) => {
+        if (mine !== ticket.current) return;
+        if (body.reason === 'bad_filter') { setFilterError(body.message); setLoading(false); return; }
+        setData(body);
+        setLoading(false);
+      })
       .catch((e) => {
         if (mine !== ticket.current) return;
         setError(String(e.message ?? e));
         setLoading(false);
       });
-  }, [scope, page, term]);
+  }, [scope, page, term, filterKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Debounced: every keystroke is a query across 8,063 rows and twelve columns. */
   useEffect(() => {
@@ -80,7 +106,7 @@ export default function VendorMasterModule({ navKey }) {
   }, [load]);
 
   /* A new search or filter invalidates the page number. */
-  useEffect(() => { setPage(1); }, [term, scope]);
+  useEffect(() => { setPage(1); }, [term, scope, filterKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (selected === null) { setDetail(null); return; }
@@ -185,6 +211,18 @@ export default function VendorMasterModule({ navKey }) {
         (<em>Vendor Master</em> / <em>All Vendor Masters</em>) this is, is not: no screenshot of
         either exists, so <code>{navKey}</code> shows the same report as the other key.
       </p>
+
+      <FilterBar
+        schema={data?.filter_schema ?? []}
+        filters={filters}
+        onChange={(next) => { setFilters(next); setFilterError(null); }}
+        matched={data?.matched}
+        total={data?.total}
+      />
+
+      {filterError && (
+        <div style={{ padding: '6px 14px', fontSize: 12, color: 'var(--bad)' }}>{filterError}</div>
+      )}
 
       {error && <div style={{ padding: 14, color: 'var(--bad)' }}>Failed to load: {error}</div>}
       {!data && !error && <div style={{ padding: 14, color: 'var(--ink3)' }}>Loading…</div>}

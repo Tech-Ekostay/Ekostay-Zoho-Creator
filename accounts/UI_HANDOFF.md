@@ -79,8 +79,14 @@ Improvements come later, on his signal.
      `Accounts.ds` (7 vs 10 occurrences) — see addendum §10.
    - The trailing space on `F&B STAFF MEDICAL EXPENSE ` is confirmed present and
      is the only such name in 135 item categories.
-8. Footer reads `Showing N of M`. On reports over 1000 rows Creator prints
-   `Showing 1000 of ###` — it pages at 1000 and the total overflows the field.
+8. Footer reads `Showing N of M`. Creator pages at 1000, so the SHOWN count caps
+   there — but **M is the real total**.
+
+   **CORRECTED 27-Aug-2026, on Husain's screenshot.** This rule previously said
+   Creator prints `Showing 1000 of ###` because "the total overflows the field", and
+   the app reproduced the hashes faithfully. The live All Expenses footer reads
+   `Showing 1000 of 66407`. The hashes are a clipped or in-flight render, not the
+   settled output. Show the number.
 9. Zoho chrome: navy rail, pink active state, pink `＋`, pink primary buttons,
    `SEARCH` chip with field selector + `contains` + value.
 

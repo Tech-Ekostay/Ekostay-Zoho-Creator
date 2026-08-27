@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import ReportBar from '../components/ReportBar';
 import ReportGrid from '../components/ReportGrid';
+import FilterBar from '../components/FilterBar';
 import RecordDetail from '../components/RecordDetail';
 import BillForm from './BillForm';
 import { ddMmmYyyy, inr } from '../lib/format';
@@ -26,6 +27,24 @@ export default function BillsModule({ onCreatePayment }) {
   const [data, setData] = useState(null);
   const [options, setOptions] = useState(null);
   const [error, setError] = useState(null);
+
+  /* Creator-style filters: column + operator + value, applied server-side. */
+  const [filters, setFilters] = useState([]);
+  const [filterError, setFilterError] = useState(null);
+
+  /*
+   * DEPEND ON THE SERIALISED FILTERS, NOT THE ARRAY.
+   *
+   * `filters` is a new array object on every change, so using it as a hook
+   * dependency compares by IDENTITY. That produced an infinite fetch loop: an effect
+   * that both depended on `filters` and called `setFilters([])` re-armed itself
+   * forever, and the browser hammered the API — caught by watching the network log,
+   * not by reading the code.
+   *
+   * A JSON string is stable when the contents are unchanged, which is the comparison
+   * actually wanted here.
+   */
+  const filterKey = JSON.stringify(filters);
   const [term, setTerm] = useState('');
   /*
    * SELECTING AND EDITING ARE SEPARATE, deliberately.
@@ -44,11 +63,14 @@ export default function BillsModule({ onCreatePayment }) {
 
   const load = useCallback(() => {
     setError(null);
-    fetch('/api/bills')
+    fetch(`/api/bills${filters.length ? `?filters=${encodeURIComponent(JSON.stringify(filters))}` : ''}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then(setData)
+      .then((body) => {
+        if (body.reason === 'bad_filter') { setFilterError(body.message); return; }
+        setData(body);
+      })
       .catch((e) => setError(String(e.message ?? e)));
-  }, []);
+  }, [filterKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     load();
@@ -137,6 +159,18 @@ export default function BillsModule({ onCreatePayment }) {
         </div>
       )}
 
+      <FilterBar
+        schema={data?.filter_schema ?? []}
+        filters={filters}
+        onChange={(next) => { setFilters(next); setFilterError(null); }}
+        matched={data?.matched}
+        total={data?.total}
+      />
+
+      {filterError && (
+        <div style={{ padding: '6px 14px', fontSize: 12, color: 'var(--bad)' }}>{filterError}</div>
+      )}
+
       {error && <div style={{ padding: 14, color: 'var(--bad)' }}>Failed to load: {error}</div>}
       {!data && !error && <div style={{ padding: 14, color: 'var(--ink3)' }}>Loading…</div>}
 
@@ -155,7 +189,7 @@ export default function BillsModule({ onCreatePayment }) {
         <ReportGrid
           columns={columns}
           rows={rows}
-          total={term ? rows.length : data.total}
+          total={filters.length > 0 ? data.matched : data.total}
           selectedId={selectedId}
           /*
            * A row click opens the DETAIL view (Husain, 25-Aug-2026 — one flow for

@@ -8,6 +8,7 @@ use App\Domain\Bills\Money;
 use App\Domain\Bills\SplitAllocator;
 use App\Domain\Bills\SplitLeg;
 use App\Domain\Bills\SplitValidator;
+use App\Domain\Reports\ReportFilter;
 use App\Http\Controllers\Controller;
 use App\Models\Bill;
 use App\Models\BillingCycle;
@@ -46,6 +47,8 @@ use Illuminate\Support\Facades\DB;
  */
 class BillController extends Controller
 {
+    use Concerns\FiltersReports;
+
     /** Column labels in report order. §6.1's "which All Bills report is live" is open. */
     private const COLUMNS = [
         'Bill No',
@@ -67,15 +70,58 @@ class BillController extends Controller
         private readonly SplitValidator $validator = new SplitValidator,
     ) {}
 
-    public function index(): JsonResponse
+    /**
+     * Filterable columns, whitelisted. See ReportFilter on why a whitelist and not a
+     * convenience: a column name arriving from a request and reaching a query builder
+     * is how arbitrary columns get read.
+     *
+     * `Vendor Name` filters through the relation so a user filters on the name they
+     * can see rather than a foreign key. 315 bills have no vendor at all (§6's
+     * invisible deletions) and those never match a vendor filter — correct, and worth
+     * knowing before someone reads a short result as a bug.
+     */
+    private function filterable(): ReportFilter
     {
-        $bills = Bill::query()->with(['vendor', 'location'])->latest('id')->limit(500)->get();
+        return new ReportFilter([
+            'Bill No' => ['column' => 'bill_no', 'type' => 'text'],
+            'Vendor Name' => ['column' => 'name', 'type' => 'text', 'relation' => 'vendor'],
+            'Bill Date' => ['column' => 'bill_date', 'type' => 'date'],
+            'Due Date' => ['column' => 'due_date', 'type' => 'date'],
+            'Gross Amount' => ['column' => 'amount', 'type' => 'money'],
+            'GST Amount' => ['column' => 'gst_amount', 'type' => 'money'],
+            'TDS Amount' => ['column' => 'tds_amount', 'type' => 'money'],
+            'Payable Amount' => ['column' => 'payable_amount', 'type' => 'money'],
+            'Paid Amount' => ['column' => 'paid_amount', 'type' => 'money'],
+            'Status' => ['column' => 'status', 'type' => 'text'],
+            'Location' => ['column' => 'name', 'type' => 'text', 'relation' => 'location'],
+            'ID' => ['column' => 'creator_id', 'type' => 'text'],
+        ]);
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $query = Bill::query()->with(['vendor', 'location'])->latest('id');
+
+        $filter = $this->filterable();
+        $filters = $this->requestedFilters($request);
+
+        if ($error = $this->applyFilters($filter, $query, $filters)) {
+            return response()->json(['message' => $error, 'reason' => 'bad_filter'], 422);
+        }
+
+        $matched = (clone $query)->count();
+
+        // 1000, matching Creator's page size — see PaymentController::index.
+        $bills = $query->limit(1000)->get();
 
         return response()->json([
             'report' => 'bills',
             'title' => 'All Bills',
             'columns' => self::COLUMNS,
             'total' => Bill::query()->count(),
+            'matched' => $matched,
+            'filter_schema' => $filter->schema(),
+            'filters' => $filters,
             'rows' => $bills->map(fn (Bill $bill): array => $this->row($bill))->all(),
         ]);
     }

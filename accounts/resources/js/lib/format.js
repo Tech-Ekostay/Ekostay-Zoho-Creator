@@ -103,17 +103,28 @@ export function isGoZeroTime(value) {
 }
 
 /**
- * `Showing N of M`.
+ * `Showing N of M` — with the REAL total.
  *
- * EXCEPTION (handoff §2 rule 8): Creator pages at 1000, so on reports over 1000
- * rows it prints `Showing 1000 of ###` — the total overflows the field and comes
- * out as literal hashes. Reproduced, because a reviewer comparing against the
- * live screen will see `###` there.
+ * CORRECTS HANDOFF §2 RULE 8, on Husain's evidence of 27-Aug-2026. That rule says
+ * Creator prints `Showing 1000 of ###` above 1000 rows because "the total overflows
+ * the field", and this function reproduced the hashes faithfully. A screenshot of
+ * the live All Expenses footer reads:
+ *
+ *     Showing 1000 of 66407
+ *
+ * So the hashes are not what Creator settles on — they are a clipped or in-flight
+ * render of a real number, and the number is the total record count. Husain
+ * confirmed it directly: "that #### is actually the count of total records".
+ *
+ * The lesson is the one CLAUDE.md already states: the docs are partly inferred and
+ * evidence wins. Reproducing `###` was faithful to the document and wrong about the
+ * product, which is the worst kind of wrong — it looked deliberate.
+ *
+ * The 1000 cap on the SHOWN count stays: Creator does page at 1000, and the live
+ * footer says `Showing 1000` against a 66,407 total.
  */
 export function showing(shown, total) {
-  const capped = Math.min(shown, 1000);
-  if (total > 1000) return `Showing ${capped} of ###`;
-  return `Showing ${shown} of ${total}`;
+  return `Showing ${Math.min(shown, 1000)} of ${inr(String(total ?? 0), 0)}`;
 }
 
 /**
