@@ -1185,6 +1185,209 @@ This is addendum §2's rule biting: an export mirrors the report's columns exact
 **For any form with a grid, the screenshot is the primary source and the export is
 a summary.**
 
+### 11.7 The Approvers grid, captured 27-Aug-2026 — routing is UNBLOCKED
+
+Thirteen screenshots of All Approvals — report, detail panel and the edit form
+scrolled to the grid. **This is the export that was never available**, and
+`ApprovalRouter` was written to refuse rather than guess without it. It can now route.
+
+**16 records**, footer `Showing 16 of 16`. Report columns: `Module` ·
+`Level 1 & 2 Approval` · `Level 2 & 3 Approval` · `Approvers` · `Location` ·
+`Villa Name` · `Item Category`. Detail adds **`Exclude Category`** and **`Type`**.
+
+**The grid, on two live rules:**
+
+| | Level | Minimum | Maximum | Approver | Approval Type |
+|---|---|---|---|---|---|
+| rule A | Level 1 | `0` | `50,00,00,000` | `Varun Arora - varun@ekostay.com` | `-Select-` |
+| rule B | Level 1 | `0` | `5,000` | `Rohan - rohan.ops@ekostay.com` | `-Select-` |
+| rule B | Level 2 | `5,001` | `50,00,00,000` | `Sohail Mirchandani - sohail.m@ekostay.com` | `Any` |
+
+Grid columns: `Level` · `Minimum Amount` · `Maximum Amount` · `Approver` ·
+`Approval Type`, with `+ Add New`. `Approver` is a **multi-select** chip box, which is
+what makes `Approval Type` meaningful — a level can hold more than one person.
+
+**All three approvers resolve against our 475 employees, by email, exactly:**
+
+```
+Varun Arora         varun@ekostay.com       OK   phone present
+Rohan               rohan.ops@ekostay.com   OK   phone present
+Sohail Mirchandani  sohail.m@ekostay.com    OK   phone present
+```
+
+So the `Name - email` display format is directly parseable and the join is by email,
+not by name — which matters, because §18's lesson is that names do not join.
+
+### 11.8 `Maximum_Amount` confirmed as inert, and why that is nearly harmless
+
+§11 recorded that Creator never consults `Maximum_Amount`. The grid confirms the
+bands are **contiguous and inclusive** — `0-5,000` then `5,001-50,00,00,000`, with
+₹50 crore as the sentinel ceiling. On data shaped like that, greatest-minimum and
+"the band containing the amount" give the same answer, which is exactly why ignoring
+the maximum has never surfaced as a bug.
+
+`ApprovalRouter::bandWarnings()` now reports the three shapes where they part company
+— gaps, overlaps, inverted bands — **without changing the routing**, because Creator
+routes by minimum and reproducing that is the rule. Nine tests in
+`tests/Unit/ApprovalBandTest.php`.
+
+**And a fourth shape, which is not a misconfiguration and is the interesting one.**
+
+```
+Level 1   0     - 5,000              a 5,000.50 payment falls in NEITHER band
+Level 2   5,001 - 50,00,00,000       and greatest-minimum sends it to LEVEL 1
+```
+
+**The bands are whole-rupee; payment amounts are not.** §6.3 splits at paisa scale
+and Pending Approvals renders `Gross Amount` at three decimals (₹58,614.140), so
+amounts in the open interval `(5000, 5001)` are real — and every one of them is
+approved by the **lower** authority, not the higher. The band above ₹5,000 never sees
+them.
+
+This was found by writing the assertion the wrong way round: the test asserted
+₹5,000.01 routes to Level 2, because that is what a reader assumes, and it failed.
+The test now asserts `Level 1` with a comment saying it is surprising rather than
+right. **The exposure is one rupee per boundary**, so it is small in money and
+unbounded in principle — a rule with a boundary at ₹5,00,000 has the same one-rupee
+window, and nothing stops a payment being written into it deliberately.
+
+`[TODO]` for Husain: should a sub-rupee amount at a band boundary route **up**? It is
+a one-line change here and a policy question there.
+
+### 11.9 The header fields are a BROWSER-SIDE MIRROR of the grid — `Accounts.ds:38118`
+
+This is the finding that changes how §11 should be read. `Level_1_2_Approval` and
+`Level_2_3_Approval` — the two fields routing actually branches on — are **not
+independently maintained**:
+
+```deluge
+on user input of Approvers.Approval_Type
+    if (row.Level == "Level 2")
+        input.Level_1_2_Approval = row.Approval_Type;
+    else if (row.Level == "Level 3")
+        input.Level_2_3_Approval = row.Approval_Type;
+```
+
+**The grid is the source; the header is a copy.** And like §10's Block Payment Date,
+that handler is `on user input` — **browser-side only**. It fires when a human edits
+the field in the form and never for a record written by API, by script, or before the
+handler existed.
+
+**All 16 live rules show both headers BLANK while the grid holds `Any` on Level 2.**
+So in practice `lvl12` is never `"ALL"`, and every Level 2 payment routes to
+`[Level 2]` alone — **Level 1 never participates in a two-level approval.** On rule B
+that happens to match the intent (`Any` on Level 2 means Level 2 alone), so the stale
+mirror is currently harmless. It stops being harmless the moment someone sets Level 2
+to `All` through a path that does not fire the handler: the header stays blank,
+routing walks `[Level 2]`, and **an approver the configuration asked for is skipped.**
+
+`ApprovalRouter::mirrorWarnings()` reports the disagreement and **still routes on the
+header, as Creator does.** Reading the grid instead would be truer to intent and
+would change who approves money — a policy decision, not a refactor. Surfaced rather
+than silently corrected, the same choice `SplitValidator` makes with its sub-rupee gap.
+
+### 11.10 A null `Approval Type` on Level 1 is DELIBERATE — and nearly cost us
+
+The same handler ends:
+
+```deluge
+else if (row.Level == "Level 1")
+    alert "Approval Type is Not Applicable for Level 1 ";
+    row.Approval_Type = null;
+    disable row.Approval_Type;
+```
+
+Creator **nulls and disables** it. The grid agrees: Level 1 reads `-Select-` on both
+rules while Level 2 reads `Any`.
+
+Worth recording as a near miss. Reading the screenshots alone, Level 1's blank
+`Approval Type` looked like §11's fourth blank-as-real-state, and the conservative
+repair looked obvious — treat a null type as `All`, on the reasoning that requiring
+more approvals fails safe. `PendingApproval::currentLevelSatisfied()` was about to be
+changed that way. **It would have stalled every Level 1 approval in the system**,
+because Level 1's type is *supposed* to be null and "any one of the listed approvers
+ticks" is the only sensible reading of it.
+
+The DS grep took a minute and the guess would have been wrong. The existing
+`!== 'All'` default is correct and now has a comment saying why it must stay.
+
+### 11.11 `Type` is an Include/Exclude radio with NEITHER option selected
+
+The detail panel's last field is `Type`, blank. The edit form shows why:
+
+```
+Type     ( ) Include     ( ) Exclude
+```
+
+**A two-option radio with neither chosen**, on the field that decides whether
+`Item Category` is an allow-list or a deny-list. And the rule carries **both**
+`Item Category` and a separate `Exclude Category` list, so there are two exclusion
+mechanisms and an unset switch between them.
+
+The two rules are near-complements, which is how the 16 records partition the space:
+
+| | `Item Category` | `Exclude Category` |
+|---|---|---|
+| rule A | `PHOTOSHOOT` | ~all ~135 categories, alphabetical |
+| rule B | ~all categories | `OWNER RENT`, `PHOTOSHOOT` |
+
+`ApprovalRouter::matchRule()` already declines to implement `scope_type` and
+`exclude_categories`, saying so in its docblock and noting §3.1's warning against
+implementing all the category-scoping mechanisms at once. **That decision stands and
+is now better justified**: the switch governing them is unset in live data, so there
+is no observed behaviour to reproduce. `[TODO]` unchanged.
+
+### 11.12 The notification path — DoubleTick, and what that means for the key
+
+Husain, 27-Aug-2026: *"if I select an approver and I have contact numbers in the admin
+table… in payments module, the payable amount falls under that approver, they receive
+a whatsapp message for which we have doubletick integrated."*
+
+That closes two open threads:
+
+- **The `Messageid` / `Messageid_Level_2` / `Messageid_Level_3` fields** on the
+  Payment form, and the `Message ID` column on Pending Approvals (§5), are
+  **DoubleTick WhatsApp message ids** — one per level. Recorded as "outbound WhatsApp
+  message ids, not interpreted"; now confirmed as to provider
+- **The approver's phone comes from Employee_Master, not from the rule.** The rule
+  stores the person; the number is looked up. Our `employees` table has the column
+
+**And it changes the shape of a defect on the register.** The hardcoded DoubleTick API
+key at `Accounts.ds:22851` is not an incidental credential in a utility function — it
+is **the notification path for every approval in the system**. Two consequences:
+
+1. **Rotating it will stop approval notifications** unless the new key is deployed in
+   the same change. The register entry said "needs rotating" as though it were
+   isolated; it is not, and rotating it blind would silently stop approvers being
+   told they have work. Still rotate it — a live key in a git-ignored file is not a
+   control — but rotate it *with* the deployment, not before it
+2. **Only 81 of 475 employees have a phone number.** All three current approvers do.
+   But an approver selected from the other 394 would be saved successfully, routed to
+   correctly, and **never notified** — the approval would sit in the queue with
+   nobody aware of it. That is a plausible contributor to §5's finding that the
+   Pending Approvals queue is over 1,000 rows and never clears. Worth checking
+   against the live queue: **are the stuck approvals assigned to approvers with no
+   phone number?**
+
+### 11.13 Smaller findings
+
+- `Module` is `Payment` on both visible rules, confirming §11's "exactly one value"
+- **`Villa Name` order differs between the report and the form.** The report lists
+  ~45 Alibaug villas in insertion order (`Pinewood Villa`, `EKOSTAY- Bali Villa`,
+  `Casa Royale`, …); the edit form sorts them alphabetically (`7 Palms`,
+  `Alibaug Central`, `Alpine Villa`, …). Since `All_Approvals.Villa Name` is a
+  **comma-packed string** and record 8 contains `,Nature,Nature,Nature,`,
+  multiplicity and order live in the raw string — **read the report, not the form,
+  when either matters**. Confirms the note in `CLAUDE.md`
+- The `Approvers` report column reads `Level 1` — the **flattened** subform, showing
+  the first row's `Level` and nothing else. Creator's own UI doing the §12
+  flattening, as on Pending Approvals' `Approved By` (§5)
+- **New preserve-spellings candidates** from the villa list: `Sea Shore Villa 8 BHK`
+  (space) beside `Sea Shore Villa 12BHK` (no space), and `Kihim 6BHK` (no space)
+  beside `Jungle Beach 8 BHK` (space). Inconsistent BHK spacing within one rule
+- This report leads with `Module`, not `Added Time` — the other three backend/queue
+  reports (§4.1, §5, §7.6) all lead with the platform stamp
+
 ---
 
 ## 12. §8.5 closed — Blueprints and Approvals are both empty `[UI]`

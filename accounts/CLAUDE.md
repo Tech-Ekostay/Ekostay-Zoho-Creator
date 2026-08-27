@@ -300,6 +300,15 @@ beside the real masters by accident.
 versioned payroll configuration with effective dates, which does not exist yet, and
 §17 is explicit that re-running a month without it silently re-decides old payslips.
 
+**The Approvers grid arrived 27-Aug-2026 and routing is unblocked** — amount bands,
+approver identities and `Approval Type`, all three approvers resolving against
+`employees` by email. Addendum §11.7-11.13. Two things came out of it that the
+screenshots alone would have got wrong: the header fields routing branches on are a
+**browser-side mirror** of the grid (`Accounts.ds:38118`) and are blank on all 16
+live rules, and a null `Approval Type` on Level 1 is **deliberate**
+(`Accounts.ds:38137` nulls and disables it) so `currentLevelSatisfied()`'s
+null-means-Any default must stay.
+
 **Not built on Payments yet, and known:** the approval engine between
 `Submit for Approval` and `Paid` (§8.2's matrix is amount-banded and collides with
 Backend Expenses' second amount-banded engine — addendum §11), and
@@ -539,7 +548,11 @@ Several conclusions in this project were revised after better evidence.
 ## Live defects, independent of the rebuild
 
 Open and worth raising: hardcoded **DoubleTick API key** at `Accounts.ds` line
-22851 needs rotating · the **negative-HRA band** (₹21,001–21,099) is producing
+22851 needs rotating — **but rotate it WITH the deployment, not before**: it is the
+WhatsApp path that tells approvers they have work (addendum §11.12), so a blind
+rotation silently stops every approval notification. Related: **only 81 of 475
+employees have a phone number**, so an approver from the other 394 is routed to
+correctly and never told · the **negative-HRA band** (₹21,001–21,099) is producing
 bad payslips today · **`Delete Paid Payment`** sits one click from a settled
 payment · duplicate approvals minting duplicate payments · ~~approved requests
 with no payee~~ — **probably a reporting artefact, not missing data**: All Payment
