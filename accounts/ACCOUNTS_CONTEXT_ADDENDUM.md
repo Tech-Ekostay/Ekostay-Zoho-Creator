@@ -391,43 +391,289 @@ Level / Approved, with `+ Add New`.
 
 ---
 
-## 6. Payment Requests — three views
+## 6. Payment Requests — three views, verified 27-Aug-2026
 
-The clearest evidence yet for the §3.3 permission matrix:
+Still the clearest evidence for the §3.3 permission matrix:
 
 1. **`Payment Request`** — add-only form, no list. A requester can create but not
    browse. Commits `Submit` / **`Reset`**
-2. **`All Payment Requests`** — admin read across everyone, 66 records, not
-   editable inline
-3. **`User Payment Requests`** — the requester's own 24, **inline-editable**
+2. **`All Payment Requests`** — admin read across everyone, **72 records**
+   (was 66 on 13-Aug; +6 since), not editable inline
+3. **`User Payment Requests`** — the requester's own **24**, **inline-editable**
    (`*` + Save/Remove Changes) with a per-row **`Re-Send for Approval`** button
 
 So the requester can amend and resubmit; the reviewing admin cannot edit inline.
 
-Form fields: Requested By · Vendor Name · **Add New Vendor** (checkbox) ·
-Location · Villa Name · Item Category · Payment Amount (₹ suffix, placeholder
-`##,##,###.##`) · Particulars · Bills · Supporting Documents. On the **edit** form
-Villa Name and Item Category render greyed — `[TODO]` confirm they are read-only
-once the request exists. Files read `Select File` empty, **`File uploaded` in
-pink** when populated. Edit commits `Update` / `Cancel`.
+**Thirteen screenshots of 27-Aug-2026** — the create form, the edit form in both
+branches, both reports scrolled to their last column, and two detail panels — turn
+this section from inferred to verified. Two recorded claims are corrected, one
+`[TODO]` is closed, and one entry on the live-defect register is probably wrong.
 
-Detail adds `Bill Amount`, `Status`, `Add New Vendor`, a **second `Vendor Name`**
-(free text, for the new-vendor path), `Bank Details`, `Payment No`. Panel bar is
-`Edit / Duplicate / More` — **`Duplicate` occupies the slot every other module
-gives to `Delete`**.
+### 6.1 `[TODO]` CLOSED — Villa Name and Item Category are NOT read-only
 
-**Findings**
+The `[TODO]` read: "on the **edit** form Villa Name and Item Category render greyed
+— confirm they are read-only once the request exists."
 
-- **`Payment No` is blank on every `Submit for Approval` row and populated on
-  `Approved` ones — approval is what mints the Payment.** This is the missing link
-  between Payment Requests, Pending Approvals and Payments, and it is where
-  `Auto_Numbers.Payment_No` is consumed
-- `Requested By` empty on 6 of 10 rows while `Added User` is populated on all 10
-- `Vendor Name` is `amazon` on some rows and `Amazon` on others — two vendor
-  records for one vendor
-- Two rows are **`Approved` with a blank `Vendor Name`** — approved with no payee
-- One User row has a **blank `Status`**, in no state the workflow recognises, with
-  `Re-Send for Approval` enabled
+**They are not read-only. They are multi-select chip fields, and that is what the
+grey was.** On the create form they show a grey `-Select-` and, unlike `Vendor Name`
+and `Location`, **no `▾` caret**. On the edit form the same controls hold
+`× Saltwater Villa- Nerul` and `× PRINTING` — chips **with a remove `×` on each**,
+which a read-only field does not have.
+
+So the distinction the screenshots actually encode is not enabled-vs-disabled, it is
+**single-select (caret) vs multi-select (chips)**:
+
+| field | control |
+|---|---|
+| `Requested By` | single-select lookup, `×` + `▾`, **prefilled with the logged-in user** |
+| `Vendor Name` | single-select lookup, `▾` |
+| `Location` | single-select lookup, `▾` |
+| `Villa Name` | **multi-select chips**, no caret |
+| `Item Category` | **multi-select chips**, no caret |
+
+Had the `[TODO]` been guessed the wrong way, both fields would have been built
+disabled on the edit form, and a request could never be re-scoped.
+
+### 6.2 The multi-value hazard is live on this report, not theoretical
+
+`EKS/PY/20559` carries **six villas in one cell**, stacked on separate lines:
+
+```
+Location   Ooty And Coonoor
+Villa Name Under The Pines / Dusk Villa / Dawn Villa / Orchid Villa /
+           Whispering Pines / The Velvet Slope
+Category   AMAZON PURCHASE          Amount  ₹ 10,610.70
+```
+
+Creator renders all six. **Analytics would flatten this to one**, silently — §12,
+measured by the other team on an expense tagged to two billing cycles that exported
+tagged to one. This is the first time that hazard has been *seen* on an Accounts
+screen rather than reasoned about, and it is on the field a payment request is
+allocated by. **Never import Payment Requests from a one-row-per-request view.**
+
+### 6.3 The two `Vendor Name` fields — the mechanic is now proven, not inferred
+
+§6 recorded that the detail panel holds a **second `Vendor Name`** (free text, for
+the new-vendor path) alongside `Bank Details`. What it is *for* is now demonstrated.
+`Add New Vendor` is the discriminator and the two branches are mutually exclusive:
+
+| | `Add New Vendor` | `Vendor Name` (lookup) | `Vendor Name` (text) |
+|---|---|---|---|
+| `EKS/PY/21570` | **true** | *(blank)* | `Shree balaji hardware` |
+| `…8860030` | **false** | `hussain sir` | *(blank)* |
+
+Checked all 30 master values these screenshots name against our seeded masters —
+4 locations, 16 villas, 6 item categories, 4 vendors, 4 employees. **29 of 30
+resolve.** The single miss:
+
+```
+Shree balaji hardware        -- MISSING from Vendor_Master --
+```
+
+Which is **exactly** the `Add New Vendor = true` row. The free-text field exists to
+hold a payee that has no master record yet, and the one unresolvable name in the
+batch is the one that went down that path. The design is working as intended, so —
+same phrasing as the vendor-merge pointer in §18 — **a null lookup beside a non-null
+text is a fact, not a gap.**
+
+(`amazon` resolves to **three** case-insensitive rows in our master, not the two
+§6 recorded. One vendor, three records.)
+
+### 6.4 A DEFECT ON THE REGISTER IS PROBABLY A REPORTING ARTEFACT
+
+§6 recorded, and `CLAUDE.md` carries on the live-defect list: **"Two rows are
+`Approved` with a blank `Vendor Name` — approved with no payee."**
+
+`All Payment Requests` binds the **lookup** copy of `Vendor Name` in its column 4.
+So **every request created through `Add New Vendor` shows a blank vendor to the
+admin**, while its actual payee sits in the second field, one panel away. On this
+report `Vendor Name` is blank on **8 of 10 visible rows**, and the one row whose
+detail panel we have — `EKS/PY/21570`, blank in the column — has
+`Shree balaji hardware` in the text field.
+
+**So "approved with no payee" is most likely a column bound to the dead half of a
+pair, not missing data.** Same defect class as Backend Expenses' `receiver_details`
+(§4.2), where a report column is bound to the empty member of a duplicate pair.
+
+Stated as *probably*, not *certainly*: the mechanic is confirmed on one row, and the
+two `Approved` rows in question have not had their panels opened. **Before that entry
+stays on the register, someone should open those two records and look at the second
+`Vendor Name`.** It is a ten-second check and it decides whether a real payee is
+missing or merely hidden.
+
+### 6.5 CORRECTED — the `Payment No` rule has a counterexample
+
+§6 recorded: "**`Payment No` is blank on every `Submit for Approval` row and
+populated on `Approved` ones — approval is what mints the Payment.**"
+
+The first half is falsified. `EKS/PY/21570` is `Submit for Approval` **and carries a
+number.** But the underlying claim survives, and is now much better evidenced.
+Checked all ten visible request numbers against our 16,490 imported `EKS/PY`
+payments:
+
+```
+EKS/PY/21570   Submit for Approval   NOT in payments
+EKS/PY/21111   Approved              in payments, status Paid
+EKS/PY/21107   Approved              in payments, status Paid
+EKS/PY/21094   Approved              in payments, status Paid
+EKS/PY/20998   Approved              in payments, status Paid
+EKS/PY/20619   Approved              in payments, status Paid
+EKS/PY/20618   Approved              in payments, status Paid
+EKS/PY/20617   Approved              in payments, status Paid
+EKS/PY/20559   Sent for Approval     in payments, status Paid
+EKS/PY/16239   Approved              in payments, status Paid
+```
+
+**Nine of ten are real, settled payments.** So a request's `Payment No` is not a
+parallel series — it is *the payment the request became*, and the request keeps a
+pointer to it. That is the Payment Requests → Pending Approvals → Payments link,
+now traced through live numbers rather than asserted.
+
+The one absentee has an innocent explanation that has to be checked rather than
+assumed: **`EKS/PY/21570` was created today, and our payments came from an export
+two days old.** Our imported maximum is `EKS/PY/21308`. So 21570's payment may well
+exist live and simply not be in our snapshot — in which case the rule is "`Payment
+No` is populated iff a Payment record exists" and the request's own `Status` is
+merely stale, which is this application's most reliable habit (§4.5, §5).
+
+`[TODO]` **One live check settles it:** open `EKS/PY/21570` and see whether a Payment
+record exists. If it does, the rule is about the Payment's existence, not the
+request's status. If it does not, the number is reserved at submit and the mint point
+moves earlier than §6 says.
+
+Related, and unresolved: **`Submit for Approval` and `Sent for Approval` both occur**
+on these reports, on rows that otherwise look alike. Either two states or two
+spellings of one — the same trap as `Payment InProgress` (§10). Added to §8's
+label-divergence list.
+
+### 6.6 URGENT — the main payment counter is 261 behind, and my earlier fix was not enough
+
+```
+payments table (imported)   max EKS/PY = 21308   over 16,490 rows
+auto_numbers.payment_no                 = 21309
+live, from these screenshots            >= 21570
+```
+
+**At least 261 behind, on the series we actually allocate from.** Roughly 130
+payments a day.
+
+This is the same finding as §4.10's Haewaya counter, but it lands harder, because
+this counter is live in our code and I already caused one collision with it —
+minting `EKS/PY/21305` over a real ₹1,00,000 payment. That was diagnosed as an
+off-by-one (`allocate()` returning current-then-incrementing) and fixed to `max + 1`.
+
+**The fix was correct and insufficient.** `max + 1` of a *snapshot* is still a
+snapshot. Analytics lags Creator by design, and an export is a photograph — so a
+counter reconciled from one is stale the moment it is written, and staleness grows at
+~130/day. Reconciling more often does not fix it; it shortens the window.
+
+The only two safe designs:
+
+1. **Creator keeps the series while it is live**, and `AutoNumber::allocate()`
+   **refuses** `EKS/PY` entirely — our writes take numbers from nowhere until cutover
+2. **We take the series over at cutover**, seeded from a live read taken *at* cutover
+   with Creator writes stopped — not from an Analytics export at all
+
+Until one is chosen, **nothing may allocate from `payment_no`.** Recorded here rather
+than fixed, because which of the two applies is a cutover decision, not a code one.
+
+### 6.7 Form layout order and detail order are different — the second confirmation
+
+**Form (layout) order.** The conditional block sits high, right after the vendor
+lookup it modifies:
+
+```
+Requested By · Vendor Name · [x] Add New Vendor
+    -> when checked, reveals:  Vendor Name (text) · Bank Details
+Location · Villa Name · Item Category · Payment Amount · Particulars
+Bills · Supporting Documents            [Submit] [Reset]   /   [Update] [Cancel]
+```
+
+**Detail (declaration) order.** The same block sits low, and three fields appear
+that the create form never shows:
+
+```
+Requested By · Vendor Name · Location · Villa Name · Item Category ·
+**Bill Amount** · Payment Amount · Particulars · **Status** ·
+Add New Vendor · Vendor Name (text) · Bank Details · **Payment No** ·
+Bills · Supporting Documents
+```
+
+The conditional block is **declared late and laid out early.** That is §4.3's lesson
+on a second, unrelated form: **the detail panel is declaration order, the form is
+layout order, and neither can be derived from the other.** Record both, always.
+`Status` and `Payment No` are system-set. `Bill Amount` is blank on both records
+seen — `[TODO]` who fills it, and when.
+
+`Particulars` is **mandatory** — it is the only field carrying Creator's red required
+border, on both the create and the edit form.
+
+### 6.8 Column sets, both reports
+
+**All Payment Requests** (10) — `Payment No` · `Requested By` · `Status` ·
+`Vendor Name` · `Location` · `Villa Name` · `Item Category` · `Payment Amount` ·
+`ID` · `Added User`. Footer **`Showing 72 of 72`**.
+
+**User Payment Requests** (15) — **`Re-Send for Approval`** · `Payment No` ·
+`Requested By` · `Status` · **`Remarks`** · `Vendor Name` · `Location` ·
+`Villa Name` · `Item Category` · `Payment Amount` · `ID` · **`Link`** · `Bills` ·
+`Supporting Documents` · `Particulars`. Footer **`Showing 24 of 24`**.
+
+So the requester's view adds the action button, `Remarks`, `Link`, and the three
+content columns the admin view omits — attachments and particulars included.
+**Neither footer is capped**, so both are direct tests of the corrected
+`showing()` helper against a real total rather than `###`.
+
+**The panel action bar differs per report, not per form:**
+
+| report | panel bar |
+|---|---|
+| All Payment Requests | `Edit` · **`Delete`** · `More ▾` |
+| User Payment Requests | `Edit` · **`Duplicate`** · `More ▾` |
+
+§6 recorded only the second and generalised it. `Duplicate` is on the **requester's**
+view — and two of those 24 rows are identical ₹2,500.00 requests
+(`…8860030` / `…8860016`) sharing one attachment,
+`WhatsApp_Image_2026-05-26_at_1.43.09_PM__1.jpeg`. Given §5's nine identical payments
+from a repeated approval, a `Duplicate` button on a payment request is a duplicate-
+payment vector worth raising. Both of these are Husain's own test rows, so no real
+money is involved in *this* pair.
+
+### 6.9 Smaller corrections and first sightings
+
+- **NOT REPRODUCED:** §6's "`Requested By` empty on 6 of 10 rows while `Added User`
+  is populated on all 10". `Requested By` is populated on **all 10** rows of All
+  Payment Requests and all 24 of User. The column that *is* empty on 8 of 10 is
+  `Vendor Name` — see §6.4. The earlier note may have conflated the two columns;
+  recorded as unreproduced rather than as a corrected fact, since the earlier report
+  state cannot be re-examined
+- **`Added User` is a login handle, not a name** — `sanjayprojapati1983`,
+  `amit7331411`, `shaikh.nehu091`, against `Requested By` values `Sanjay Projapati`,
+  `Amit`, `Neha`. So `TracksCreatorAudit`'s user half must store Creator's **login**,
+  and `Requested By` is a separate Employee lookup that a requester can override.
+  They agree on every row seen, but the form lets them diverge
+- **`Requested By` defaults to the logged-in user** (`Husain Super Admin` prefilled
+  while Husain is logged in), and is clearable. So this is the first screen whose
+  *correct* behaviour needs authentication — `CurrentUser::login()` returns null
+  today. Auth moves from "blocker before exposure" to "blocker for this screen's
+  fidelity"
+- **A second empty record.** Row 3 of All Payment Requests carries only
+  `Requested By`, `ID` (`292482000010752954`) and `Added User` — no status, location,
+  villa, category, amount or payment number. An empty payment request, 1 of 72, and
+  the second blank-`Status` row after the one §6 found in the User view. §11's
+  "blank-as-real-state is systemic" now has a fourth screen
+- **All 24 User rows are Husain's own test data** — `hussain sir` as vendor on every
+  row, `Particulars` reading `test` / `test for payment`, one at `₹10.00`. The view
+  proves the filter (own requests only) and carries no business data; the
+  `₹42,000.00` and `₹36,000.00` rows should not be read as real spend
+- Files render `Select File` when empty and **`File uploaded` in pink** when
+  populated — confirmed on both edit forms. The detail panel shows the real filename
+  with a type icon (`IMG-20260827-WA0473.jpg`, `REPC500-_Repeat_Guest_EKOSTAY.pdf`)
+- `Remarks` reads `na` on the one `Approved` User row and is blank elsewhere —
+  the same literal `"na"` placeholder as Backend Expenses' `bank_payout_details`
+- **The FK layer is ready for this screen.** 29 of 30 master values resolve, the
+  30th by design. Payment Requests can be built against our seeded masters today
+  without a mapping table — unlike Backend Expenses (§4.8)
 
 ---
 
@@ -467,6 +713,7 @@ field, three content types.
 | Disable flag | field `Disable`, label **`Disallow Manual Creation`** |
 | COA visibility flag | field `Hide`(?), label **`COA`** |
 | Module name | `Backend Payments` (form) · `Backbend Payments` (rail) |
+| **Approval-pending status** | **`Sent for Approval` · `Submit for Approval`** — both live on Payment Requests, on rows that otherwise look alike (27-Aug-2026, §6.5). Two states or two spellings is **unresolved**, and it decides whether a status comparison misses half the queue — exactly the `Payment InProgress` trap in §10 |
 
 `Disallow Manual Creation` finally says what `Disable` does: it stops the category
 being picked during manual bill/payment entry while leaving it available to the

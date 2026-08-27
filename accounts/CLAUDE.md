@@ -541,8 +541,12 @@ Several conclusions in this project were revised after better evidence.
 Open and worth raising: hardcoded **DoubleTick API key** at `Accounts.ds` line
 22851 needs rotating · the **negative-HRA band** (₹21,001–21,099) is producing
 bad payslips today · **`Delete Paid Payment`** sits one click from a settled
-payment · duplicate approvals minting duplicate payments · approved requests
-with no payee · unresolved foreign keys on settled Backend Payments.
+payment · duplicate approvals minting duplicate payments · ~~approved requests
+with no payee~~ — **probably a reporting artefact, not missing data**: All Payment
+Requests binds the *lookup* half of the duplicate `Vendor Name` pair, so every
+`Add New Vendor` request shows a blank payee. Confirmed on one row 27-Aug-2026;
+addendum §6.4 names the ten-second check that settles it · unresolved foreign
+keys on settled Backend Payments.
 
 Added 22-Aug-2026, from the delete census in addendum §16.4: **`void
 DeleteAllRecords()` at `F_B.ds:4645`** wipes 14 F&B tables with
