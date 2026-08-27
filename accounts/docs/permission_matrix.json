@@ -1,0 +1,3458 @@
+[
+ {
+  "profile": "Read",
+  "label": "Read",
+  "description": "This profile will have read permission for all components\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Billing_Cycles": [
+      "View"
+     ]
+    }
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Backbend_Payments": [
+      "View"
+     ]
+    }
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Taxes": [
+      "View"
+     ]
+    }
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "CA_Expenses": [
+      "View"
+     ],
+     "All_Expenses": [
+      "View"
+     ],
+     "All_Bills1": [
+      "View"
+     ]
+    }
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Zoho_app_pointers_Payment_Apr_Jun_1_Report": [
+      "View"
+     ]
+    }
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Backend_Expenses": [
+      "View"
+     ]
+    }
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {
+     "COA_Report": [
+      "View"
+     ]
+    }
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Bank_Transactions": [
+      "View"
+     ],
+     "CA_Bank_Transactions": [
+      "View"
+     ]
+    }
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {
+     "User_Payment_Requests": [
+      "View"
+     ],
+     "All_Payment_Requests": [
+      "View"
+     ]
+    }
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Vendor_Master1": [
+      "View"
+     ],
+     "All_Vendor_Masters": [
+      "View"
+     ]
+    }
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Approvals": [
+      "View"
+     ]
+    }
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Block_Payments": [
+      "View"
+     ]
+    }
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {
+     "TDS_Report": [
+      "View"
+     ]
+    }
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Expense_Observations": [
+      "View"
+     ]
+    }
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Scheduled_Payments": [
+      "View"
+     ],
+     "Payments_Scheduled_Report": [
+      "View"
+     ]
+    }
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Auto_Numbers": [
+      "View"
+     ]
+    }
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Schedule_Payments": [
+      "View"
+     ]
+    }
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Master_Categories": [
+      "View"
+     ]
+    }
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Payments": [
+      "View"
+     ],
+     "Payments": [
+      "View"
+     ],
+     "CA_Payments": [
+      "View"
+     ]
+    }
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Pending_Approvals": [
+      "View"
+     ]
+    }
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Deleted_Payments_Report": [
+      "View"
+     ]
+    }
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Item_Categories": [
+      "View"
+     ]
+    }
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "CA_Bills": [
+      "View"
+     ],
+     "All_Bills": [
+      "View"
+     ]
+    }
+   },
+   "Accounts": {
+    "allFieldsVisible": null,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Write",
+  "label": "Write",
+  "description": "This profile will have write permission for all components\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Billing_Cycles": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Backbend_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Taxes": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "CA_Expenses": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "All_Expenses": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "All_Bills1": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Zoho_app_pointers_Payment_Apr_Jun_1_Report": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Backend_Expenses": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {
+     "COA_Report": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Bank_Transactions": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "CA_Bank_Transactions": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {
+     "User_Payment_Requests": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "All_Payment_Requests": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Vendor_Master1": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "All_Vendor_Masters": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Match_Transaction": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Approvals": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Block_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {
+     "TDS_Report": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Expense_Observations": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Scheduled_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "Payments_Scheduled_Report": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Auto_Numbers": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Schedule_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Husain_Office_Module": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Expense": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Add_Payment_Reference_Number": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Master_Categories": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Personal_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Flagged_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "All_Payments_Hussain": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "CA_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Pending_Approvals": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Deleted_Payments_Report": [
+      "View"
+     ]
+    }
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Item_Categories": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "CA_Bills": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "All_Bills": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Accounts": {
+    "allFieldsVisible": null,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Write - same as admin",
+  "label": "Write - same as admin",
+  "description": "This profile will have write permission for all components - Duplicate\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Regenerate_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Billing_Cycles": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Backbend_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Eko_RS_App_Config": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Taxes": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "CA_Expenses": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "All_Expenses": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "All_Bills1": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Eko_RS_Statements": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Pdf_Staging": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Zoho_app_pointers_Payment_Apr_Jun_1_Report": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Eko_RS_Settings": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Create_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Backend_Expenses": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {
+     "COA_Report": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Bank_Transactions": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "CA_Bank_Transactions": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {
+     "User_Payment_Requests": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "All_Payment_Requests": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Vendor_Master1": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "All_Vendor_Masters": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Match_Transaction": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Flags": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Approvals": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Block_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {
+     "TDS_Report": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Expense_Observations": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Scheduled_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "Payments_Scheduled_Report": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Auto_Numbers": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Schedule_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Husain_Office_Module": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Expense": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Add_Payment_Reference_Number": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Master_Categories": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Personal_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Flagged_Payments": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Flagged_Payments_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Salary_Payout_Schedule": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "CA_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Pending_Approvals": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Item_Categories": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Eko_RS_Send_Log": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "CA_Bills": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "All_Bills": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Accounts": {
+    "allFieldsVisible": null,
+    "reports": {}
+   },
+   "Revenue_Share": {
+    "allFieldsVisible": null,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Administrator",
+  "label": "Administrator",
+  "description": "This profile will have all the permissions.\\n",
+  "flags": "Chat:true, Predefined:true, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {}
+ },
+ {
+  "profile": "Account Team-Senior",
+  "label": "Account Team-Senior",
+  "description": "Account Team-Senior\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Salary_Payouts": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Salary_Payouts_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Regenerate_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_App_Config": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Expenses": [
+      "View"
+     ],
+     "All_Bills1": [
+      "View"
+     ]
+    }
+   },
+   "Eko_RS_Statements": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Pdf_Staging": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Settings": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Create_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Manual_Update_Bank": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Backend_Expenses": [
+      "View"
+     ]
+    }
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Bank_Transactions": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Payment_Requests": [
+      "View"
+     ]
+    }
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Vendor_Master1": [
+      "View",
+      "Edit"
+     ],
+     "All_Vendor_Masters": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Match_Transaction": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Flags": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Expense_Observations": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Scheduled_Payments": [
+      "View",
+      "Edit"
+     ],
+     "Payments_Scheduled_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Schedule_Payments": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Husain_Office_Module": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Husain_Office_Modules": [
+      "View"
+     ]
+    }
+   },
+   "Update_Expense": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Match_Payments": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Add_Payment_Reference_Number": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Master_Categories": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Personal_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Flagged_Payments": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Flagged_Payments_Report": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Salary_Payout_Schedule": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Salary_Payout_Schedule_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Debit_Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Pending_Approvals": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Deleted_Payments_Report": [
+      "View"
+     ]
+    }
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Item_Categories": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Eko_RS_Send_Log": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Bills": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Accounts": {
+    "allFieldsVisible": null,
+    "reports": {}
+   },
+   "Revenue_Share": {
+    "allFieldsVisible": null,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Developer",
+  "label": "Developer",
+  "description": "Developer\\n",
+  "flags": "Chat:false, Predefined:true, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {}
+ },
+ {
+  "profile": "Food Operator",
+  "label": "Food Operator",
+  "description": "food operator\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_App_Config": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Statements": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Pdf_Staging": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Settings": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {
+     "User_Payment_Requests": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Transaction": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Flags": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Husain_Office_Module": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Expense": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Add_Payment_Reference_Number": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Personal_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Flagged_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Send_Log": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Dependant Property Owner",
+  "label": "Dependant Property Owner",
+  "description": "Dependant Property Owner\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Expenses": [
+      "View"
+     ],
+     "All_Bills1": [
+      "View"
+     ]
+    }
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Customer",
+  "label": "Customer",
+  "description": "This is the default profile having only add and view permission.\\n",
+  "flags": "Chat:true, Predefined:true, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {}
+ },
+ {
+  "profile": "Market Head",
+  "label": "Market Head",
+  "description": "market head\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_App_Config": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Statements": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Pdf_Staging": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Settings": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {
+     "User_Payment_Requests": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Transaction": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Flags": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Husain_Office_Module": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Expense": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Add_Payment_Reference_Number": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Personal_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Flagged_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Send_Log": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Independant Property Owner",
+  "label": "Independant Property Owner",
+  "description": "Independant Property Owner\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Expenses": [
+      "View"
+     ],
+     "All_Bills1": [
+      "View"
+     ]
+    }
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "CA Team",
+  "label": "CA Team",
+  "description": "CA Team Profile\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Regenerate_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_App_Config": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "CA_Expenses": [
+      "View"
+     ]
+    }
+   },
+   "Eko_RS_Statements": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Pdf_Staging": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Settings": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Create_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {
+     "LLP_Bank": [
+      "View"
+     ]
+    }
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Vendor_Master1": [
+      "View"
+     ],
+     "All_Vendor_Masters": [
+      "View"
+     ]
+    }
+   },
+   "Match_Transaction": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Flags": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Husain_Office_Module": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Expense": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Add_Payment_Reference_Number": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Personal_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Flagged_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "CA_Payments": [
+      "View"
+     ]
+    }
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Send_Log": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "CA_Bills": [
+      "View"
+     ]
+    }
+   }
+  }
+ },
+ {
+  "profile": "Human Resources",
+  "label": "Human Resources",
+  "description": "Human Resources Profile\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Salary_Payouts": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Salary_Payouts_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Regenerate_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_App_Config": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Statements": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Pdf_Staging": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Settings": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Create_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Manual_Update_Bank": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {
+     "View_Bank_Transactions": [
+      "View"
+     ]
+    }
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Vendor_Master1": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Match_Transaction": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Flags": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Scheduled_Payments": [
+      "View"
+     ]
+    }
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Schedule_Payments": [
+      "View"
+     ]
+    }
+   },
+   "Husain_Office_Module": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Expense": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Add_Payment_Reference_Number": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Personal_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Flagged_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Salary_Payout_Schedule": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "View_Payments": [
+      "View"
+     ]
+    }
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Send_Log": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Payment Request",
+  "label": "Payment Request",
+  "description": "Payment Request Profile\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_App_Config": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Statements": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Pdf_Staging": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Settings": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {
+     "User_Payment_Requests": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Transaction": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Flags": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Husain_Office_Module": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Expense": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Add_Payment_Reference_Number": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Personal_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Flagged_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Send_Log": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Account Team-Executive",
+  "label": "Account Team-Executive",
+  "description": "Account Team-Executive\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Salary_Payouts": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Salary_Payouts_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Regenerate_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_App_Config": {
+    "allFieldsVisible": null,
+    "reports": {
+     "Eko_RS_App_Config_Report": [
+      "View"
+     ]
+    }
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": null,
+    "reports": {
+     "All_Expenses": [
+      "View"
+     ],
+     "All_Bills1": [
+      "View"
+     ]
+    }
+   },
+   "Eko_RS_Statements": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Eko_RS_Statements_Report": [
+      "View"
+     ]
+    }
+   },
+   "Eko_RS_Pdf_Staging": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Eko_RS_Pdf_Staging_Report": [
+      "View"
+     ]
+    }
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Settings": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Eko_RS_Settings_Report": [
+      "View"
+     ]
+    }
+   },
+   "Create_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Manual_Update_Bank": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Backend_Expenses": [
+      "View"
+     ]
+    }
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Bank_Transactions": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {
+     "User_Payment_Requests": [
+      "View"
+     ],
+     "All_Payment_Requests": [
+      "View"
+     ]
+    }
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Vendor_Master1": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Match_Transaction": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Flags": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Eko_RS_Flags_Report": [
+      "View"
+     ]
+    }
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Expense_Observations": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Scheduled_Payments": [
+      "View",
+      "Edit"
+     ],
+     "Payments_Scheduled_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Schedule_Payments": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Husain_Office_Module": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Husain_Office_Modules": [
+      "View"
+     ]
+    }
+   },
+   "Update_Expense": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Add_Payment_Reference_Number": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Master_Categories": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Personal_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Flagged_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Salary_Payout_Schedule": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Salary_Payout_Schedule_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Debit_Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Pending_Approvals": [
+      "View"
+     ]
+    }
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Deleted_Payments_Report": [
+      "View"
+     ]
+    }
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Item_Categories": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Eko_RS_Send_Log": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Eko_RS_Send_Log_Report": [
+      "View"
+     ]
+    }
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Bills": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Accounts": {
+    "allFieldsVisible": null,
+    "reports": {}
+   },
+   "Revenue_Share": {
+    "allFieldsVisible": null,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Account Team-Senior",
+  "label": "Account Team-Senior",
+  "description": "Account Team-Senior\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Salary_Payouts": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Salary_Payouts_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Regenerate_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_App_Config": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Eko_RS_App_Config_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Expenses": [
+      "View"
+     ],
+     "All_Bills1": [
+      "View"
+     ]
+    }
+   },
+   "Eko_RS_Statements": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Eko_RS_Statements_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Eko_RS_Pdf_Staging": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Eko_RS_Pdf_Staging_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Settings": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Eko_RS_Settings_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Create_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Manual_Update_Bank": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Backend_Expenses": [
+      "View"
+     ]
+    }
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Bank_Transactions": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Payment_Requests": [
+      "View"
+     ]
+    }
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Vendor_Master1": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Match_Transaction": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Flags": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Eko_RS_Flags_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Expense_Observations": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Scheduled_Payments": [
+      "View",
+      "Edit"
+     ],
+     "Payments_Scheduled_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Schedule_Payments": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Husain_Office_Module": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Husain_Office_Modules": [
+      "View"
+     ]
+    }
+   },
+   "Update_Expense": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Add_Payment_Reference_Number": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Master_Categories": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Personal_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Flagged_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Salary_Payout_Schedule": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Salary_Payout_Schedule_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Payments": [
+      "View",
+      "Edit",
+      "Delete"
+     ],
+     "Payments": [
+      "View",
+      "Edit"
+     ],
+     "CA_Payments": [
+      "View",
+      "Delete"
+     ]
+    }
+   },
+   "Debit_Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Pending_Approvals": [
+      "View"
+     ]
+    }
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Deleted_Payments_Report": [
+      "View"
+     ]
+    }
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Item_Categories": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Eko_RS_Send_Log": {
+    "allFieldsVisible": true,
+    "reports": {
+     "Eko_RS_Send_Log_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Bills": [
+      "View",
+      "Edit",
+      "Delete"
+     ]
+    }
+   },
+   "Accounts": {
+    "allFieldsVisible": null,
+    "reports": {}
+   },
+   "Revenue_Share": {
+    "allFieldsVisible": null,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Central Operations",
+  "label": "Central Operations",
+  "description": "central operations\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_App_Config": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Statements": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Pdf_Staging": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Settings": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {
+     "User_Payment_Requests": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Transaction": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Flags": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Husain_Office_Module": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Expense": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Add_Payment_Reference_Number": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Personal_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Flagged_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Send_Log": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Salary Data Entry",
+  "label": "Salary Data Entry",
+  "description": "Salary Data Entry Profile\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Scheduled_Payments": [
+      "View",
+      "Edit"
+     ],
+     "Payments_Scheduled_Report": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {
+     "All_Schedule_Payments": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "Property Manager",
+  "label": "Property Manager",
+  "description": "property manager\\n",
+  "flags": "Chat:false, Predefined:false, ApiAccess:true, PIIAccess:true, ePHIAccess:true",
+  "modules": {
+   "Salary_Payouts": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Regenerate_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Billing_Cycles": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_App_Config": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Tax": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expenses_Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Statements": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Pdf_Staging": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Zoho_app_pointers_Payment_Apr_Jun_1": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Settings": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Create_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Backend_Expenses": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "COA": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bank_Transactions": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment_Request": {
+    "allFieldsVisible": true,
+    "reports": {
+     "User_Payment_Requests": [
+      "View",
+      "Edit"
+     ]
+    }
+   },
+   "Error_Message": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Vendor_Master": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Transaction": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Flags": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Approval": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Block_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "TDS": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Expense_Observation": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payments_Scheduled": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Auto_Numbers": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Schedule_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Husain_Office_Module": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Expense": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Match_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Add_Payment_Reference_Number": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Master_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Personal_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Flagged_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Salary_Payout_Schedule": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Pending_Approvals": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Deleted_Payments": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Item_Category": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Eko_RS_Send_Log": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Preferred_Approver": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Update_Payment": {
+    "allFieldsVisible": true,
+    "reports": {}
+   },
+   "Bills": {
+    "allFieldsVisible": true,
+    "reports": {}
+   }
+  }
+ },
+ {
+  "profile": "roles",
+  "label": "roles",
+  "description": "User belonging to this role can access data of all other users.",
+  "flags": "",
+  "modules": {}
+ }
+]

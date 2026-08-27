@@ -1,0 +1,58 @@
+[
+ {
+  "Tax Name": "IGST5",
+  "Tax Type": "tax",
+  "Tax Percentage": 5,
+  "Tax ID": "2508841000000048101",
+  "ID": "292482000003927072"
+ },
+ {
+  "Tax Name": "IGST18",
+  "Tax Type": "tax",
+  "Tax Percentage": 18,
+  "Tax ID": "2508841000000048105",
+  "ID": "292482000003927070"
+ },
+ {
+  "Tax Name": "IGST0",
+  "Tax Type": "tax",
+  "Tax Percentage": 0,
+  "Tax ID": "2508841000000048099",
+  "ID": "292482000003927068"
+ },
+ {
+  "Tax Name": "GST5",
+  "Tax Type": "tax_group",
+  "Tax Percentage": 5,
+  "Tax ID": "2508841000000048227",
+  "ID": "292482000000130726"
+ },
+ {
+  "Tax Name": "GST28",
+  "Tax Type": "tax_group",
+  "Tax Percentage": 28,
+  "Tax ID": "2508841000000048251",
+  "ID": "292482000000130724"
+ },
+ {
+  "Tax Name": "GST18",
+  "Tax Type": "tax_group",
+  "Tax Percentage": 18,
+  "Tax ID": "2508841000000048243",
+  "ID": "292482000000130722"
+ },
+ {
+  "Tax Name": "GST12",
+  "Tax Type": "tax_group",
+  "Tax Percentage": 12,
+  "Tax ID": "2508841000000048235",
+  "ID": "292482000000130720"
+ },
+ {
+  "Tax Name": "GST0",
+  "Tax Type": "tax_group",
+  "Tax Percentage": 0,
+  "Tax ID": "2508841000000048219",
+  "ID": "292482000000130718"
+ }
+]

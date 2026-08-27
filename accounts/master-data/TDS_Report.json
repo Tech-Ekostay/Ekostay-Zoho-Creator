@@ -1,0 +1,212 @@
+[
+ {
+  "TDS Name": "Revenue Share TDS",
+  "TDS Percentage": 1,
+  "Books ID": "2508841000007785095",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Revenue Share TDS",
+  "TDS Percentage": 1,
+  "Books ID": "2508841000007785085",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Payment of contractors HUF/Indiv (Reduced)",
+  "TDS Percentage": 0.75,
+  "Books ID": "2508841000007785169",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Payment of contractors HUF/Indiv (Reduced)",
+  "TDS Percentage": 0.75,
+  "Books ID": "2508841000007785161",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Payment of contractors for Others (Reduced)",
+  "TDS Percentage": 1.5,
+  "Books ID": "2508841000007785185",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Payment of contractors for Others (Reduced)",
+  "TDS Percentage": 1.5,
+  "Books ID": "2508841000007785177",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Payment of contractors for Others",
+  "TDS Percentage": 2,
+  "Books ID": "2508841000007785111",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Payment of contractors for Others",
+  "TDS Percentage": 2,
+  "Books ID": "2508841000007785103",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Owner Rent",
+  "TDS Percentage": 10,
+  "Books ID": "2508841000007785045",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Other Interest than securities (Reduced)",
+  "TDS Percentage": 7.5,
+  "Books ID": "2508841000007785153",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Other Interest than securities (Reduced)",
+  "TDS Percentage": 7.5,
+  "Books ID": "2508841000007785145",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Other Interest than securities (Reduced)",
+  "TDS Percentage": 7.5,
+  "Books ID": "2508841000007785137",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Other Interest than securities",
+  "TDS Percentage": 10,
+  "Books ID": "2508841000007785055",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Other Interest than securities",
+  "TDS Percentage": 10,
+  "Books ID": "2508841000007785065",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Other Interest than securities",
+  "TDS Percentage": 10,
+  "Books ID": "2508841000007785075",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "NRI owner rent/ revenue",
+  "TDS Percentage": 31.2,
+  "Books ID": "2508841000007785203",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Dividend (Reduced)",
+  "TDS Percentage": 7.5,
+  "Books ID": "2508841000007785129",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Commission or Brokerage (Reduced)",
+  "TDS Percentage": 3.75,
+  "Books ID": "2508841000007785193",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "Commission or Brokerage",
+  "TDS Percentage": 2,
+  "Books ID": "2508841000007785121",
+  "Status": "Active"
+ },
+ {
+  "TDS Name": "NRI owner rent/ revenue",
+  "TDS Percentage": 31.2,
+  "Books ID": "2508841000000280140",
+  "Status": null
+ },
+ {
+  "TDS Name": "Technical Fees (2%)",
+  "TDS Percentage": 2,
+  "Books ID": "2508841000000030063",
+  "Status": null
+ },
+ {
+  "TDS Name": "Professional Fees (Reduced)",
+  "TDS Percentage": 7.5,
+  "Books ID": "2508841000000030061",
+  "Status": null
+ },
+ {
+  "TDS Name": "Rent on land or furniture etc (Reduced)",
+  "TDS Percentage": 7.5,
+  "Books ID": "2508841000000030059",
+  "Status": null
+ },
+ {
+  "TDS Name": "Commission or Brokerage (Reduced)",
+  "TDS Percentage": 3.75,
+  "Books ID": "2508841000000030057",
+  "Status": null
+ },
+ {
+  "TDS Name": "Payment of contractors for Others (Reduced)",
+  "TDS Percentage": 1.5,
+  "Books ID": "2508841000000030055",
+  "Status": null
+ },
+ {
+  "TDS Name": "Payment of contractors HUF/Indiv (Reduced)",
+  "TDS Percentage": 0.75,
+  "Books ID": "2508841000000030053",
+  "Status": null
+ },
+ {
+  "TDS Name": "Other Interest than securities (Reduced)",
+  "TDS Percentage": 7.5,
+  "Books ID": "2508841000000030051",
+  "Status": null
+ },
+ {
+  "TDS Name": "Dividend (Reduced)",
+  "TDS Percentage": 7.5,
+  "Books ID": "2508841000000030049",
+  "Status": null
+ },
+ {
+  "TDS Name": "Professional Fees",
+  "TDS Percentage": 10,
+  "Books ID": "2508841000000030047",
+  "Status": null
+ },
+ {
+  "TDS Name": "Rent on land or furniture etc",
+  "TDS Percentage": 10,
+  "Books ID": "2508841000000030045",
+  "Status": null
+ },
+ {
+  "TDS Name": "Commission or Brokerage",
+  "TDS Percentage": 2,
+  "Books ID": "2508841000000030043",
+  "Status": null
+ },
+ {
+  "TDS Name": "Payment of contractors for Others",
+  "TDS Percentage": 2,
+  "Books ID": "2508841000000030041",
+  "Status": null
+ },
+ {
+  "TDS Name": "Revenue Share TDS",
+  "TDS Percentage": 1,
+  "Books ID": "2508841000000030039",
+  "Status": null
+ },
+ {
+  "TDS Name": "Other Interest than securities",
+  "TDS Percentage": 10,
+  "Books ID": "2508841000000030037",
+  "Status": null
+ },
+ {
+  "TDS Name": "Owner Rent",
+  "TDS Percentage": 10,
+  "Books ID": "2508841000000030035",
+  "Status": null
+ }
+]

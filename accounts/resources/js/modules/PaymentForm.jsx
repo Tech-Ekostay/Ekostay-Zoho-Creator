@@ -1,0 +1,438 @@
+import { useEffect, useMemo, useState } from 'react';
+import VendorPicker from '../components/VendorPicker';
+import { inr } from '../lib/format';
+
+/**
+ * The direct Payment form — a payment entered on its own, not from a bill.
+ *
+ * WHY IT EXISTS. §7.2's `Create_Payment` was the only creation path the three
+ * context docs describe, so Payments' `+` used to send the user to Bills. Husain
+ * corrected that on 25-Aug-2026: **a payment can be entered directly.** Sending
+ * someone to Bills taught a data model that is not the real one.
+ *
+ * FIELD ORDER IS NOT INFERRED — unusually for this project. It is parsed from the
+ * `Payment` form in `deluge/Accounts.ds` (lines 7273-8673): 130 entries across 10
+ * sections, each carrying `row` and `column`, which IS the layout. Section names
+ * below are Creator's own (`Commercials`, `Admin`). Same route used for the Villa
+ * form. So a reviewer comparing against the live screen should find the order right;
+ * what they will find missing is listed at the foot of the form, on screen.
+ *
+ * THE PICKER FILTERS ARE THE DS's TOO, and two of them corrected shipped code:
+ *
+ *   COA           -> COA[Hide == true]        47 of 144 — `Hide` means selectable
+ *                                             here, not hidden. Settles the open
+ *                                             COA `hide` question in addendum §17.5.
+ *   Vendor Name   -> Vendor_Master[Main_Primary is not null]
+ *                                             6,957 — trade vendors, EXCLUDING the
+ *                                             1,107 customer payees, and INCLUDING
+ *                                             the 112 merged-away ones. The opposite
+ *                                             of what this app had.
+ *   Bank Name     -> COA[Bank == true]        the load-bearing flag, not Account_Type
+ *   Villa Name    -> Villa[Hide_From_Payments == false]
+ *   Item Category -> Item_Category[Disable == false]
+ *
+ * WHAT THIS DELIBERATELY DOES NOT DO. Nothing here computes money. There is no
+ * client-side derivation of Payable, no GST arithmetic and no split-equally: §6.3's
+ * remainder convention truncates at paisa and puts the whole dropped remainder on
+ * the LAST row, and the spec says "Reproduce exactly. Do not substitute banker's
+ * rounding." Re-implementing that in JavaScript would be re-deciding it. The server
+ * validates the split against the gross (§6.4 rule 1 / §7.4's missing check).
+ */
+
+/** Sections in DS row order, with Creator's own names. */
+export default function PaymentForm({ options, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    coa_account_id: '',
+    vendor_id: '',
+    bank_coa_account_id: '',
+    location_id: '',
+    item_category_id: '',
+    master_category_id: '',
+    tds_rate_id: '',
+    tax_id: '',
+    status: 'Draft',
+    payment_status: 'Pending',
+    payment_mode: '',
+    gst_type: '',
+    payment_date: '',
+    due_date: '',
+    amount: '',
+    gst_amount: '',
+    tds_amount: '',
+    pt_amount: '',
+    esic_amount: '',
+    pf_amount: '',
+    payable_amount: '',
+    total_amount: '',
+    original_amount: '',
+    particulars: '',
+    remarks: '',
+    management_remarks: '',
+    payment_reference_number: '',
+    payment_by: '',
+    expense_by: '',
+    ca_email: '',
+    payment_source: '',
+    haewaya_utr_number: '',
+    billing_year: '',
+    billing_months: [],
+    billing_cycle_ids: [],
+    gst_needed: false,
+    split_equally: false,
+    multiple_villa: false,
+    verified: false,
+    accounts_bills: false,
+  });
+
+  const [legs, setLegs] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const set = (key, value) => setForm((c) => ({ ...c, [key]: value }));
+
+  /** The running leg total, shown beside the gross so the §6.4 tie is visible. */
+  const legTotal = useMemo(
+    () => legs.reduce((sum, leg) => sum + (Number(leg.amount) || 0), 0),
+    [legs],
+  );
+
+  const grossNumber = Number(form.amount) || 0;
+  const balanced = legs.length === 0 || Math.round(legTotal) === Math.round(grossNumber);
+
+  const save = () => {
+    setSaving(true);
+    setError(null);
+    setFieldErrors({});
+
+    const payload = {
+      ...form,
+      billing_year: form.billing_year === '' ? null : Number(form.billing_year),
+      billing_cycle_ids: form.billing_cycle_ids.map(Number),
+      legs: legs
+        .filter((l) => l.villa_id && l.item_category_id && l.billing_cycle_id)
+        .map((l) => ({
+          villa_id: Number(l.villa_id),
+          item_category_id: Number(l.item_category_id),
+          billing_cycle_id: Number(l.billing_cycle_id),
+          amount: l.amount === '' ? 0 : Number(l.amount),
+        })),
+    };
+
+    // Numeric fields go as null rather than '' so the server sees "not supplied".
+    for (const key of ['amount', 'gst_amount', 'tds_amount', 'pt_amount', 'esic_amount',
+      'pf_amount', 'payable_amount', 'total_amount', 'original_amount']) {
+      if (payload[key] === '') payload[key] = null;
+    }
+    for (const key of ['coa_account_id', 'vendor_id', 'bank_coa_account_id', 'location_id',
+      'item_category_id', 'master_category_id', 'tds_rate_id', 'tax_id']) {
+      payload[key] = payload[key] === '' ? null : Number(payload[key]);
+    }
+
+    fetch('/api/payments/direct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(payload),
+    })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) {
+          if (body.errors) setFieldErrors(body.errors);
+          throw new Error(body.message ?? `HTTP ${response.status}`);
+        }
+        return body;
+      })
+      .then((body) => onSaved?.(body))
+      .catch((e) => setError(String(e.message ?? e)))
+      .finally(() => setSaving(false));
+  };
+
+  const field = (key, node, hint, group = false) => (
+    <div className="zc-field" key={key}>
+      {group
+        ? <span id={`p-${key}-label`} style={{ width: 190, flex: '0 0 190px', paddingTop: 6, color: 'var(--ink2)' }}>{LABELS[key]}</span>
+        : <label htmlFor={`p-${key}`}>{LABELS[key]}</label>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {node}
+        {fieldErrors[key] && (
+          <div className="zc-field-hint" style={{ color: 'var(--bad)' }}>{fieldErrors[key][0]}</div>
+        )}
+        {hint && <div className="zc-field-hint">{hint}</div>}
+      </div>
+    </div>
+  );
+
+  const text = (key, extra = {}) => (
+    <input id={`p-${key}`} className="zc-input" value={form[key]}
+      onChange={(e) => set(key, e.target.value)} {...extra} />
+  );
+
+  const money = (key) => (
+    <input id={`p-${key}`} className="zc-input" inputMode="decimal" value={form[key]}
+      onChange={(e) => set(key, e.target.value)} placeholder="0.00" />
+  );
+
+  const select = (key, list, blank = '— none —') => (
+    <select id={`p-${key}`} className="zc-select" value={form[key]}
+      onChange={(e) => set(key, e.target.value)}>
+      <option value="">{blank}</option>
+      {(list ?? []).map((o) => (
+        <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>
+      ))}
+    </select>
+  );
+
+  const check = (key) => (
+    <input id={`p-${key}`} type="checkbox" className="zc-check" checked={form[key]}
+      onChange={(e) => set(key, e.target.checked)} />
+  );
+
+  const multi = (key, list) => (
+    <div id={`p-${key}`} role="group" aria-labelledby={`p-${key}-label`}
+      style={{ maxHeight: 120, overflowY: 'auto', border: '1px solid var(--line)', padding: '4px 8px' }}>
+      {(list ?? []).length === 0 && <span style={{ color: 'var(--ink3)', fontSize: 12 }}>none</span>}
+      {(list ?? []).map((o) => {
+        const value = String(o.value ?? o);
+        const on = form[key].includes(value);
+
+        return (
+          <label key={value} style={{ display: 'block', fontWeight: 400 }}>
+            <input type="checkbox" className="zc-check" checked={on}
+              onChange={(e) => set(key, e.target.checked
+                ? [...form[key], value]
+                : form[key].filter((v) => v !== value))} />
+            {' '}{o.label ?? o}
+          </label>
+        );
+      })}
+    </div>
+  );
+
+  const addLeg = () => setLegs((c) => [...c,
+    { villa_id: '', item_category_id: '', billing_cycle_id: '', amount: '' }]);
+  const setLeg = (i, key, value) => setLegs((c) =>
+    c.map((leg, j) => (j === i ? { ...leg, [key]: value } : leg)));
+
+  return (
+    <div className="zc-overlay" role="dialog" aria-modal="true" aria-label="Add Payment">
+      <div className="zc-overlay-head">Payment</div>
+
+      <div className="zc-overlay-body">
+        {error && (
+          <p style={{ color: 'var(--bad)', border: '1px solid var(--bad)', padding: 10, marginTop: 0 }}>
+            {error}
+          </p>
+        )}
+
+        <p className="zc-field-hint" style={{ marginTop: 0, marginBottom: 16 }}>
+          Field order and section names come from the <strong>Payment form in Accounts.ds</strong>,
+          which carries row/column for every field — so the layout is parsed, not inferred. What is
+          not here is listed at the foot of this form.
+        </p>
+
+        {/* ------------------------------------------------ DS section, row 1 */}
+        <div className="zc-section">Payment</div>
+        {field('coa_account_id', select('coa_account_id', options.coa_accounts),
+          `${options.coa_accounts?.length ?? 0} of 144 accounts — the form filters COA[Hide == true], which on this screen means selectable, not hidden.`)}
+        {field('vendor_id',
+          <VendorPicker id="p-vendor_id" value={form.vendor_id}
+            onChange={(v) => set('vendor_id', v)} />,
+          `${options.vendor_count ?? 0} selectable — trade vendors only. Customer payees are excluded, as Creator excludes them.`)}
+        {field('payment_date', text('payment_date', { placeholder: 'YYYY-MM-DD' }),
+          'Typed YYYY-MM-DD, displayed dd-MMM-yyyy. Never a native date input (§15.2).')}
+        {field('due_date', text('due_date', { placeholder: 'YYYY-MM-DD' }))}
+        {field('payment_mode', select('payment_mode', options.payment_modes))}
+        {field('bank_coa_account_id', select('bank_coa_account_id', options.bank_accounts),
+          'COA[Bank == true] — the load-bearing flag, not Account_Type: 9 accounts are Bank without being typed `bank`.')}
+        {field('status', select('status', options.statuses),
+          'All 8 DS values, including three spellings of one concept — they are in the picklist, not just the data.')}
+        {field('payment_status', select('payment_status', options.payment_statuses),
+          '`Open` is live on 7,583 imported payments but is NOT in the picklist (addendum §10), so it is not offered here.')}
+        {field('location_id', select('location_id', options.locations))}
+        {field('master_category_id', select('master_category_id', options.master_categories))}
+        {field('item_category_id', select('item_category_id', options.item_categories),
+          'Categories flagged `Disallow Manual Creation` are excluded — a hard block at validate.')}
+        {field('particulars', <textarea id="p-particulars" className="zc-input" rows={2}
+          value={form.particulars} onChange={(e) => set('particulars', e.target.value)} />)}
+        {field('expense_by', text('expense_by'))}
+        {field('payment_by', text('payment_by'))}
+        {field('payment_source', text('payment_source'))}
+        {field('ca_email', text('ca_email', { type: 'email' }))}
+        {field('original_amount', money('original_amount'))}
+        {field('remarks', <textarea id="p-remarks" className="zc-input" rows={2}
+          value={form.remarks} onChange={(e) => set('remarks', e.target.value)} />)}
+        {field('management_remarks', <textarea id="p-management_remarks" className="zc-input" rows={2}
+          value={form.management_remarks} onChange={(e) => set('management_remarks', e.target.value)} />)}
+        {field('verified', check('verified'))}
+        {field('multiple_villa', check('multiple_villa'))}
+
+        {/* ------------------------------------------------ DS section, row 3 */}
+        <div className="zc-section">Billing</div>
+        {field('billing_year', text('billing_year', { inputMode: 'numeric' }))}
+        {field('billing_months', multi('billing_months', options.billing_months),
+          'Stored comma-packed, as Creator stores it. A month name here NEVER creates a cycle.', true)}
+        {field('billing_cycle_ids', multi('billing_cycle_ids', options.billing_cycles),
+          (options.billing_cycles?.length ?? 0) === 0
+            ? 'None exist. A cycle is NEVER created on the fly — §6.4: that defect put a junk "9-2026" cycle into live accounting. 50 real cycles exist in Creator and have not been imported yet.'
+            : 'A cycle must already exist; none is derived from a month name (§6.4).', true)}
+
+        {/* ------------------------------------------------ DS section, row 4 */}
+        <div className="zc-section">Commercials</div>
+        {field('amount', money('amount'), 'Gross. The split legs below must tie to this (§6.4 rule 1).')}
+        {field('tds_rate_id', select('tds_rate_id', options.tds_rates),
+          '§6.3 applies the percentage PER ROW, so per-row TDS need not sum to TDS on the total.')}
+        {field('tds_amount', money('tds_amount'))}
+        {field('pt_amount', money('pt_amount'))}
+        {field('esic_amount', money('esic_amount'))}
+        {field('pf_amount', money('pf_amount'))}
+        {field('gst_needed', check('gst_needed'))}
+        {field('gst_type', select('gst_type', options.gst_types),
+          '`Enter Manully` is Creator’s spelling and is preserved (handoff §2 rule 7).')}
+        {field('tax_id', select('tax_id', options.taxes))}
+        {field('gst_amount', money('gst_amount'))}
+        {field('total_amount', money('total_amount'))}
+        {field('payable_amount', money('payable_amount'),
+          '§6.3 records TWO formulas under this one name and which is authoritative is still open, so it is stored as entered rather than derived.')}
+        {field('payment_reference_number', text('payment_reference_number'))}
+        {field('haewaya_utr_number', text('haewaya_utr_number'))}
+        {field('split_equally', check('split_equally'))}
+        {field('accounts_bills', check('accounts_bills'))}
+
+        {/* ------------------------------------------------ DS section, row 8 */}
+        <div className="zc-section">Split Payments</div>
+        <p className="zc-field-hint" style={{ marginTop: 0 }}>
+          One row per villa × billing cycle × item category (§5.1). Per §5.2 each row becomes a
+          ledger entry, so this is where attribution is decided. The legs must sum to the gross —
+          the server enforces it and will refuse the save otherwise.
+        </p>
+
+        <table className="zc-grid">
+          <thead>
+            <tr>
+              {['Villa Name', 'Item Category', 'Billing Cycle', 'Amount', ''].map((h) => <th key={h}>{h}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {legs.map((leg, i) => (
+              <tr key={i}>
+                <td>
+                  <select className="zc-select" value={leg.villa_id}
+                    onChange={(e) => setLeg(i, 'villa_id', e.target.value)}>
+                    <option value="">—</option>
+                    {(options.villas ?? []).map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
+                  </select>
+                </td>
+                <td>
+                  <select className="zc-select" value={leg.item_category_id}
+                    onChange={(e) => setLeg(i, 'item_category_id', e.target.value)}>
+                    <option value="">—</option>
+                    {(options.item_categories ?? []).map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  </select>
+                </td>
+                <td>
+                  <select className="zc-select" value={leg.billing_cycle_id}
+                    onChange={(e) => setLeg(i, 'billing_cycle_id', e.target.value)}>
+                    <option value="">—</option>
+                    {(options.billing_cycles ?? []).map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  </select>
+                </td>
+                <td>
+                  <input className="zc-input" inputMode="decimal" value={leg.amount}
+                    onChange={(e) => setLeg(i, 'amount', e.target.value)} />
+                </td>
+                <td>
+                  <button type="button" className="zc-btn"
+                    onClick={() => setLegs((c) => c.filter((_, j) => j !== i))}>
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+          <button type="button" className="zc-btn" onClick={addLeg}
+            disabled={(options.billing_cycles?.length ?? 0) === 0}
+            title={(options.billing_cycles?.length ?? 0) === 0
+              ? 'No billing cycle exists, and one is never created on the fly (§6.4)'
+              : 'Add a split row'}>
+            Add split row
+          </button>
+          {legs.length > 0 && (
+            <span style={{ fontSize: 12, color: balanced ? 'var(--ink3)' : 'var(--bad)' }}>
+              legs {inr(String(legTotal))} · gross {inr(form.amount || '0')}
+              {!balanced && ' — these must tie (§6.4 rule 1); the server will refuse the save'}
+            </span>
+          )}
+        </div>
+
+        {/* What a reviewer will find missing, said here rather than discovered. */}
+        <div className="zc-section">Not on this form yet</div>
+        <p className="zc-field-hint" style={{ marginTop: 0 }}>
+          The DS form has 130 entries over 10 sections. Deliberately absent, with reasons:
+          the <strong>Admin</strong> section (Approver 1–3, Bank Reconcilation, Books ID) because the
+          approval engine is not built and §8.2's matrix collides with Backend Expenses' second
+          one; the <strong>Bill Payments</strong> and <strong>Bills</strong> subform grids, which
+          belong to the from-a-bill path (§7.2); <strong>file uploads and OCR</strong>
+          (Bills doc, Supporting Documents, Verification Call); the three
+          <strong> Messageid</strong> fields, which are outbound-WhatsApp plumbing rather than
+          accounting data; and <strong>Payments Scheduled</strong>, whose table does not exist here.
+        </p>
+
+        <div className="zc-commit">
+          <button type="button" className="zc-btn zc-btn-primary" disabled={saving} onClick={save}>
+            {saving ? 'Saving…' : 'Add'}
+          </button>
+          <button type="button" className="zc-btn" disabled={saving} onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Labels verbatim from the DS `displayname`, or the field name where it has none. */
+const LABELS = {
+  coa_account_id: 'COA',
+  vendor_id: 'Vendor Name',
+  bank_coa_account_id: 'Bank Name',
+  location_id: 'Location',
+  item_category_id: 'Item Category',
+  master_category_id: 'Master Category',
+  tds_rate_id: 'TDS %',
+  tax_id: 'GST',
+  status: 'Status',
+  payment_status: 'Payment Status',
+  payment_mode: 'Payment Mode',
+  gst_type: 'GST Type',
+  payment_date: 'Payment Date',
+  due_date: 'Due Date',
+  amount: 'Gross Amount',
+  gst_amount: 'GST Amount',
+  tds_amount: 'TDS Amount',
+  pt_amount: 'PT',
+  esic_amount: 'ESIC',
+  pf_amount: 'PF',
+  payable_amount: 'Payable Amount',
+  total_amount: 'Invoice Amount',
+  original_amount: 'Original Amount',
+  particulars: 'Particulars',
+  remarks: 'Accounts Remarks',
+  management_remarks: 'Management Remarks',
+  payment_reference_number: 'Payment Reference Number',
+  payment_by: 'Payment By',
+  expense_by: 'Expense By',
+  ca_email: 'CA Email',
+  payment_source: 'Payment Source',
+  haewaya_utr_number: 'Haewaya UTR Number',
+  billing_year: 'Billing Year',
+  billing_months: 'Billing Months',
+  billing_cycle_ids: 'Billing Cycles',
+  gst_needed: 'GST Needed',
+  split_equally: 'Split Equally',
+  multiple_villa: 'Multiple Villa',
+  verified: 'Verified',
+  accounts_bills: 'Accounts Bills',
+};

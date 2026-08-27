@@ -1,0 +1,1217 @@
+[
+ {
+  "Item Category": "F&B CHEF INCENTIVE",
+  "Master Category": "F&B",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000010310488",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B PROFIT DISTRIBUTION",
+  "Master Category": "F&B",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000010310486",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "SALES INCENTIVE",
+  "Master Category": "Employee & Staff Considerations",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000010306036",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "EXPERIENCES INCENTIVE",
+  "Master Category": "Employee & Staff Considerations",
+  "Expense Type": "Direct",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000010094259",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B STAFF ADVANCE",
+  "Master Category": "F&B",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000008940142",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B STAFF LOAN",
+  "Master Category": "F&B",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000008940140",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "EXPERIENCES REFUND",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": true,
+  "Haewaya ID": null,
+  "ID": "292482000008913100",
+  "Exclude for Observation": true
+ },
+ {
+  "Item Category": "STAFF ADVANCE",
+  "Master Category": "Employee & Staff Considerations",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000008899006",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "CSR",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000006888427",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B GENERAL STAFF FUEL",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000006333093",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B GENERAL AUTO",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000006333089",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "GENSET PURCHASE",
+  "Master Category": "New Purchases & Capex",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000006000489",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B STAFF MEDICAL EXPENSE ",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000004346267",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B CHEF OUTSOURCED",
+  "Master Category": "F&B",
+  "Expense Type": "Direct",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000004346263",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B OWNER PAYOUT",
+  "Master Category": "F&B",
+  "Expense Type": "Direct",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000003255607",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "SECURITY DEPOSIT",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000001720561",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B AUTO",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000001235079",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "AIRBNB MARKETING BOOKING",
+  "Master Category": "Marketing",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000001193759",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "FOOD REFUND",
+  "Master Category": "F&B",
+  "Expense Type": null,
+  "Exclude for Profit": true,
+  "Haewaya ID": null,
+  "ID": "292482000000513369",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "STAY REFUND",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": true,
+  "Haewaya ID": null,
+  "ID": "292482000000513345",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "TDS",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000479235",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "SOCIETY MAINTENANCE",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000473033",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "GOVERNMENT TDS",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": true,
+  "Haewaya ID": null,
+  "ID": "292482000000473029",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "ZEESHAN PERSONAL",
+  "Master Category": "Co-founders Personal",
+  "Expense Type": null,
+  "Exclude for Profit": true,
+  "Haewaya ID": null,
+  "ID": "292482000000439085",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "VARUN PERSONAL",
+  "Master Category": "Co-founders Personal",
+  "Expense Type": null,
+  "Exclude for Profit": true,
+  "Haewaya ID": null,
+  "ID": "292482000000439081",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "INSIYA PERSONAL",
+  "Master Category": "Co-founders Personal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000439077",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "SOHAIL PERSONAL",
+  "Master Category": "Co-founders Personal",
+  "Expense Type": null,
+  "Exclude for Profit": true,
+  "Haewaya ID": null,
+  "ID": "292482000000439073",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "HUSAIN PERSONAL",
+  "Master Category": "Co-founders Personal",
+  "Expense Type": null,
+  "Exclude for Profit": true,
+  "Haewaya ID": null,
+  "ID": "292482000000439069",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "FRUITS",
+  "Master Category": "F&B",
+  "Expense Type": "Direct",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000394015",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "PETTY",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": true,
+  "Haewaya ID": null,
+  "ID": "292482000000394007",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "INTERNAL TRANSFER",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": true,
+  "Haewaya ID": null,
+  "ID": "292482000000394003",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B STOREROOM PURCHASE",
+  "Master Category": "F&B",
+  "Expense Type": "Direct",
+  "Exclude for Profit": true,
+  "Haewaya ID": null,
+  "ID": "292482000000385081",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "INFLUENCER",
+  "Master Category": "Marketing",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361493",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "TRANSPORT",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361489",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "WATER BILL",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361485",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "WATER TANKER",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361481",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "WIFI",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361477",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "STATIONARY AND DOCUMENTATION",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361473",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "TOILETRIES",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361469",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "PRINTING",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361465",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "POOL CHEMICAL",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361461",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "PEST CONTROL",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361457",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "LAUNDRY",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361453",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "HOUSEKEEPING AND CLEANING MATERIAL",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361449",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "HAMAALI AND PACKAGING",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361445",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "GUEST COMPLIMENTARY",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361441",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "GENERATOR FUEL",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361437",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "GAS CYLINDER",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361433",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "ELECTRICITY BILL",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361429",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "DTH",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361425",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "COURIER",
+  "Master Category": "Operations & Logistics",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361421",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "OTHER TAX",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361417",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "INCOME TAX",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361413",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "GOVERNMENT GST",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361409",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "PROFESSIONAL TAX",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361405",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "ESIC",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361401",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "BANK CHARGES",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361397",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "PAYMENT REVERSE",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": true,
+  "Haewaya ID": null,
+  "ID": "292482000000361393",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "PROVIDENT FUNDS",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361389",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "OWNER REVENUE",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361385",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "OWNER RENT",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361381",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "STAFF LOAN",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361377",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "LEGAL",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361373",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "HR COMPLIANCES",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361369",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "INVESTMENT",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361365",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "BROKERAGE",
+  "Master Category": "Finance & Legal",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361361",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "STAFF VEHICLE MAINTENANCE",
+  "Master Category": "Employee & Staff Considerations",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361357",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "STAFF INCENTIVES",
+  "Master Category": "Employee & Staff Considerations",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361353",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "STAFF SALARY",
+  "Master Category": "Employee & Staff Considerations",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361349",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "STAFF TRAVEL",
+  "Master Category": "Employee & Staff Considerations",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361345",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "STAFF RENT & ACCOMODATION",
+  "Master Category": "Employee & Staff Considerations",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361341",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "STAFF FUEL",
+  "Master Category": "Employee & Staff Considerations",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361337",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "STAFF FOOD",
+  "Master Category": "Employee & Staff Considerations",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361333",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "STAFF MEDICAL EXPENSES",
+  "Master Category": "Employee & Staff Considerations",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361329",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "CO-FOUNDERS SPENDS",
+  "Master Category": "Employee & Staff Considerations",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361325",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "META ADS",
+  "Master Category": "Advertisements",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361321",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "BOOKING.COM COMMISSION",
+  "Master Category": "Advertisements",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361317",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "GOOGLE ADS",
+  "Master Category": "Advertisements",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361313",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "OTHER COMMISSION",
+  "Master Category": "Advertisements",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361309",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "SEO",
+  "Master Category": "Marketing",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361305",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "SOCIAL MEDIA SERVICES",
+  "Master Category": "Marketing",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361301",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "PHOTOSHOOT",
+  "Master Category": "Marketing",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361297",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "MARKETING ACTIVITIES",
+  "Master Category": "Marketing",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361293",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "DESSERT",
+  "Master Category": "F&B",
+  "Expense Type": "Direct",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361289",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "BAKERY",
+  "Master Category": "F&B",
+  "Expense Type": "Direct",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361285",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "VEGETABLES",
+  "Master Category": "F&B",
+  "Expense Type": "Direct",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361281",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "KIRANA",
+  "Master Category": "F&B",
+  "Expense Type": "Direct",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361277",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "MEAT",
+  "Master Category": "F&B",
+  "Expense Type": "Direct",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361273",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "DAIRY",
+  "Master Category": "F&B",
+  "Expense Type": "Direct",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361269",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B SALES INCENTIVES",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361265",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B UTENSILS CROCKERY",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361261",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B SALARY",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361257",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B ELECTRONICS",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361253",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B COMPLIMENTARY",
+  "Master Category": "F&B",
+  "Expense Type": "Direct",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361249",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B FLIPKART PURCHASE",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361245",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B AMAZON PURCHASE",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361241",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B GENERAL PURCHASE",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361237",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B CIVIL WORKS",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361233",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B GAS",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361229",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B REPAIR AND MAINTAINENCE",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361225",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B RENT AND ACCOMMODATION",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361221",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B VEHICLE MAINTENANCE",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361217",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B HOUSEKEEPING MATERIAL",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361213",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B TRANSPORT",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361209",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B STAFF FOOD",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361205",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "F&B STAFF FUEL",
+  "Master Category": "F&B",
+  "Expense Type": "Indirect",
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361201",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "ELECTRONICS REPAIR",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361197",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "SEPTIC TANK",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361193",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "POP & FASE CEILING",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361189",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "POOL WORKS",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361185",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "PLUMBER WORKS",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361181",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "PAINTING WORKS",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361177",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "HARDWARE MATERIAL",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361173",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "GENSET REPAIR",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361169",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "GARDENING",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361165",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "GARBAGE COLLECTION",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361161",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "FABRICATION",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361157",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "ELECTRICAL WORKS",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361153",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "CIVIL WORK",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361149",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "CARPENTRY",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361145",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "AC WORKS",
+  "Master Category": "Property Repair & Maintenance",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361141",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "DEVELOPERS",
+  "Master Category": "Technology & Communication",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361137",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "SOFTWARE RENEWAL",
+  "Master Category": "Technology & Communication",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361133",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "HR RECRUITMENT",
+  "Master Category": "Technology & Communication",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361129",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "IVR",
+  "Master Category": "Technology & Communication",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361125",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "ELECTRICAL FITTINGS",
+  "Master Category": "New Purchases & Capex",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361121",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "FLIPKART PURCHASES",
+  "Master Category": "New Purchases & Capex",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361117",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "UTENSILS CUTLERY CROCKERY GLASSWARE",
+  "Master Category": "New Purchases & Capex",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361113",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "GENERAL PURCHASE",
+  "Master Category": "New Purchases & Capex",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361109",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "LINENS",
+  "Master Category": "New Purchases & Capex",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361105",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "HOME DECOR",
+  "Master Category": "New Purchases & Capex",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361101",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "IKEA PURCHASES",
+  "Master Category": "New Purchases & Capex",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361097",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "ELECTRONICS PURCHASE",
+  "Master Category": "New Purchases & Capex",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361087",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "FURNITURE PURCHASE",
+  "Master Category": "New Purchases & Capex",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361083",
+  "Exclude for Observation": false
+ },
+ {
+  "Item Category": "AMAZON PURCHASE",
+  "Master Category": "New Purchases & Capex",
+  "Expense Type": null,
+  "Exclude for Profit": false,
+  "Haewaya ID": null,
+  "ID": "292482000000361079",
+  "Exclude for Observation": false
+ }
+]

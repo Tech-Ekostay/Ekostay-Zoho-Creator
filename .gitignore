@@ -1,0 +1,70 @@
+# Ekostay Platform — repository-root ignores.
+#
+# Each entry below is here because committing it would be HARD TO UNDO. Git history
+# is permanent in any practical sense: a secret or a PII file removed in a later
+# commit is still in the history, still clonable, and still has to be treated as
+# leaked. So these are excluded before the first commit, not after.
+
+# ---------------------------------------------------------------- credentials
+# accounts/.env holds the Zoho Analytics client_secret and refresh_token.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ------------------------------------------------------------- Deluge exports
+# accounts/deluge/Accounts.ds line 22851 is a LIVE hardcoded DoubleTick API key.
+# Rotate it before this is ever reconsidered. F_B.ds is excluded for consistency,
+# though it carries no credential of its own — it does carry
+# `void DeleteAllRecords()` at line 4645, which wipes 14 tables.
+*.ds
+
+# --------------------------------------------------------------------- the PII
+# Vendor_Master.csv — 8,063 real vendors: PANs, GST registrations, phone numbers,
+# free-text bank details. The other master-data exports are tracked; these two are
+# categorically different and stay out.
+master-data/Vendor_Master.csv
+**/master-data/Vendor_Master.csv
+**/master-data/*.csv.orig.csv
+
+# All_Employee_Masters.csv — 475 real employees with Name, DOB, Email and Phone.
+# Caught by inspecting the staged file list rather than by the pattern above, which
+# only looked for the vendor file. Worth remembering that "is it PII?" has to be
+# asked per file, not per pattern.
+**/master-data/All_Employee_Masters.csv
+
+# ------------------------------------------------- exported production data
+# ~251 MB of real payments, expense legs and vendors pulled from Zoho Analytics.
+# Regenerable with `php artisan zoho:inspect <view>`; not source.
+storage/app/zoho/
+**/storage/app/zoho/
+
+# ------------------------------------------------------------------ PHP / Laravel
+/accounts/vendor/
+/accounts/node_modules/
+/accounts/public/build/
+/accounts/public/hot
+/accounts/public/storage
+/accounts/storage/*.key
+/accounts/storage/pail
+/accounts/.phpunit.cache
+/accounts/.phpunit.result.cache
+/accounts/bootstrap/cache/*.php
+
+# ------------------------------------------------------------------------- node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ------------------------------------------------------------------------ local
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Screenshots dropped for reference are working material, not source. The
+# directory itself is tracked via its .gitkeep.
+/accounts/docs/screenshots/*
+!/accounts/docs/screenshots/.gitkeep

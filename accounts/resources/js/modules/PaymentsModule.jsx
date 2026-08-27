@@ -1,0 +1,326 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import ReportBar from '../components/ReportBar';
+import ReportGrid from '../components/ReportGrid';
+import RecordDetail from '../components/RecordDetail';
+import PaymentForm from './PaymentForm';
+import { ddMmmYyyy, inr, rupees, sameStatus } from '../lib/format';
+
+/**
+ * All Payments — §7, and the first screen in this app with a write path behind it.
+ *
+ * COLUMN ORDER IS PROVISIONAL, and that is worth saying on the screen rather than
+ * only in a docblock. handoff §6 item 4: "All Payments column set — the Payments
+ * module's column order is inferred, not seen. Recoverable, Bank Reconciliation
+ * and Withdrawal Ma... exist and are not in it, and there is a per-row action
+ * button." So the order below matches the API, which matches §7.1 plus the
+ * reference JSX — and a screenshot would settle it in a minute.
+ *
+ * GROSS AMOUNT PRINTS AT THREE DECIMALS in the split grid. Not a rounding choice:
+ * addendum §5 records it on the live screen, and a reviewer comparing screenshots
+ * will look for it. inr(value, 3) is what does that.
+ *
+ * NO DELETE CONTROL EXISTS HERE, deliberately. Creator's More menu carries
+ * `Delete Paid Payment` one click from a settled payment and it destroyed 17 real
+ * payments. §7.6 replaces it with a reversal: a linked negative entry, a required
+ * reason, the original and its number intact.
+ */
+
+/** Payment_Status values that mean money has actually moved. */
+const SETTLED = ['paid'];
+
+export default function PaymentsModule() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(null);
+
+  /*
+   * THE DIRECT ADD PATH. Payments' `+` used to navigate to Bills, on the reading
+   * that §7.2's Create_Payment is the only way a payment comes into being. It is
+   * not — a payment can be entered directly (Husain, 25-Aug-2026). `options` gates
+   * the button because a form with empty pickers is worse than a disabled one.
+   */
+  const [adding, setAdding] = useState(false);
+  const [options, setOptions] = useState(null);
+  const [detail, setDetail] = useState(null);
+  const [term, setTerm] = useState('');
+  const [reversing, setReversing] = useState(false);
+  const [reason, setReason] = useState('');
+  const [notice, setNotice] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/payments/options')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(setOptions)
+      .catch(() => setOptions(null));
+  }, []);
+
+  const load = useCallback(() => {
+    setError(null);
+    fetch('/api/payments')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
+      .then(setData)
+      .catch((e) => setError(String(e)));
+  }, []);
+
+  useEffect(load, [load]);
+
+  /** Pull the detail — the split grid lives there, not on the list row. */
+  useEffect(() => {
+    if (selected === null) {
+      setDetail(null);
+      return;
+    }
+
+    setDetail(null);
+    fetch(`/api/payments/${selected}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
+      .then(setDetail)
+      .catch((e) => setError(String(e)));
+  }, [selected]);
+
+  const columns = (data?.columns ?? []).map((label) => ({
+    key: label,
+    label,
+    align: label.endsWith('Amount') ? 'right' : undefined,
+    // Status columns render as solid filled cells, per ReportGrid's `fill`
+    // contract — All Payments is one of the reports with conditional formatting.
+    fill: label === 'Status' || label === 'Payment Status',
+    render: (value) => {
+      if (label.endsWith('Amount')) return inr(value);
+      if (label.endsWith('Date')) return ddMmmYyyy(value);
+      return value ?? '';
+    },
+  }));
+
+  const payment = detail?.payment;
+  const settled = payment && SETTLED.some((s) => sameStatus(s, payment.payment_status));
+  const alreadyReversed = Boolean(payment?.reversed_by_payment_no);
+
+  const submitReversal = () => {
+    setNotice(null);
+
+    fetch(`/api/payments/${payment.id}/reverse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ reason }),
+    })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.message ?? `HTTP ${response.status}`);
+        return body;
+      })
+      .then((body) => {
+        setNotice({
+          kind: 'ok',
+          text: `Reversed as ${body.reversal_payment_no}. ${payment['Payment No']} keeps its number and its rows.`,
+        });
+        setReversing(false);
+        setReason('');
+        load();
+        setSelected(body.reversal_id);
+      })
+      .catch((e) => setNotice({ kind: 'bad', text: String(e.message ?? e) }));
+  };
+
+  const rows = useMemo(() => {
+    const all = data?.rows ?? [];
+    const needle = term.trim().toLowerCase();
+    if (needle === '') return all;
+
+    return all.filter((row) =>
+      (data?.columns ?? []).some((label) => String(row[label] ?? '').toLowerCase().includes(needle))
+    );
+  }, [data, term]);
+
+  return (
+    <>
+      <ReportBar
+        title="All Payments"
+        term={term}
+        onTermChange={setTerm}
+        matches={rows.length}
+        /*
+         * `+` sends you to Bills rather than opening a form. A payment is NOT typed
+         * from scratch: §7.2's Create_Payment is a per-record action ON THE BILLS
+         * REPORT, and it forces COA, carries eleven fields across and clones the
+         * split grid. A blank Payment form would be a different thing wearing the
+         * same name. The button is live and honest about where the action lives.
+         */
+        onAdd={options ? () => setAdding(true) : undefined}
+        addDisabledReason="Loading the vendor, COA and villa pickers…"
+        extras={<button type="button" className="zc-btn" onClick={load}>Refresh</button>}
+      />
+
+      {error && <div style={{ padding: 14, color: 'var(--bad)' }}>Failed to load: {error}</div>}
+      {!data && !error && <div style={{ padding: 14, color: 'var(--ink3)' }}>Loading…</div>}
+
+      {data && data.rows.length === 0 && (
+        <div style={{ padding: 20, color: 'var(--ink3)' }}>
+          <p style={{ marginTop: 0 }}>No payments yet.</p>
+          <p style={{ fontSize: 12 }}>
+            A payment is created from a bill by the <strong>Create_Payment</strong> action
+            (§7.2). Seed the fixture bill with
+            {' '}<code>php artisan db:seed --class=TestBillSeeder</code>{' '}
+            then POST its id to <code>/api/payments</code>.
+          </p>
+        </div>
+      )}
+
+      {data && data.rows.length > 0 && (
+        <ReportGrid
+          columns={columns}
+          rows={rows}
+          total={term ? rows.length : data.total}
+          selectedId={selected}
+          onSelect={(row) => setSelected(row.id)}
+        />
+      )}
+
+      {/*
+        THE SHARED FLOW: grid -> click a row -> this detail overlay -> Edit -> form.
+        Husain settled it on 25-Aug-2026 and it is now the same on every report.
+        This panel used to be a bottom-anchored strip, which meant Payments,
+        Bills, Vendor Master and Settings each behaved differently.
+
+        EDIT IS DELIBERATELY UNAVAILABLE HERE. There is no payment edit path in the
+        app and adding one is not a UI decision: §7.6 turns on a payment's number,
+        amounts and legs being immutable once issued, which is why a correction is a
+        reversing entry rather than an edit. The button says so instead of hiding.
+      */}
+      {adding && options && (
+        <PaymentForm
+          options={options}
+          onClose={() => setAdding(false)}
+          onSaved={(body) => {
+            setAdding(false);
+            setNotice({ kind: 'ok', text: `Created payment ${body.payment_no} — ${body.split_legs} split legs.` });
+            load();
+          }}
+        />
+      )}
+
+      {payment && (
+        <RecordDetail
+          title={data?.title ?? 'All Payments'}
+          subtitle={payment['Payment No']}
+          fields={(data?.columns ?? []).map((label) => ({
+            label,
+            // Same rules the grid uses, so a value cannot read differently in
+            // the detail view than in the row it was clicked from.
+            value: label.endsWith('Amount')
+              ? inr(payment[label])
+              : (label.endsWith('Date') ? ddMmmYyyy(payment[label]) : payment[label]),
+          }))}
+          editDisabledReason={
+            'A payment is not editable. §7.6 makes its number, amounts and split legs '
+            + 'immutable once issued — a correction is a reversing entry, not an edit.'
+          }
+          onClose={() => setSelected(null)}
+          extras={(
+            <>
+              {payment.is_reversal && (
+                <span style={{ fontSize: 12, color: 'var(--bad)' }}>
+                  reversing entry against {payment.reverses_payment_no}
+                </span>
+              )}
+              {alreadyReversed && (
+                <span style={{ fontSize: 12, color: 'var(--bad)' }}>
+                  reversed by {payment.reversed_by_payment_no}
+                </span>
+              )}
+              {/*
+                The reversal control replaces `Delete Paid Payment`. It appears only
+                on a settled, not-yet-reversed forward payment — the three conditions
+                ReversePayment enforces server-side. The server is the authority; this
+                only avoids offering an action that would be refused.
+              */}
+              {settled && !alreadyReversed && !payment.is_reversal && (
+                <button type="button" className="zc-btn" onClick={() => setReversing(true)}>
+                  Reverse Payment
+                </button>
+              )}
+            </>
+          )}
+        >
+
+          {notice && (
+            <p style={{ fontSize: 12, color: notice.kind === 'ok' ? 'var(--ink2)' : 'var(--bad)' }}>
+              {notice.text}
+            </p>
+          )}
+
+          {reversing && (
+            <div style={{ marginBottom: 10, padding: 10, border: '1px solid var(--line2)', background: 'var(--pinkl)' }}>
+              <p style={{ margin: '0 0 6px', fontSize: 12 }}>
+                A reversal creates a <strong>new</strong> payment with negative amounts linked to
+                this one. {payment['Payment No']} keeps its number, its amounts and its split
+                legs — nothing is deleted (§7.6). A reason is required.
+              </p>
+              <input
+                className="zc-input"
+                style={{ width: '100%', marginBottom: 6 }}
+                placeholder="Why is this being reversed?"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+              <button
+                type="button"
+                className="zc-btn zc-btn-primary"
+                disabled={reason.trim().length < 3}
+                onClick={submitReversal}
+              >
+                Confirm reversal
+              </button>
+              <button
+                type="button"
+                className="zc-btn"
+                style={{ marginLeft: 6 }}
+                onClick={() => { setReversing(false); setReason(''); setNotice(null); }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {payment.reversal_reason && (
+            <p style={{ fontSize: 12, color: 'var(--ink3)' }}>
+              Reason: {payment.reversal_reason}
+            </p>
+          )}
+
+          <div className="zc-section">Split Payments</div>
+          {/*
+            §5.2: an Expenses_Bills row IS one of these legs, so every downstream
+            villa-month-category figure resolves here. Gross Amount at THREE
+            decimals — addendum §5.
+          */}
+          <table className="zc-grid">
+            <thead>
+              <tr>
+                {['Villa Name', 'Item Category', 'Billing Cycle', 'Gross Amount', 'TDS Amount', 'GST Amount', 'Amount']
+                  .map((h) => <th key={h}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {(detail.split_payments ?? []).map((leg, i) => (
+                <tr key={i}>
+                  <td>{leg['Villa Name']}</td>
+                  <td>{leg['Item Category']}</td>
+                  <td>{leg['Billing Cycle']}</td>
+                  <td className="zc-money">{inr(leg['Gross Amount'], 3)}</td>
+                  <td className="zc-money">{inr(leg['TDS Amount'])}</td>
+                  <td className="zc-money">{inr(leg['GST Amount'])}</td>
+                  <td className="zc-money">{inr(leg['Amount'])}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <p style={{ fontSize: 12, color: 'var(--ink3)', marginTop: 8 }}>
+            Payable {rupees(payment['Payable Amount'])} · COA {payment.coa}
+          </p>
+        </RecordDetail>
+      )}
+    </>
+  );
+}

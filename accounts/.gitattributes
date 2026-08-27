@@ -1,0 +1,8 @@
+# Normalise to LF in the repo. The master-data exports carry significant
+# whitespace (trailing spaces, doubled spaces) that is a live lookup key —
+# keep line endings stable so diffs show real changes only.
+* text=auto eol=lf
+*.json  text eol=lf
+*.jsx   text eol=lf
+*.md    text eol=lf
+*.png   binary

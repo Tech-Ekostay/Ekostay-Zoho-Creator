@@ -1,0 +1,411 @@
+/*
+ * Ekostay Accounts — the Zoho Creator chrome, as one stylesheet.
+ *
+ * Source: UI_HANDOFF.md §3, INCLUDING its "Corrections to v1" block. The
+ * reference replicas in reference-ui/ each carry their own duplicated Style()
+ * block; the handoff is explicit that the real build must NOT carry that over.
+ * This file replaces all ten of them.
+ *
+ * The governing rule (handoff §2): replicate the Creator screens, do not redesign
+ * them. Same structure, same labels, same column order, same density — rendered
+ * cleanly. Anything here that departs from Creator is a bug, not a improvement.
+ */
+
+:root {
+  --rail: #2b2f4a;
+  --rail2: #383d5e;
+  --pink: #e4407f;
+  --pinkd: #c72e69;
+  --pinkl: #fdeef4;
+  --ink: #20242e;
+  --ink2: #4a5160;
+  --ink3: #7b8494;
+  --ink4: #a8afbb;
+  --line: #e6e9ee;
+  --line2: #d2d7df;
+  --bg: #f4f5f7;
+  --white: #fff;
+
+  --ok: #0f7b5f;
+  --ok-bg: #e9f6f1;
+  --bad: #c0392b;
+  --bad-bg: #fdeceb;
+  --warn: #9a6206;
+  --warn-bg: #fdf3e2;
+  --info: #2b5fa8;
+  --info-bg: #eaf1fb;
+
+  /* Solid status-cell fill. NOT a chip — see .zc-fill below. */
+  --fillgreen: #1ec69f;
+
+  --row-h: 27px;
+  --head-h: 31px;
+  --appbar-h: 42px;
+  --footer-h: 28px;
+  --rail-w: 104px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.35 Inter, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Figures use tabular numerals so columns of money line up. */
+.zc-num, .zc-grid td.zc-num, .zc-money, .zc-date {
+  font-family: "Roboto Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.zc-money, .zc-num { text-align: right; }
+
+/* ---------------------------------------------------------------- shell */
+
+.zc-app {
+  display: grid;
+  grid-template-columns: var(--rail-w) minmax(0, 1fr);
+  height: 100vh;
+}
+
+.zc-rail {
+  background: var(--rail);
+  color: #fff;
+  overflow-y: auto;
+  /*
+   * CORRECTION (handoff §3): a nav flyout cannot live inside the rail.
+   * overflow-y:auto makes the horizontal axis a scroll container too and clips
+   * the submenu. The flyout is a viewport-anchored position:fixed panel instead
+   * — see .zc-flyout.
+   */
+}
+
+.zc-rail-brand {
+  height: var(--appbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  letter-spacing: .04em;
+  background: var(--pink);
+}
+
+.zc-rail-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 6px;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  color: #cfd3e4;
+  cursor: pointer;
+  border: 0;
+  background: none;
+  width: 100%;
+}
+.zc-rail-item:hover { background: var(--rail2); color: #fff; }
+.zc-rail-item[aria-current="true"] { background: var(--pink); color: #fff; }
+.zc-rail-item svg { width: 18px; height: 18px; }
+
+/* Viewport-anchored, never a child of the rail. */
+.zc-flyout {
+  position: fixed;
+  left: var(--rail-w);
+  z-index: 40;
+  min-width: 210px;
+  background: var(--white);
+  border: 1px solid var(--line2);
+  box-shadow: 0 6px 24px rgba(20, 24, 46, .16);
+  padding: 4px 0;
+  /*
+   * The panel is viewport-anchored, so a long submenu opened low in a short
+   * window used to run past the fold with nothing to scroll — Settings is eight
+   * items and 262px. Rail.jsx clamps `top` and sets an inline max-height when the
+   * panel cannot fit; this makes that overflow scrollable rather than clipped.
+   * overscroll-behavior keeps that scroll from chaining out to the grid behind it.
+   */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.zc-flyout button[aria-current="true"] { background: var(--pinkl); color: var(--ink); font-weight: 500; }
+.zc-flyout button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink2);
+  cursor: pointer;
+}
+.zc-flyout button:hover { background: var(--pinkl); color: var(--ink); }
+
+/*
+ * CORRECTION (handoff §3): .zc-main needs min-height:0. It is a grid item, so it
+ * defaults to min-height:auto and grows past the 100vh container instead of
+ * letting its child scroll. Every module had this bug; it only shows on content
+ * taller than the viewport.
+ */
+.zc-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  background: var(--white);
+}
+
+.zc-appbar {
+  height: var(--appbar-h);
+  flex: 0 0 var(--appbar-h);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+}
+.zc-appbar-spacer { margin-left: auto; }
+
+.zc-reportbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.zc-reporttitle { font-size: 15px; font-weight: 600; }
+.zc-req { color: var(--pink); margin-left: 3px; }
+
+.zc-searchrow {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.zc-searchchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line2);
+  border-radius: 2px;
+  padding: 3px 6px;
+  background: var(--white);
+}
+.zc-searchchip .zc-tag {
+  background: var(--ink);
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: .06em;
+  padding: 2px 6px;
+}
+
+/* ----------------------------------------------------------------- grid */
+
+.zc-gridwrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
+
+.zc-grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: max-content;
+  min-width: 100%;
+}
+
+.zc-grid th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: var(--head-h);
+  background: var(--bg);
+  color: var(--ink2);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  padding: 0 10px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line2);
+}
+
+.zc-grid td {
+  height: var(--row-h);
+  padding: 0 10px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  background: var(--white);
+}
+
+/*
+ * CORRECTION (handoff §3): zebra striping is wrong. Creator renders EVERY row
+ * white. v1's `even { background:#fafbfc }` does not match. Do not add it back.
+ */
+.zc-grid tbody tr:hover td { background: var(--pinkl); }
+.zc-grid tbody tr[aria-selected="true"] td { background: var(--pinkl); }
+
+/*
+ * Rows are content-height where a cell holds multi-select values or a long URL.
+ * Creator prints multi-selects ONE PER LINE, not comma-joined, which is what
+ * makes those rows hundreds of pixels tall (handoff §3).
+ */
+.zc-grid td.zc-multi { white-space: normal; padding: 5px 10px; vertical-align: top; }
+.zc-multi-line { display: block; }
+
+/*
+ * CORRECTION (handoff §3): status is a SOLID FILLED CELL on reports with
+ * conditional formatting (All Payments, All Pending Approvals) — flat green
+ * edge-to-edge behind the value. Not a chip. The four earlier modules use tinted
+ * chips and need converting.
+ */
+.zc-grid td.zc-fill {
+  background: var(--fillgreen);
+  color: #fff;
+  font-weight: 500;
+  padding: 0 10px;
+}
+.zc-grid tbody tr:hover td.zc-fill { background: var(--fillgreen); }
+
+.zc-footer {
+  flex: 0 0 var(--footer-h);
+  height: var(--footer-h);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-top: 1px solid var(--line);
+  color: var(--ink3);
+  font-size: 12px;
+}
+
+/* --------------------------------------------------------------- controls */
+
+.zc-btn {
+  border: 1px solid var(--line2);
+  background: var(--white);
+  color: var(--ink2);
+  padding: 5px 11px;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.zc-btn:hover { border-color: var(--ink4); }
+.zc-btn-primary { background: var(--pink); border-color: var(--pink); color: #fff; }
+.zc-btn-primary:hover { background: var(--pinkd); border-color: var(--pinkd); }
+.zc-btn-plus {
+  background: var(--pink);
+  border-color: var(--pink);
+  color: #fff;
+  width: 28px;
+  height: 26px;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0;
+}
+.zc-btn[disabled] { opacity: .45; cursor: default; }
+
+.zc-input, .zc-select {
+  border: 1px solid var(--line2);
+  border-radius: 2px;
+  padding: 5px 8px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--white);
+  width: 324px;
+  max-width: 100%;
+}
+.zc-input:focus, .zc-select:focus { outline: 0; border-color: var(--pink); }
+
+/* Unchecked checkboxes carry a PINK border (addendum §2). */
+.zc-check { width: 15px; height: 15px; accent-color: var(--pink); }
+.zc-check:not(:checked) { outline: 1px solid var(--pink); outline-offset: -1px; }
+
+/* Percentage fields carry a % suffix box; currency an ₹ prefix. */
+.zc-suffix, .zc-prefix {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid var(--line2);
+  background: var(--bg);
+  color: var(--ink3);
+  height: 30px;
+}
+.zc-suffix { border-left: 0; }
+.zc-prefix { border-right: 0; }
+
+/* ----------------------------------------------------------------- form */
+
+/*
+ * CORRECTION (handoff §3): forms are NEAR-FULL-SCREEN OVERLAYS, not centred
+ * modals. v1 used min(1220px,100%) centred; the live forms cover the viewport
+ * from left:30px, leaving a sliver of rail. Bills, Vendor Master, Backend
+ * Expenses and Payments were built as modals and need converting.
+ */
+.zc-overlay {
+  position: fixed;
+  inset: 0 0 0 30px;
+  background: var(--white);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.zc-overlay-head {
+  flex: 0 0 auto;
+  padding: 12px 26px;
+  border-bottom: 1px solid var(--line);
+  font-size: 16px;
+}
+.zc-overlay-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 18px 26px; }
+
+.zc-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 13px;
+}
+.zc-field > label { width: 190px; flex: 0 0 190px; padding-top: 6px; color: var(--ink2); }
+.zc-field-hint { color: var(--ink3); font-size: 11px; margin-top: 4px; }
+
+.zc-section {
+  margin: 22px 0 12px;
+  font-weight: 600;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+}
+
+/* The commit button sits under the last field behind a rule — not pinned. */
+.zc-commit { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; gap: 8px; }
+
+/* --------------------------------------------------------------- detail */
+
+.zc-detailbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.zc-detail { width: 100%; border-collapse: collapse; }
+.zc-detail th {
+  width: 260px;
+  text-align: left;
+  font-weight: 500;
+  color: var(--ink2);
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  /*
+   * CORRECTION (handoff §3): vertical-align MUST be top. A middle-aligned label
+   * beside a 3,000px multi-select cell renders off-screen.
+   */
+  vertical-align: top;
+}
+.zc-detail td { padding: 9px 14px; border: 1px solid var(--line); vertical-align: top; }

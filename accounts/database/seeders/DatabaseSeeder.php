@@ -1,0 +1,43 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+
+/**
+ * §17 step 2 — the master layer, seeded from master-data/.
+ *
+ * Order matters: master_categories before item_categories, and ca_masters is
+ * created inside CoaAccountSeeder from the CA Name values on the COA export.
+ *
+ * NOT seeded, because no export exists for them yet: states, head_offices,
+ * employee_designations, employee_departments, employees, vendors,
+ * billing_cycles, permissions. Villas and locations are seeded NAME-ONLY from
+ * recovered files — see those seeders' docblocks.
+ */
+class DatabaseSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $this->call([
+            RoleSeeder::class,
+            PermissionSeeder::class,
+            GeographySeeder::class,
+            VillaSeeder::class,
+            MasterCategorySeeder::class,
+            ItemCategorySeeder::class,
+            CoaAccountSeeder::class,
+            TaxSeeder::class,
+            TdsRateSeeder::class,
+            EmployeeSeeder::class,
+            // 8,063 real vendors. Runs after GeographySeeder and
+            // MasterCategorySeeder, whose rows it resolves against, and after
+            // VillaSeeder because it adds the one Location the villa export
+            // does not contain (Alleppey — see the seeder).
+            VendorSeeder::class,
+            // The payment-number counter (§7.2). Must be real: it is at 20938, and
+            // starting fresh would re-issue numbers that already exist.
+            AutoNumberSeeder::class,
+        ]);
+    }
+}

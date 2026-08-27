@@ -1,0 +1,80 @@
+{
+ "All_Approvals": {
+  "records": 9,
+  "columns": [
+   "Module",
+   "Level 1 & 2 Approval",
+   "Level 2 & 3 Approval",
+   "Approvers",
+   "Location",
+   "Villa Name",
+   "Item Category"
+  ]
+ },
+ "All_Item_Categories": {
+  "records": 135,
+  "columns": [
+   "Item Category",
+   "Master Category",
+   "Expense Type",
+   "Exclude for Profit",
+   "Haewaya ID",
+   "ID",
+   "Exclude for Observation"
+  ]
+ },
+ "All_Master_Categories": {
+  "records": 10,
+  "columns": [
+   "Master Category",
+   "F&B",
+   "Haewaya ID",
+   "ID"
+  ]
+ },
+ "All_Taxes": {
+  "records": 8,
+  "columns": [
+   "Tax Name",
+   "Tax Type",
+   "Tax Percentage",
+   "Tax ID",
+   "ID"
+  ]
+ },
+ "Auto_Numbers": {
+  "records": 1,
+  "columns": [
+   "Payment Series",
+   "Payment No",
+   "Books Payment Series",
+   "Books Payment No",
+   "Haewaya Series",
+   "Haewaya No",
+   "ID"
+  ]
+ },
+ "COA_Report": {
+  "records": 144,
+  "columns": [
+   "Account Name",
+   "Account Type",
+   "Account Code",
+   "Account ID",
+   "COA",
+   "Bank",
+   "CA Name",
+   "ID",
+   "Ekostay ID"
+  ]
+ },
+ "TDS_Report": {
+  "records": 35,
+  "columns": [
+   "TDS Name",
+   "TDS Percentage",
+   "Books ID",
+   "Status"
+  ]
+ }
+}
