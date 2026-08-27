@@ -677,25 +677,237 @@ money is involved in *this* pair.
 
 ---
 
-## 7. Backend Payments — form only
+## 7. Backbend Payments — verified 27-Aug-2026, and it is the REFUNDS channel
 
-The payments counterpart to Backend Expenses: where Haewaya writes, including
-`REFUND-stay-*`. Two columns plus a `Commercials` section, ~40 fields, Update /
-Cancel. `[TODO]` list and detail not captured.
+`[TODO]` **CLOSED — list and detail are now captured.** Twelve screenshots of
+27-Aug-2026: the blank create form, the report scrolled to its last column, the
+detail panel end to end, and the edit form populated. **42 fields**, two columns
+plus a `Commercials` section, `Submit`/`Reset` on create and `Update`/`Cancel` on
+edit. Footer **`Showing 1000 of ###`**, so over a thousand records.
 
-**Three fields on a live PAID record hold unresolved foreign keys:**
-`Villa Name` = `292482000000368045`, `Location` = `292482000000170003`,
-`Bank Name` = `8`. Plain text fields; the integration writes IDs and nothing
-resolves them. A settled ₹4,000 refund therefore has no readable property or
-location, and `8` is a third ID space again — not an 18-digit Creator id, not a
-Books id, but the small integer that looks like `Ekostay_ID` on the COA master.
+### 7.1 What this screen is for — every visible row is a refund
 
-`Payment Reference Number` holds a **Firebase Storage URL**. The same field on
-Payments is labelled `Haewaya UTR Number` and packs two comma-separated UTRs. One
-field, three content types.
+§7 called it "the payments counterpart to Backend Expenses: where Haewaya writes,
+including `REFUND-stay-*`". Sharper: **on the fifteen visible rows, every single one
+is a refund.** `COA` is `Expense` on all fifteen, `Item Category` is
+`EXPERIENCES REFUND`, and `Payment No.` follows a scheme that is not `EKS/PY` at all:
 
-`Bill No` appears **twice**, one blank. `GST Type` is not in §7's field list.
-`Haewaya ID`, `Creator ID` and `Books ID` are all empty on a paid record.
+```
+REFUND-experiences-327718        Booking No.  EKO10327718
+REFUND-stay-315735
+REFUND-food-314533-1             <- note the -1
+```
+
+**`Payment No.` = `REFUND-{product}-{bookingId}`**, and the booking id is the tail of
+`Booking No.` (`EKO10` + `327718`). Three products so far — `experiences`, `stay`,
+`food`. The `-1` suffix on `REFUND-food-314533-1` is a **second refund against one
+booking**, which makes the number a derived de-duplication key rather than a counter.
+
+Two things follow. **This series is not `Auto_Numbers`** — nothing is allocated, so
+§6.6's counter problem does not apply here. And **the `-1` scheme has no visible
+ceiling**: what a third refund on one booking is numbered is unknown, and a collision
+there would silently overwrite a settled refund. `[TODO]` confirm against a booking
+with three refunds.
+
+`Payment No.` and the `Payment` lookup hold the **same string** on every row — the
+fourth duplicate-representation pair in this app (§4.2, §6.3).
+
+### 7.2 CORRECTED — the "unresolved foreign keys" are a DISPLAY defect, not a data one
+
+§7 recorded, and `CLAUDE.md` carries on the live-defect register:
+
+> **Three fields on a live PAID record hold unresolved foreign keys:** `Villa Name` =
+> `292482000000368045`, `Location` = `292482000000170003`, `Bank Name` = `8`. Plain
+> text fields; the integration writes IDs and nothing resolves them. A settled ₹4,000
+> refund therefore has no readable property or location.
+
+**Every one of those keys resolves.** Checked all four ids across both records
+against our seeded masters:
+
+```
+villa    292482000000368205  ->  Casa Zul            (this record)
+villa    292482000000368045  ->  Lakefront Villa     (the record §7 described)
+location 292482000000170003  ->  Alibaug
+Bank Name 84                 ->  COA EKOSTAY HOSPITALITY LLP   via coa.ekostay_id
+Bank Name  8                 ->  COA EKOSTAY LLP 1             via coa.ekostay_id
+```
+
+So the data is sound and **only the rendering is broken** — the form shows a raw key
+where a human expects a name. "A settled refund has no readable property or location"
+is true of the *screen*, not of the *record*. Our rebuild resolves these for free,
+and no repair migration is needed.
+
+§7's guess about `Bank Name` was right and is now confirmed: it stores
+**`COA.Ekostay_ID`**, the small-integer id space, not an 18-digit Creator id.
+Pleasingly, `ekostay_id` 84 is `EKOSTAY HOSPITALITY LLP` — the exact string Backend
+Expenses stores in `business_name` (§4.9). **The two backend forms agree on the
+entity; one stores its name, the other its id.**
+
+**The real risk is narrower and worth stating:** only **51 of 144** COA rows carry an
+`ekostay_id`. This join is exactly as good as that column's coverage, so a
+`Bank Name` outside those 51 would not resolve. That is the thing to guard, not the
+ids we can already read.
+
+This is the **second** register entry this week that turns out to be a rendering
+problem rather than missing data, after §6.4's "approved requests with no payee". Both
+were reported from a screen rather than from the record behind it. Worth remembering
+as a habit: **check the record before believing the column.**
+
+### 7.3 NEW — `Vendor Name` holds guests, and it will not join to Vendor_Master
+
+The payees on a refund are not vendors. Fifteen rows: `AKHIL`, `Tushar Swami`,
+`Shruti`, `Rushabh`, `Milan Kanakiya`, `Jashan`, `Sneha`, `Ritika Sachdev`,
+`Amit Vaidya`, `Sunanda Tibrewala`, `Mohammed Faisal`, `Vikas Kumar`, `Sonal` — plus
+one company, `TRAVELFAST TOURISM`, presumably a travel agent. **These are the guests
+being refunded.**
+
+Checked five against the 8,064-row master:
+
+```
+AKHIL               exact 0    as '...(Customer)'  1
+Sonal               exact 0    as '...(Customer)'  3
+TRAVELFAST TOURISM  exact 0                        0
+Tushar Swami        exact 0                        0
+Ritika Sachdev      exact 0                        0
+```
+
+**Not one joins.** This closes a loop opened in §18. That section found Vendor_Master
+holds two populations in one table — 1,097 of 1,099 `…(Customer)` rows have a blank
+`Main Primary` against 9 of 6,964 others — and asked where customer payees come from.
+**Refunds are where they come from.** But the two representations do not agree: the
+master carries a `…(Customer)` suffix and Backbend Payments stores the **bare name**,
+so exact matching fails on every row, and `Sonal` matches **three** customer rows so
+fuzzy matching is ambiguous too.
+
+So `Vendor Name` here is free text naming a person, not a foreign key. **Do not try
+to resolve it.** Unlike §7.2's ids, this one genuinely cannot be joined, and a
+mapping table would need the booking to disambiguate rather than the name.
+
+### 7.4 NEW — a `Payment Reference Number` that is a Google Drive link
+
+§7 recorded this field holding a **Firebase Storage URL**, and on Payments the same
+concept is `Haewaya UTR Number` packing two comma-separated UTRs. Now a third:
+
+```
+Payment Reference Number   https://drive.google.com/file/d/14AqBxwsoN...view?usp=sharing
+Accounts Remarks           https://drive.google.com/file/d/1IuUYTlpWN...view?usp=drive_link
+```
+
+**One field, four content types** (Firebase URL, Drive URL, comma-packed UTRs, and
+presumably an actual reference number somewhere). And `Accounts Remarks` — a free-text
+remarks field — is being used as a **second attachment slot**.
+
+Two consequences worth raising:
+
+- **The actual payment reference is not recorded anywhere on this record.** A settled
+  refund has a Drive link where its UTR should be, so it cannot be reconciled against
+  a bank statement without opening the link by hand
+- **The evidence lives outside the app.** Drive links sit outside Creator's permission
+  model, outside its backups, and outside any migration we perform. On cutover these
+  strings must be **carried across verbatim and not resolved** — we cannot fetch them,
+  and a link that dies takes the only proof of the refund with it
+
+### 7.5 The two orders differ again — and this time by the whole form
+
+Third independent confirmation of §4.3 / §6.7. **`Payment` is the very first field on
+the form and the very last in declaration order.**
+
+**Form (layout) order** — two columns, read as rows:
+
+```
+Payment*         | Vendor Name        COA           | Bill No
+Payment No.      | Bill No            Requested Date* | Billing Cycles
+Payment Date     | Timestamp Date     Due Date      | Villa Name
+Item Category    | Location           Master Category | Head Office
+Bank Name        | Booking No.        Expense By    | Payment Source
+Payment By       | Accounts Remarks   Management Remarks | Original Amount
+Particulars      | -
+--- Commercials ---
+Gross Amount     | GST Type           TDS %         | GST
+TDS Amount       | GST Amount         PT            | PF
+ESI              | Invoice Amount     Payable Amount | Payment Reference Number
+Payment Status   |  F & B Payments  |  Haewaya ID  |  Creator ID  |  Books ID
+```
+
+**Detail (declaration) order** — neither row-major nor column-major over the above:
+
+```
+COA · Vendor Name · Payment No. · Bill No · Requested Date · Bill No · Payment Date ·
+Billing Cycles · Due Date · Timestamp Date · Item Category · Villa Name ·
+Master Category · Bank Name · Expense By · Payment By · Management Remarks ·
+Location · Head Office · Booking No. · Payment Source · Accounts Remarks ·
+Particulars · Original Amount · Gross Amount · GST Type · TDS % · GST · TDS Amount ·
+GST Amount · PT · PF · ESI · Invoice Amount · Payable Amount ·
+Payment Reference Number · Payment Status · F & B Payments · Haewaya ID ·
+Creator ID · Books ID · **Payment**
+```
+
+The layout was rearranged after the fields were declared, and `Payment` was promoted
+to the top. **Record both orders per screen; neither can be derived from the other.**
+
+`Bill No` appears **twice and adjacently** in both the form and the detail panel —
+and, unlike §4.1's duplicate, **both copies are blank**, so which is canonical cannot
+be decided from this record. It also appears **twice on the report** (columns 6 and
+8), both blank. `[TODO]` find a record with a bill number.
+
+### 7.6 Report columns and the mandatory markers
+
+**All Backbend Payments** (10 confirmed) — `Added Time` · `Payment` · `COA` ·
+`Vendor Name` · `Payment No.` · `Bill No` · `Requested Date` · `Bill No` ·
+`Payment Date` · `ID`. Footer **`Showing 1000 of ###`**.
+
+Note the report leads with **`Added Time`**, as Pending Approvals does (§5) and
+Backend Expenses does (§4.1). Three of the four backend/queue reports put the
+platform stamp first.
+
+**The red mandatory border is inconsistent between the two form states**, and is
+recorded rather than resolved:
+
+| | red-bordered |
+|---|---|
+| create (blank) | `Payment`, `Requested Date` |
+| edit (populated) | `Payment`, `COA` |
+
+If red marks *mandatory*, the two states disagree. If it marks *mandatory-and-empty*,
+then create is consistent (`Requested Date` blank) but edit is not — `COA` holds
+`Expense`, which **does** exist in our COA master (1 exact match of 144). So neither
+reading fits both screenshots. `[TODO]` one more edit screenshot of a different record
+would settle it; until then treat `Payment` as the only reliably mandatory field.
+
+### 7.7 Smaller findings
+
+- **`Billing Cycles` = `August-2026`** — no spaces around the hyphen, a **fourth**
+  spelling after `July - 2026` (`payment_master`), `Jul 2026` (`expenses`) and
+  `August - 2026` (the All Expenses report). **Checked: already aliased.**
+  `ZohoImportBills::cycleMap()` registers five forms per cycle —
+  `August - 2026`, `August-2026`, `Aug 2026`, `Aug-2026`, `August 2026` — so this one
+  resolves. Recorded because the cycle-label mismatch cost 26,720 split legs once, and
+  a fifth spelling is now more likely than not
+- **`Particulars` disagrees with the amounts.** `Decoration selling Price- 11000/-`
+  against `Gross Amount` / `Invoice Amount` / `Payable Amount` all `7500`. Plausibly a
+  partial refund, but the number in prose and the number in the field differ and
+  nothing on the record reconciles them
+- **The whole `Commercials` block is empty on a settled refund** — `GST Type`,
+  `TDS %`, `GST`, `TDS Amount`, `GST Amount`, `PT`, `PF`, `ESI` and `Original Amount`
+  are all blank, with only Gross = Invoice = Payable = 7500. A refund carries no tax
+  treatment, so §7.2's TDS-sign defect cannot reach these rows
+- **`Payment Status` = `PAID`**, uppercase. Confirms §8's divergence row: `Paid`
+  (Pending Approvals) · `paid` (Payments) · `PAID` (here). Three casings, one concept
+- `Haewaya ID`, `Creator ID` and `Books ID` are **all empty on a paid refund** —
+  confirmed again. So nothing on this record links out to Haewaya, Creator or Books,
+  despite the fields existing for it. The integration writes the payload and not the
+  cross-references
+- `Timestamp Date` is `27-Aug-2026 19:36:54` — **dd-MMM-yyyy HH:mm:ss**, Creator's
+  format. Note Backend Expenses' `date` renders ISO (`2026-08-27 19:36:30`) on the
+  same day. **The two backend forms disagree on datetime format**, so neither can be
+  parsed with one rule
+- `Requested Date`, `Payment Date` and `Due Date` are all `27-Aug-2026` on this record
+  — same day, so the date semantics cannot be distinguished from this sample. Other
+  rows do differ (`Requested Date` 04-Aug-2026 against `Payment Date` 17-Aug-2026, a
+  13-day gap), so they are genuinely separate dates
+- `Master Category`, `Expense By`, `Payment By`, `Management Remarks`, `Head Office`,
+  `Payment Source`, `F & B Payments`, `Original Amount` and both `Bill No` are blank
+  on this record
 
 ---
 
@@ -708,11 +920,12 @@ field, three content types.
 | TDS rate | `TDS` (Payments) · `TDS Percentage` (Settings) · `TDS %` (Backend Payments) |
 | Employee state insurance | `ESIC` (Item Category, §7) · `ESI` (Backend Payments) |
 | Food & beverage | `F&B` · `F & B Payments` |
-| Paid status | `Paid` (Pending Approvals) · `paid` (Payments) · `PAID` (Backend Payments) |
+| Paid status | `Paid` (Pending Approvals) · `paid` (Payments) · `PAID` (Backbend Payments, **confirmed on a settled refund 27-Aug-2026**) |
 | Approval level pair | `Level 1 & 2 Approval` — **not** `Level 1 2 Approval` |
 | Disable flag | field `Disable`, label **`Disallow Manual Creation`** |
 | COA visibility flag | field `Hide`(?), label **`COA`** |
 | Module name | `Backend Payments` (form) · `Backbend Payments` (rail) |
+| **Billing cycle label** | **`July - 2026`** (`payment_master`) · **`Jul 2026`** (`expenses`) · **`August - 2026`** (All Expenses report) · **`August-2026`** (Backbend Payments, 27-Aug-2026) — four spellings of one cycle. All four ARE aliased in `ZohoImportBills::cycleMap()`, which registers five forms per cycle; a mismatch here cost 26,720 split legs once |
 | **Approval-pending status** | **`Sent for Approval` · `Submit for Approval`** — both live on Payment Requests, on rows that otherwise look alike (27-Aug-2026, §6.5). Two states or two spellings is **unresolved**, and it decides whether a status comparison misses half the queue — exactly the `Payment InProgress` trap in §10 |
 
 `Disallow Manual Creation` finally says what `Disable` does: it stops the category

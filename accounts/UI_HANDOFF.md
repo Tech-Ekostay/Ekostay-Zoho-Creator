@@ -200,7 +200,7 @@ picture. Faults this loop caught that static review did not:
 | `PendingApprovalsModule.jsx` | Pending Approvals — 24 cols, detail, form | |
 | `PaymentRequestsModule.jsx` | Payment Requests — 3 views | |
 | `BackendExpensesModule.jsx` | Backend Expenses — **32** cols, 136 fields seen | **report + detail verified 27-Aug-2026**, addendum §4 |
-| `BackendPaymentsModule.jsx` | Backend Payments — **form only** | list not captured |
+| `BackendPaymentsModule.jsx` | Backbend Payments — 42 fields, 10-col report | **form + list + detail verified 27-Aug-2026**, addendum §7 |
 | `BillsModule.jsx` | Bills | from v1, needs the §3 chrome corrections |
 | `VendorMasterModule.jsx` | Vendor Master | from v1, same |
 

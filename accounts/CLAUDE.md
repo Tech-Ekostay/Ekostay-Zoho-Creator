@@ -545,8 +545,14 @@ payment · duplicate approvals minting duplicate payments · ~~approved requests
 with no payee~~ — **probably a reporting artefact, not missing data**: All Payment
 Requests binds the *lookup* half of the duplicate `Vendor Name` pair, so every
 `Add New Vendor` request shows a blank payee. Confirmed on one row 27-Aug-2026;
-addendum §6.4 names the ten-second check that settles it · unresolved foreign
-keys on settled Backend Payments.
+addendum §6.4 names the ten-second check that settles it · ~~unresolved foreign
+keys on settled Backend Payments~~ — **a DISPLAY defect, not a data one**: all four
+ids across two records resolve (villas Casa Zul and Lakefront Villa, location
+Alibaug, and `Bank Name` via `coa.ekostay_id`). The form renders raw keys where a
+name belongs; the records are sound and need no repair. Addendum §7.2.
+
+**Both of those entries were reported from a screen rather than from the record
+behind it. Check the record before believing the column.**
 
 Added 22-Aug-2026, from the delete census in addendum §16.4: **`void
 DeleteAllRecords()` at `F_B.ds:4645`** wipes 14 F&B tables with
