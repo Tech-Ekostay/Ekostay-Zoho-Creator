@@ -3802,3 +3802,107 @@ been fixed in the guard, reproduced by hand thirty minutes later.
 
 **Use PHP for every clock reading in this project.** The machine's bare `date` is IST
 and correct; `TZ=` is not. Both times, the guard was what caught it.
+
+---
+
+## 20. `EKS/PAY` is a RETIRED series — corrected 28-Aug-2026
+
+Husain: *"in bills, when a bill is created and then in payments when that bill number is
+added, the COA becomes Accounts Payable, hence EKS/PAY series is created for the
+payment. Check for this logic in the codes."*
+
+Checked. **The semantics are exactly right and the series has changed.** §19.1 called the
+missing `EKS/PAY` counter a cutover blocker; it is not one, and that claim is withdrawn.
+
+### 20.1 The COA half is in the code, verbatim
+
+`Accounts.ds:19018`, `Creator.CreatePaymentfromBill(int recID)`:
+
+```deluge
+fetBill = Bills[ID == recID];
+fetCOA  = COA[Account_Name == "Accounts Payable"];     // <- forced, exactly as described
+fetAuto = Auto_Numbers[ID != null];
+Series  = ifnull(fetAuto.Payment_No, 1);
+BkngNo  = fetAuto.Payment_Series + "/" + Series;        // <- but EKS/PY, not EKS/PAY
+fetAuto.Payment_No = ifnull(fetAuto.Payment_No, 1) + 1;
+```
+
+So a bill-derived payment IS forced onto Accounts Payable — and it takes
+`Payment_Series`, which is `EKS/PY`. `EKS/PAY` appears nowhere in `Accounts.ds` as a
+literal, and only four series fields exist: `Payment_`, `Haewaya_`, `Books_Payment_` and
+`External_Payment_`.
+
+### 20.2 THE SERIES WAS SWAPPED IN Q2 2026, and the data shows the exact quarter
+
+```
+payment_date range      EKS/PAY      2025-09-01 .. 2026-05-05   (stopped)
+                        EKS/PY       2023-08-01 .. 2026-09-03   (ongoing)
+                        EKS/Haewaya  2025-09-01 .. 2026-08-25   (ongoing)
+```
+
+Accounts Payable payments by series, by quarter:
+
+| quarter | `EKS/PAY` | `EKS/PY` |
+|---|---|---|
+| 2025 Q3 | 105 | 28 |
+| 2025 Q4 | **532** | 4 |
+| 2026 Q1 | **626** | 6 |
+| 2026 Q2 | 81 | **709** |
+| 2026 Q3 | — | **434** |
+
+**`EKS/PAY` was the Accounts Payable series from Sep 2025 through Q1 2026 and was
+replaced by `EKS/PY` in Q2 2026.** Its last payment is 05-May-2026, nearly four months
+before this was written, and its maximum number — **1,781** — is final.
+
+That reconciles everything: the rule Husain describes was the live behaviour, the code
+now implements the same *semantics* under a different series, and the 1,187 Accounts
+Payable payments carrying `EKS/PY` (§19.1) are simply the ones issued after the swap.
+
+### 20.3 What this changes
+
+- **`EKS/PAY` needs NO counter and is not a cutover blocker.** §19.1 said one screenshot
+  of the Auto Numbers form "unblocks cutover for Accounts Payable payments". Wrong: AP
+  payments have taken `EKS/PY` since Q2 2026, and `EKS/PY` is the counter already guarded
+  and already decided. Nothing was built on the wrong assumption, but the ask was wrong
+  and is withdrawn
+- **An importer must still ACCEPT `EKS/PAY` on read.** 1,344 historical payments carry it
+  and all of them are on Accounts Payable — a prefix whitelist that only knows the two
+  live series would silently drop them
+- **`External_Payment_Series` is a DIFFERENT thing**, and still unobserved. Its only
+  reader is `Accounts.ds:20501` inside the `External.*` family
+  (`External.UpdatePaymentFromExternal`, `External.DeletePaymentFromExternal`) — an
+  external-system payment API, not the bill path. Worth a reading before anything writes
+  through that API; it does not block cutover
+
+### 20.4 And `External Payment Series` IS a report column, just off-screen
+
+§6.14 said the fourth series is one "no screen displays". Not quite —
+`Accounts.ds:11738-11747` lists the Auto Numbers report columns in order:
+
+```
+Payment_Series · Payment_No · Books_Payment_Series · Books_Payment_No
+Haewaya_Series · Haewaya_No · ID · External_Payment_Series · External_Payment_No
+```
+
+**They come AFTER `ID`.** So they are on the report and simply off the right edge of the
+screenshot — which is `CLAUDE.md`'s own warning that `ID` is not always last, biting on
+the one report where it mattered. Scrolling that report right is enough; no form export
+is needed.
+
+The Analytics `Auto Numbers` view is the thing that genuinely lacks them: its 11 columns
+stop at the three live series. §11's per-view instability, on a view built before those
+fields existed.
+
+### 20.5 Two notes so the next reader does not repeat the detour
+
+**`Payment_Bills` (89,433 rows) is NOT the settles-which-bills grid.** Its 33,684 parents
+are 99% `EKS/Haewaya`, which reads as Analytics exploding the `Bill_No1` multi-select
+rather than a subform. Testing the bill-to-series correlation against it produced a
+confidently wrong answer before the shape was checked.
+
+**`Payment_Bill Payments` (11,804 rows) is the real grid.** Its keys are `Bill No`,
+`Bill No_1`, `Villa Name`, `Check In Date`, `Check Out Date`, `Booking No.`,
+`UnPaid Amount`, `Payable Amount`, `Pay Full` — and `Payable Amount` there is the clamped
+allocation of §6.3. It also carries **`Bill No` AND `Bill No_1`**, confirming from a
+second direction the duplicate `Bill No` pair first seen on Backbend Payments (§7.5),
+where both copies were blank and canonicality could not be decided.

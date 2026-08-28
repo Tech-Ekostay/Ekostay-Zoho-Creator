@@ -300,11 +300,14 @@ which no screen displays and `Accounts.ds:20502` allocates from.
 `EKS/PAY` payments are on Accounts Payable and none on Expense, max number **1,781**.
 The prefix census is `EKS/Haewaya` 33,408 · `EKS/PY` 16,490 · `EKS/PAY` 1,344.
 
-`auto_numbers` has no `EKS/PAY` counter and the Analytics `Auto Numbers` view carries
-none either — so it is almost certainly the `External_Payment` series, the one counter
-with no series against the one series with no counter. **One screenshot of the Auto
-Numbers FORM (not the report) unblocks cutover for Accounts Payable payments.**
-Addendum §19.1.
+**CORRECTED 28-Aug-2026: `EKS/PAY` IS RETIRED and is NOT a cutover blocker.** It ran
+2025-09-01 to 2026-05-05 and was replaced by `EKS/PY` for Accounts Payable in Q2 2026 —
+the handover is visible per quarter (2026 Q1: PAY 626 / PY 6; Q2: PAY 81 / PY 709; Q3:
+PY 434 only). Husain's rule is right about the SEMANTICS —
+`Creator.CreatePaymentfromBill` at `Accounts.ds:19018` does force COA to Accounts
+Payable — but it mints from `Payment_Series`, so bill-derived payments now take
+`EKS/PY`. Max `EKS/PAY` is 1,781 and final. **An importer must still ACCEPT `EKS/PAY`
+on read**, or 1,344 historical AP payments get dropped. Addendum §20.
 
 **USE PHP FOR EVERY CLOCK READING.** `app.timezone` is UTC, the shared-slot cron runs
 IST, and **Git Bash on Windows returns UTC when asked for `TZ=Asia/Kolkata`**. That
