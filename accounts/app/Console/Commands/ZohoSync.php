@@ -44,6 +44,7 @@ class ZohoSync extends Command
                             {group? : a named group, or omit and pass --view}
                             {--view=* : explicit view keys, repeatable}
                             {--dry-run : show the plan and touch nothing}
+                            {--import : after fetching, run each view\'s importer}
                             {--pause=20 : seconds to wait between views}';
 
     protected $description = 'Export several Analytics views in one sequential, slot-safe pass.';
@@ -57,6 +58,30 @@ class ZohoSync extends Command
     private const GROUPS = [
         // One row, and it decides whether this app may mint a payment number at all.
         'counters' => ['auto_numbers'],
+
+        /*
+         * THE PAYMENTS THEMSELVES — and the omission that made the whole first sync
+         * look broken.
+         *
+         * The 28-Aug-2026 pass fetched 19 views and not this one, so the app went on
+         * showing a max of EKS/PY/21308 from a 25-Aug export while live was at 21705.
+         * Husain reported it as "still not getting the live data from analytics", and he
+         * was right: fetching the children of a table without refetching the table is
+         * not a sync.
+         *
+         * `payment_master` is the `Payment` table (443703000000062677) and is flagged
+         * `large`, so it streams as CSV — §7.4 measured a 114k-row view OOM the other
+         * app's server when loaded as JSON.
+         */
+        'payments' => ['payment_master'],
+
+        // Everything the money flow needs, in dependency order: the parent table first,
+        // then its child grids, then the queue that points at them.
+        'flow' => [
+            'payment_master',
+            'payment_split_payments', 'payment_bill_payments',
+            'pending_approvals', 'pending_approvals_approved_by',
+        ],
 
         /*
          * The approval engine. `approval_approvers` is the grid `ApprovalRouter` was
@@ -86,6 +111,32 @@ class ZohoSync extends Command
 
         // Masters, to confirm counts rather than to seed — we hold these from CSV.
         'masters' => ['coa', 'location', 'villa'],
+    ];
+
+    /**
+     * Which command turns a fetched file into rows, per view.
+     *
+     * ---------------------------------------------------------------------------
+     * WHY `--import` EXISTS. Fetch and import were deliberately separate: an import is a
+     * decision about dirty data (§3 — fix it with a migration and a mapping table, never
+     * silently on read), and a fetch should not make one.
+     *
+     * That reasoning is sound and it produced a bad outcome. The 28-Aug-2026 sync fetched
+     * 300,079 rows and imported none, so the app went on showing a max of `EKS/PY/21308`
+     * from a three-day-old export while live was at 21705. Husain reported it as "still
+     * not getting the live data from analytics" and he was right — **a sync that stops at
+     * a file on disk is not a sync.** The separation is now a FLAG rather than a rule:
+     * `--import` is opt-in, and a view with no importer is named out loud rather than
+     * quietly leaving a stale table behind it.
+     *
+     * @var array<string, string>
+     */
+    private const IMPORTERS = [
+        'payment_master' => 'zoho:import-payments',
+        'expenses' => 'zoho:import-expenses',
+        'approval' => 'zoho:import-approvals',
+        // Imported by the same command as the headers, so it must not run twice.
+        'approval_approvers' => null,
     ];
 
     public function handle(AnalyticsClient $client): int
@@ -143,6 +194,7 @@ class ZohoSync extends Command
         $pause = max(0, (int) $this->option('pause'));
         $failed = [];
         $done = [];
+        $noImporter = [];
 
         foreach ($views as $i => $key) {
             $meta = ZohoViews::all()[$key];
@@ -183,6 +235,10 @@ class ZohoSync extends Command
 
                 $done[$key] = $rows;
                 $this->info(sprintf('        %s rows -> %s', number_format($rows), $path));
+
+                if ($this->option('import')) {
+                    $this->runImporter($key, $noImporter);
+                }
             } catch (Throwable $e) {
                 $failed[$key] = $e->getMessage();
                 $this->error('        '.$e->getMessage());
@@ -194,9 +250,44 @@ class ZohoSync extends Command
             }
         }
 
-        $this->summary($done, $failed);
+        $this->summary($done, $failed, $noImporter);
 
         return $failed === [] ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * Run the view's importer, or record that it has none.
+     *
+     * A missing importer is REPORTED, not skipped silently. The whole failure this flag
+     * exists to prevent was a fetch that looked complete while the tables behind it stayed
+     * stale, and "no importer for bank_transactions" is exactly the line that would have
+     * made that obvious three days earlier.
+     *
+     * @param  list<string>  $noImporter
+     */
+    private function runImporter(string $key, array &$noImporter): void
+    {
+        if (! array_key_exists($key, self::IMPORTERS)) {
+            $noImporter[] = $key;
+            $this->warn(sprintf('        fetched, NOT imported — no importer for %s yet', $key));
+
+            return;
+        }
+
+        $command = self::IMPORTERS[$key];
+
+        if ($command === null) {
+            $this->line('        (imported alongside its parent view)');
+
+            return;
+        }
+
+        $this->line(sprintf('        importing via %s', $command));
+
+        // Non-zero from an importer is a real failure; surfaced rather than swallowed.
+        if ($this->call($command) !== self::SUCCESS) {
+            $this->error(sprintf('        %s reported a failure', $command));
+        }
     }
 
     private function save(string $key, AnalyticsClient $client, int &$rows): string
@@ -268,7 +359,7 @@ class ZohoSync extends Command
      * @param  array<string, int>  $done
      * @param  array<string, string>  $failed
      */
-    private function summary(array $done, array $failed): void
+    private function summary(array $done, array $failed, array $noImporter = []): void
     {
         $this->line('');
 
@@ -290,8 +381,24 @@ class ZohoSync extends Command
         }
 
         $this->line('');
-        $this->line('Files are saved, and NOTHING was written to the database. Importing is a');
-        $this->line('separate decision: §3 says fix dirty data with a migration and a mapping');
-        $this->line('table, never silently on read.');
+
+        if (! $this->option('import')) {
+            $this->warn('Files are saved and NOTHING was written to the database.');
+            $this->line('  Re-run with --import, or the screens keep showing the last import.');
+            $this->line('  That gap is what made the 28-Aug sync look like it had not run.');
+
+            return;
+        }
+
+        if ($noImporter !== []) {
+            $this->line('');
+            $this->warn('FETCHED BUT NOT IMPORTED — no importer exists for these yet:');
+
+            foreach (array_unique($noImporter) as $key) {
+                $this->line('    '.$key);
+            }
+
+            $this->line('  Their files are on disk; the tables behind them are unchanged.');
+        }
     }
 }
