@@ -215,7 +215,12 @@ Accounts (first nav item) · Bank · Expenses · Expense Observations (spec §13
 Masters beyond Vendor Master · App Preferences · Preferred Approver ·
 Zoho app pointers · Ekostay … · the Backend Payments list
 
-### Nav rail — at least 17 items, not the 11 in v1
+### Nav rail — **18** items, not the 11 in v1
+
+**`Deleted Payments` was found 27-Aug-2026** and was not on the list of 27 screens —
+it is the last rail item, below `Ekostay Revenue Share`. Addendum §7F. And the rail is
+**not** a complete list of the forms: `Debit_Match_Payments` has 32 DS references and
+no rail entry.
 Accounts · **Bank** *(captured 27-Aug-2026 — 30 cols, inline-editable, Print-only
 panel, fed from Zoho Books; addendum §7B)* · Payments · Bills · Expenses ·
 Schedule Payments ·

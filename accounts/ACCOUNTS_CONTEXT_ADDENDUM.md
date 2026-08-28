@@ -1686,6 +1686,242 @@ reports the **filtered** count and is a live counterexample to the `Showing 1000
 
 ---
 
+## 7E. Preferred Approver — what it is for, from the DS
+
+One screenshot, two fields, and Husain: *"I'm not sure what this is for."*
+
+```
+Payment No       -Select-              (dropdown)
+Approver Name    -Select-              (dropdown, RED border = mandatory)
+                 [Submit]
+```
+
+No list, no edit — an **add-only form**, like `Payment Request` (§6).
+
+### 7E.1 It re-submits a payment for approval, naming who should handle it
+
+`Accounts.ds:32108` and `32390` both declare `form = Preferred_Approver`, and the
+action they reach ends at `32326`:
+
+```deluge
+AddApproval = insert into Pending_Approvals
+[
+    Added_User                   = zoho.loginuser
+    Payment_No                   = fetPayment.ID
+    Approval_Level               = rec4.Level
+    Next_Level_Approval_Required = nextLevelReq
+    Status                       = "Sent for Approval"
+    Approvers                    = rec4.Approver          // from the Approval rule grid
+    Approval_Type                = rec4.Approval_Type
+    Preferred_Approver           = input.Approver_Name    // <- THIS FORM's second field
+];
+// then one Approved_By subform row per approver at that level
+```
+
+**So Preferred Approver creates a new `Pending_Approvals` record for the chosen
+payment and stamps the chosen person as its `Preferred Approver`.** It is the manual
+escape hatch: *this payment is stuck, or needs a specific person — put it back in the
+queue and address it to them.*
+
+That closes the loop on two earlier observations:
+
+- §5's Pending Approvals edit form carries a `Preferred Approver` field that was blank
+  on the sample and had no visible source. **This form is its source.**
+- It is the payment-side counterpart to **`Re-Send for Approval`** on User Payment
+  Requests (§6.8) — the same idea one step further down the chain
+
+Everything else on the inserted record comes from the matched Approval **rule** —
+`rec4.Level`, `rec4.Approver`, `rec4.Approval_Type` — which is the grid captured in
+§11.7. So this form supplies one field and the rule supplies the rest. **It cannot
+name an approver outside the rule's own approver list**, because `Approvers` is copied
+from `rec4.Approver` regardless of what `Approver_Name` says. Worth knowing: the
+"preferred" approver is advisory, not an override of who *may* approve.
+
+### 7E.2 It INSERTS rather than updates — a duplicate-approval vector to check
+
+The statement is `insert into Pending_Approvals`, not an update of an existing open
+approval. Whether a payment that already has one open can acquire a second depends on
+a guard upstream of line 32326 that has not been traced.
+
+**This matters because §5 already found nine identical approvals** —
+`EKS/PY/20954`–`20962`, same vendor, category, bank, cycle and `₹4,956.00`, created
+within ~90 seconds, differing only in Message ID — and concluded that "an approval
+that fires more than once creates more than one payment". A form whose only job is to
+insert a fresh approval on demand is a plausible source of exactly that shape.
+
+`[TODO]` before building this: **does submitting Preferred Approver twice for one
+payment produce two open approvals?** If so, our version must update the open one or
+refuse.
+
+---
+
+## 7F. Deleted Payments — an 18th nav item, and the mechanism behind the register's worst entry
+
+**The rail in this screenshot shows a screen that was not on the list of 27.** Below
+`Ekostay Revenue Share` sits **`Deleted Payments`**, and it is the last item. So the
+rail has **18** items, not 17.
+
+It is a real form (`Accounts.ds:3606`) with a report
+(`Deleted_Payments_Report`, `13623`). And it changes the shape of the single worst
+entry on the defect register.
+
+### 7F.1 Deletion DOES archive — including the split grid
+
+`Accounts.ds:31016-31078`, on deleting a payment whose `Status == "Paid"`:
+
+```deluge
+addPayment = insert into Deleted_Payments
+[
+    Deleted_By_User   = zoho.loginuserid
+    Deleted_Time_User = zoho.currenttime
+    COA … Vendor_Name … Payment_No … Amount … Invoice_Amount …
+    Status            = "Draft"
+    Payment_Status    = "Open"
+    Payable_Amount    = amount11          // Amount + GST_Amount - TDS_Amount
+];
+for each del in input.Split_Payments        // the allocation grid is copied too
+```
+
+So there is a trash bin with a deleted-by and deleted-at stamp, and it preserves the
+`Split_Payments` legs. That is better than "destroyed with no trace" implies.
+
+### 7F.2 BUT THE ARCHIVE IS GUARDED BY THE WRONG CONDITION — `Accounts.ds:31027`
+
+```deluge
+if (COA.Account_Name != "Accounts Payable")
+{
+    ... insert into Deleted_Payments ...
+}
+```
+
+**The archive is written only when the payment is NOT on `Accounts Payable`.**
+
+And §7.2 is explicit that **`Create_Payment` forces every payment onto
+`Accounts Payable`** — it is asserted in our own `PaymentWritePathTest` setup. So for
+every payment created through the normal path, the condition is false and **no archive
+row is written at all.** The payment is deleted and nothing records it.
+
+**That is the mechanism behind "`Delete Paid Payment` destroyed 17 real payments
+(₹93,884)".** The trash bin exists, is visible in the nav, and is bypassed for exactly
+the population that matters. Anyone looking at `Deleted Payments` to find those 17
+would find an empty screen and reasonably conclude nothing had been deleted.
+
+Stated as a reading of the code, not as a reconstruction of that incident — but the
+guard is inverted relative to its evident purpose, and the majority case is the one it
+skips.
+
+### 7F.3 THREE MORE THINGS THE ARCHIVE LOSES, EVEN WHEN IT FIRES
+
+- **`Status = "Draft"` and `Payment_Status = "Open"`.** A settled payment is archived
+  as a draft. The fact that it *was* `Paid` — the only reason its deletion matters — is
+  overwritten on the way into the bin
+- **`Expense_By = zoho.loginuser`** — the deleter's name replaces whoever incurred the
+  expense. An original field silently reassigned to the person destroying the record
+- **`Payable_Amount` is RECOMPUTED**, not copied: `Amount + GST_Amount - TDS_Amount`.
+  §6.3's open `[TODO]` is which of two same-named `Payable_Amount` formulas is
+  authoritative; **this is a third site using the additive one**, and the archived
+  figure may not match what the live payment showed
+
+### 7F.4 A ONE-TOKEN BUG: the re-delete path loses the deleting user
+
+`Accounts.ds:31019-31023`, when an archive row for that `Payment_No` already exists:
+
+```deluge
+if (fetdele.count() > 0)
+{
+    fetdele.Created = false;
+    Deleted_By_User = zoho.loginuserid;          // <- no `fetdele.` prefix
+    fetdele.Deleted_Time_User = zoho.currenttime;
+}
+```
+
+**The middle line is missing its `fetdele.` prefix.** The lines above and below it both
+have one. So it assigns to a throwaway local variable and **the deleting user is never
+recorded on a second deletion**, while the timestamp is. A record showing *when* it was
+deleted and by *nobody*.
+
+Same family as the three defects already logged from the DS — `&&` for `||`, `=` for
+`==`, two spellings of `Payment InProgress`. One token, silent, and it lands on an
+audit trail.
+
+### 7F.5 The permanent-delete function's authorisation is caller-supplied
+
+`Accounts.ds:16192`:
+
+```deluge
+string Accounts.DeletePermanentlyTrash(int RecID, string user)
+{
+    fetdelete = Deleted_Payments[ID == RecID];
+    fetdelete.Delete_Record = false;
+    if (user == "husain@ekostayhospitality.com") { fetdelete.Delete_Record = true; }
+    else                                          { fetdelete.Delete_Record = false; }
+    if (fetdelete.Delete_Record == true)
+        if (fetdelete.Created == false)
+            delete from Deleted_Payments[ID == RecID];
+```
+
+Two observations, both factual:
+
+1. **Authorisation is a hardcoded email literal** — not a role, not a permission, not
+   the §3.3 matrix. `husain@ekostayhospitality.com` in source
+2. **`user` is a function PARAMETER, not `zoho.loginuser`.** The identity being checked
+   is supplied by the caller rather than read from the session, so the check does not
+   establish who is calling. And this is a `Accounts.`-prefixed standalone function —
+   §16.4 already records that standalone Deluge functions are invocable as REST
+   endpoints
+
+So the last line of defence for permanently destroying an archived payment is a string
+comparison against a value the caller provides. **Worth raising with Husain directly**,
+alongside `DeleteAllRecords()` at `F_B.ds:4645` and the two credential-carrying
+standalone functions in §7D.4. The pattern across all four is the same: standalone
+functions doing privileged work with authorisation that is either absent or supplied
+by the caller.
+
+`fetdelete.Created == false` is a restore flag — a restored record refuses permanent
+deletion with *"This record cannot be deleted because it has already been restored."*
+So there is a restore path too, which is worth capturing when this screen is built.
+
+### 7F.6 What this means for our own D4
+
+Our `ReversePayment` / model-guard approach (deviation D4, "nothing hard-deletes a
+payment") stands unchanged and is **more** justified now, not less. The point is
+narrower than before, though, and worth stating precisely:
+
+Creator's design intent was **archive-then-purge**, not destroy — the bin, the
+deleted-by stamp, the restore flag and the `Created` guard all show that. What failed
+was three specific things: an inverted COA condition that skips the archive for the
+normal case, a missing field prefix that drops the deleter on re-delete, and a
+permanent-delete authorisation the caller can assert. **A trash bin is not a control
+if the path into it is conditional on the wrong thing.**
+
+`[TODO]` for Husain: **should the rebuild have a Deleted Payments screen at all?** D4
+replaces deletion with a reversing entry, which makes a trash bin redundant by
+construction — but the live app has 18 nav items and this is one of them, and there
+may be archived rows in it worth migrating.
+
+### 7F.7 Two more forms with no nav entry
+
+`Debit_Match_Payments` (32 references) and `Deleted_Payments` are both real forms;
+only the latter is in the rail. `Debit_Match_Payments` is most likely what Bank's
+**`Match & UnMatch`** button (§7B.7) writes to. Recorded so the form inventory is
+honest: **the rail is not a complete list of the forms.**
+
+---
+
+## 7G. `Ekostay Revenue Share` — the label is confirmed
+
+The rail in this screenshot renders it in full: **`Ekostay Revenue Share`**. §7D.5
+inferred exactly that from `Eko_RS_App_Config`, its report, the
+`revenue_share_statement` WhatsApp template and spec §2's open question. **Inference
+confirmed**, and the truncated-label item comes off the unknown list — though the
+screen itself is still unseen.
+
+So it owns `Eko_RS_App_Config`, which §7D.4 established is a credential store holding
+the Analytics refresh token and an unread DoubleTick key field. **When Revenue Share
+is built, that config must land as configuration and not as a form with a report.**
+
+---
+
 ## 8. Label divergence — pick one per concept
 
 | Concept | Variants seen |

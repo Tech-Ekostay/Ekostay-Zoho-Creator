@@ -628,6 +628,22 @@ org this rebuild uses.** So the Analytics client is shared between live Creator 
 us, and revoking it takes down `Standalone.proxyAnalytics` too. A separate OAuth
 client for this app was already the recommendation; this makes it necessary.
 
+Added 27-Aug-2026, and the mechanism behind the register's worst entry. **A trash
+bin EXISTS** — `Deleted_Payments`, an 18th nav item, archiving a deleted payment with
+a deleted-by stamp and its split grid. **But `Accounts.ds:31027` guards the archive
+on `COA.Account_Name != "Accounts Payable"`, and §7.2 forces every payment onto
+`Accounts Payable`** — so the normal path writes NO archive row. That is how
+`Delete Paid Payment` destroyed 17 payments while a visible trash bin sat empty.
+Three more losses even when it fires: `Status` overwritten to `Draft`, `Expense_By`
+reassigned to the deleter, and `Payable_Amount` recomputed. Plus a one-token bug at
+`:31022` — `Deleted_By_User` is assigned without its `fetdele.` prefix, so a SECOND
+deletion records the time and nobody. Addendum §7F.
+
+**And `Accounts.DeletePermanentlyTrash(RecID, user)` at `:16192` checks authorisation
+by comparing its own `user` PARAMETER to a hardcoded `husain@ekostayhospitality.com`.**
+Caller-supplied identity, hardcoded email, standalone function — and standalone
+functions are REST-invocable. Same family as the three below.
+
 Added 22-Aug-2026, from the delete census in addendum §16.4: **`void
 DeleteAllRecords()` at `F_B.ds:4645`** wipes 14 F&B tables with
 `delete from <table>[ID != null]` — every row — and standalone Deluge functions
