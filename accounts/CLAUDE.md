@@ -293,8 +293,24 @@ them silently disarms the guard, which is how the hole was found. Addendum §6.1
 
 There are **four** series in that one row, and the report shows three: `Payment`,
 `Haewaya`, `Books_Payment` (never used, counter still 1) and **`External_Payment`**,
-which no screen displays and `Accounts.ds:20502` allocates from. Unobserved and
-unguarded — a reading of it is needed before anything touches it.
+which no screen displays and `Accounts.ds:20502` allocates from.
+
+**`EKS/PAY` IS A THIRD LIVE SERIES AND HAS NO COUNTER HERE.** Husain, 28-Aug-2026:
+`EKS/PAY` is COA **Accounts Payable** and `EKS/PY` is **Expense**. Verified: all 1,344
+`EKS/PAY` payments are on Accounts Payable and none on Expense, max number **1,781**.
+The prefix census is `EKS/Haewaya` 33,408 · `EKS/PY` 16,490 · `EKS/PAY` 1,344.
+
+`auto_numbers` has no `EKS/PAY` counter and the Analytics `Auto Numbers` view carries
+none either — so it is almost certainly the `External_Payment` series, the one counter
+with no series against the one series with no counter. **One screenshot of the Auto
+Numbers FORM (not the report) unblocks cutover for Accounts Payable payments.**
+Addendum §19.1.
+
+**USE PHP FOR EVERY CLOCK READING.** `app.timezone` is UTC, the shared-slot cron runs
+IST, and **Git Bash on Windows returns UTC when asked for `TZ=Asia/Kolkata`**. That
+half-hour offset put a 30-minute hole in the concurrency guard and then, once fixed,
+fooled the operator the same way half an hour later. The machine's bare `date` is IST
+and correct; `TZ=` is not. Addendum §19.4.
 
 **§17 steps 3–6 — done.** Roles and permissions are first-class tables (no string
 matching anywhere in the authorisation path, asserted), the Bills schema and its

@@ -3654,3 +3654,151 @@ else. The CSV itself should not be committed carelessly, for the same reason.
 - The `Account_Details` grid, `Secondary` (list), `Books ID`, `Vendor Ledger`,
   `Documents`, `Remarks`, `UPI ID`, and the PF/PT/ESIC flags: **all in spec §13A, and
   none of them in this report export.** The vendor table is seeded, not complete.
+
+---
+
+## 19. The live sync, run 28-Aug-2026 — 300,079 rows across 19 views
+
+Husain: *"I need the EKS/PY series and I need you to fetch live data from creator now on
+the basis of the table in analytics… I want this implemented for all the modules."*
+
+Fetched. **Nothing was written to the database** — an import is a separate decision
+(§3: fix dirty data with a migration and a mapping table, never silently on read), and
+only the approvals importer is written so far.
+
+| view | rows | against what we held |
+|---|---|---|
+| `auto_numbers` | 1 | the counter |
+| `approval` | **16** | 0 |
+| `approval_approvers` | **24** | 0 — the grid the router refuses without |
+| `preferred_approver` | **0** | nobody has ever used that form |
+| `pending_approvals` | **14,815** | 0 |
+| `pending_approvals_approved_by` | **24,035** | 0 |
+| `payment_split_payments` | **73,361** | 2 |
+| `payment_bill_payments` | **11,804** | 0 |
+| `payment_bills` | **89,433** | 0 |
+| `bank_transactions` | **48,245** | 0 |
+| `bank_transactions_matching` | 0 | 0 |
+| `banks` | 112 | — |
+| `backend_expenses` | **34,602** | 0 |
+| `backend_payments` | **1,542** | 0 |
+| `expense_observation` | **1,570** | 0 |
+| `payment_request` | **73** | 0 |
+| `coa` | 144 | **144 — exact match** |
+| `location` | **44** | **30** |
+| `villa` | **258** | **254** |
+
+### 19.1 EKS/PAY IS A THIRD SERIES, AND WE HAVE NO COUNTER FOR IT
+
+Husain: *"EKS/PAY is COA Accounts payable and EKS/PY is Expense."*
+
+**Checked, and the rule holds absolutely in the direction that matters:**
+
+```
+EKS/PAY on Accounts Payable   1,344        EKS/PAY on Expense   0
+EKS/PY  on Accounts Payable   1,187        EKS/PY  on Expense   13,824
+```
+
+Every one of the 1,344 `EKS/PAY` payments is on Accounts Payable and **none** is on
+Expense. The converse is not total — 1,187 Accounts Payable payments carry `EKS/PY` —
+which reads as `EKS/PAY` being the **newer** AP series with older AP payments predating
+it. Max `EKS/PAY` number: **1,781**.
+
+The prefix census across all 52,639 payments:
+
+```
+EKS/Haewaya   33,408
+EKS/PY        16,490
+EKS/PAY        1,344
+REFUND-*       (derived from the booking, not allocated — §7.1)
+```
+
+**THE GAP.** `auto_numbers` holds `payment_no` (EKS/PY), `haewaya_no` and
+`books_payment_no`. There is **no counter for `EKS/PAY`**, and the Analytics
+`Auto Numbers` view does not carry one either — its 11 columns are Payment / Haewaya /
+Books series and numbers plus the platform stamps. But the Auto_Numbers **FORM**
+declares a fourth pair, `External_Payment_Series` / `External_Payment_No`
+(`Accounts.ds:234-292`, §6.14), which no report and no view shows.
+
+**So `EKS/PAY` is almost certainly the `External_Payment` series** — it is the one
+series in the data with no counter, and `External_Payment` is the one counter with no
+series. `Accounts.ds:20502` mints from it with the same padding and clash guard as
+`EKS/PY`, and for a counter near 1,781 those pad branches are dead code exactly as
+§7.6's D3 records for the main series.
+
+`[TODO]` **This now blocks cutover for Accounts Payable payments.** One screenshot of
+the Auto Numbers **form** (not the report) gives `External Payment Series` and
+`External Payment No`, and without them this app cannot mint an AP payment number.
+Recorded as a strong inference, not a fact: nothing seen so far names `EKS/PAY` as the
+external series.
+
+### 19.2 The split legs answer the blank-column question
+
+`payment_split_payments` carries, per leg:
+
+```
+ID · PARENT_ID · Villa Name · Item Category · Billing Cycle · Percent
+Gross Amount · GST Amount · Payable Amount · TDS Amount
+backend Amount · Backend TDS Amount · Backend GST Amount
+PF Amount · ESIC Amount · PT Amount
+```
+
+**`Villa Name`, `Item Category` and `Billing Cycle` are 18-digit Creator record ids**,
+not names — which is better than names, because they resolve against our `creator_id`
+columns without the trim-and-hope that §7C.5's leading-space villas require.
+
+73,361 legs against 52,639 payments, 1 to 11 legs per payment in the sampled range. So
+**this is why `Villa Name` and `Billing Cycles` render blank on Pending Approvals**
+(§ the module's own note): the attribution was never on the parent, and we imported the
+parent only. §12's rule — import the child rows — with the cost of ignoring it now
+measured at 73,361 rows.
+
+**A spelling for the preserve list:** `backend Amount` has a **lowercase b** while
+`Backend TDS Amount` and `Backend GST Amount` are capitalised. Same triplet, three
+columns, two casings.
+
+### 19.3 Three counts that disagree with what we hold
+
+- **`location` 44 against our 30.** `CLAUDE.md` reasons that the villa export is a
+  villa-scoped view of the Location master and therefore under-reports it. Now
+  measured: **it under-reports by 14.** Every villa and location on every screen has
+  resolved so far, so nothing is broken — but 14 locations exist that no villa names
+- **`villa` 258 against our 254.** Four more, and the villa view may also be
+  form-level rather than the 18-of-40-field report ours came from
+- **`coa` 144 against our 144 — exact.** The one master that needs no attention
+- **`pending_approvals` 14,815.** §5 called the queue "over 1000 rows" from a footer
+  reading `Showing 1000 of ###`. The `###` was **14,815**, so the queue that "should be
+  short" is fourteen times worse than recorded
+- **`preferred_approver` 0 rows.** The form §7E traced through the DS has never been
+  used, which is consistent with the field being blank on every sampled record
+
+### 19.4 THE SLOT GUARD FIRED, ON A MINUTE IT COULD NOT SEE THIS MORNING
+
+Mid-sync, the guard refused:
+
+```
+Minute :48 Asia/Kolkata belongs to the expense tracker (its minutes: :00, :12, :24,
+:42, :48). … it caused a two-day stall once.
+Stopped before pending_approvals. 0 of 2 views were exported; re-run for the rest.
+```
+
+**IST :48 is UTC :18, one of the three slots the guard left unprotected until it was
+fixed an hour earlier.** So the timezone fix earned itself back inside the same session.
+
+And then the same class of error recurred, in the operator rather than the code. A shell
+`TZ=Asia/Kolkata date` was used to decide the window and reported `:18` while PHP
+reported `:48`:
+
+```
+shell, no TZ        17:49      <- correct; the machine's local time IS IST
+shell TZ=Kolkata    12:19      <- WRONG. Git Bash returns UTC here
+php UTC             12:19
+php Asia/Kolkata    17:49      <- correct
+```
+
+**Git Bash on Windows does not honour `TZ=` the way a Linux shell does**, so a reading
+taken that way is UTC wearing an IST label — which is precisely the bug that had just
+been fixed in the guard, reproduced by hand thirty minutes later.
+
+**Use PHP for every clock reading in this project.** The machine's bare `date` is IST
+and correct; `TZ=` is not. Both times, the guard was what caught it.
