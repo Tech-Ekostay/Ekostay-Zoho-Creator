@@ -224,7 +224,8 @@ villa bands with true subtotals plus `Show Summary`; addendum §7C)* ·
 Masters *(Vendor Master, All Vendor Masters)* ·
 Settings *(8 reports, see addendum §2; **All Approvals + the Approvers grid
 captured 27-Aug-2026**, addendum §11.7)* · Backend Expenses · Pending Approvals ·
-App Preferences · Payment Requests *(3 views)* · Zoho app pointers - Payment Ap… ·
+App Preferences *(**captured 27-Aug-2026 — Creator's Manage Integrations panel, a
+platform screen with no form to rebuild**; addendum §7D)* · Payment Requests *(3 views)* · Zoho app pointers - Payment Ap… ·
 **Backbend** Payments *(rail spells it Backbend, the form says Backend)* ·
 Preferred Approver · Ekostay …
 

@@ -91,9 +91,10 @@ Husain for anything the files can answer.
 counting. `Primary Vendor` is the merge pointer, `Primary Status` flags the target,
 and `Main Primary` is not a merge field. Addendum §18.1.
 
-The `.ds` files are **git-ignored on purpose**: `Accounts.ds` line 22851 holds a
-live hardcoded DoubleTick API key. Rotate it before considering these for commit,
-even to a private repo. Structure and script only — no records.
+The `.ds` files are **git-ignored on purpose**: `Accounts.ds` holds the live DoubleTick
+API key at **three** lines (16768, 16780, 22851) and the **Analytics OAuth
+client_secret** at 22647. Rotate both before considering these for commit, even to a
+private repo. Structure and script only — no records. Addendum §7D.
 
 ### What the JSX is
 
@@ -597,13 +598,17 @@ Several conclusions in this project were revised after better evidence.
 
 ## Live defects, independent of the rebuild
 
-Open and worth raising: hardcoded **DoubleTick API key** at `Accounts.ds` line
-22851 needs rotating — **but rotate it WITH the deployment, not before**: it is the
-WhatsApp path that tells approvers they have work (addendum §11.12), so a blind
-rotation silently stops every approval notification. Related: **only 81 of 475
-employees have a phone number**, so an approver from the other 394 is routed to
-correctly and never told · the **negative-HRA band** (₹21,001–21,099) is producing
-bad payslips today · **`Delete Paid Payment`** sits one click from a settled
+Open and worth raising: the hardcoded **DoubleTick API key** appears **three times** —
+`Accounts.ds:16768`, `:16780` (the approval notification) and `:22851` (the
+revenue-share statement). **Rotate it WITH the deployment, not before**, and in all
+three places: a blind rotation silently stops approval notifications AND owner
+statements. **`Eko_RS_App_Config.DoubleTick_API_Key` exists and is never read**, so
+rotating through the UI changes a field nothing consults — and that field is a
+column on a report. Addendum §7D.3-7D.4. Related: **only 81 of 475 employees have a
+phone number**, so an approver from the other 394 is routed to correctly and never told
+
+Also open: the **negative-HRA band** (₹21,001–21,099) is producing bad payslips
+today · **`Delete Paid Payment`** sits one click from a settled
 payment · duplicate approvals minting duplicate payments · ~~approved requests
 with no payee~~ — **probably a reporting artefact, not missing data**: All Payment
 Requests binds the *lookup* half of the duplicate `Vendor Name` pair, so every
@@ -616,6 +621,12 @@ name belongs; the records are sound and need no repair. Addendum §7.2.
 
 **Both of those entries were reported from a screen rather than from the record
 behind it. Check the record before believing the column.**
+
+Also hardcoded, and found 27-Aug-2026: the **Analytics OAuth client_id and
+client_secret** at `Accounts.ds:22646-22648`, against org `60042406851` — **the same
+org this rebuild uses.** So the Analytics client is shared between live Creator and
+us, and revoking it takes down `Standalone.proxyAnalytics` too. A separate OAuth
+client for this app was already the recommendation; this makes it necessary.
 
 Added 22-Aug-2026, from the delete census in addendum §16.4: **`void
 DeleteAllRecords()` at `F_B.ds:4645`** wipes 14 F&B tables with

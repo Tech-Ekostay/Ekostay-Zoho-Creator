@@ -9,9 +9,12 @@ import { useEffect, useState } from 'react';
  *     SEARCH   Payment No. contains "EKS/PY/1596…"   (x)
  *
  * A filter is therefore a COLUMN, an OPERATOR and a VALUE, displayed as a chip with
- * a clear control — not the free-text box this app had. `contains` is the operator
- * seen. The rest of the operator list is INFERRED and the panel says so, because no
- * screenshot shows Creator's operator menu.
+ * a clear control — not the free-text box this app had.
+ *
+ * TWO operators are now verified. A Bank chip caught in the background of the App
+ * Preferences screenshot (27-Aug-2026) reads `Amount is "1713…"`, so Creator spells
+ * equality **`is`**, not `equals`, and applies it to a number column. `contains` and
+ * `is` are confirmed; the rest of the list is still INFERRED and the panel says so.
  *
  * WHY IT REPLACES THE OLD SEARCH. The free-text box filtered rows the browser had
  * already loaded — the first 1,000 payments of 52,638. So searching for a payment at
@@ -131,8 +134,9 @@ export default function FilterBar({
 
           <div className="zc-field-hint" style={{ flexBasis: '100%', marginTop: 2 }}>
             Filtering happens on the server, so it covers every row — not just the page loaded.
-            {' '}<strong>contains</strong> is the operator seen on the live report; the rest of this
-            list is inferred, since no screenshot shows Creator&rsquo;s operator menu.
+            {' '}<strong>contains</strong> and <strong>is</strong> are confirmed from live filter
+            chips; the rest of this list is inferred, since no screenshot shows
+            Creator&rsquo;s full operator menu.
           </div>
         </div>
       )}

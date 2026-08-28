@@ -1497,6 +1497,195 @@ the categories it would classify by.
 
 ---
 
+## 7D. App Preferences — Creator's Manage Integrations panel
+
+One screenshot, and Husain's own summary: *"nothing but the zoho integrations."*
+
+**There is no form to rebuild.** `App Preferences` is a nav item pointing at Creator's
+built-in **Manage Integrations** panel — a platform screen, not an application form,
+recognisable by the `ⓘ` help affordance and the card layout. Same class as Accounts,
+which is an external dashboard. What matters here is the **inventory**, not the UI.
+
+### 7D.1 Four connections, and two share a display name
+
+| card | status |
+|---|---|
+| **Zoho Books** — "Zoho Books Account" | Connected |
+| **Zoho OAuth** | Connected |
+| **Zoho OAuth** *(a second card, same name)* | Connected |
+| **Zoho WorkDrive** | Connected |
+
+The DS references exactly four connection names, which matches the four cards:
+
+```
+connection:"books"                        36 uses
+connection:"books1"                        1 use
+connection:"zoho_oauth_connection"         2 uses
+"zoho_workdrive_connection1"              13 uses
+```
+
+**Two cards are both labelled `Zoho OAuth`, so the mapping from card to internal name
+cannot be read off the UI.** That matters more here than the duplicate labels
+elsewhere in this app (§4.2, §6.3, §7.5, §7B.1, §7C.7): these are **credentials**.
+Revoking the wrong `Zoho OAuth` is a coin flip, and `books1` — used exactly **once**,
+at `Accounts.ds:45908` — is a near-orphan that looks disposable and may not be.
+
+`Books` at 36 uses confirms §7B.5 from the other direction: the Books pull is live
+right now, and its OAuth genuinely sits in Creator's connection store.
+
+**`Zoho WorkDrive` is a connection nothing in our docs had accounted for.**
+`Accounts.ds:22911` uses it:
+
+```deluge
+uploadResp = zoho.workdrive.uploadFile(pdfFile, parentId, filename, true,
+                                       "zoho_workdrive_connection1");
+```
+
+and `22960` calls `/workdrive/api/v1/links`. It sits **immediately beside the
+DoubleTick send** — so the flow is *generate a PDF → upload to WorkDrive → mint a
+public link → send the link over WhatsApp*. That ties three of the four cards into one
+pipeline and explains why WorkDrive is connected at all.
+
+### 7D.2 NOTABLY ABSENT: no DoubleTick card, and no Analytics card
+
+**Neither of the two integrations this project depends on is a managed connection.**
+
+- **DoubleTick** has no card, which is *why* its key is a literal in the source. The
+  four Zoho integrations use Creator's connection store; the one non-Zoho integration
+  hardcodes a key. This screen is the evidence for that asymmetry
+- **Zoho Analytics** has no card either. Our read plane (`analyticsapi.zoho.in`, org
+  `60042406851`, refresh token in `.env`) is a **separate OAuth client**, not a Creator
+  connection — and §7D.4 shows Creator does the same thing, from a config record
+
+### 7D.3 CORRECTION to §11.12 — line 22851 is the REVENUE SHARE path, not the approval path
+
+§11.12 said, after Husain described the approval WhatsApp: *"the hardcoded DoubleTick
+API key at `Accounts.ds:22851` is the notification path for every approval in the
+system."*
+
+**Wrong about that line.** `22851` sits inside
+`string Standalone.widgetSendWhatsApp(String crmAPIRequest)`, whose default template
+is `revenue_share_statement` and whose parameters are `propertyName`, `monthYear`,
+`pdfSuffix` — a **property owner receiving their monthly revenue-share statement**,
+not an approver.
+
+The substance survives and gets worse. The same key appears **three** times:
+
+```
+Accounts.ds:16768   inline in a headers map        <- the 16xxx APPROVAL region
+Accounts.ds:16780   headers.put("Authorization", …) <- the 16xxx APPROVAL region
+Accounts.ds:22851   apiKey = …                      <- revenue-share statement
+```
+
+`16113-16135` and `16508-16511` are where `DecideApproval` was transcribed from, so
+**16768/16780 are the approval notification** and they carry the same literal. So:
+approval notifications *do* break on rotation (as claimed), revenue-share statements
+break too (not previously known), and **the key must be changed in three places.**
+
+### 7D.4 `Eko_RS_App_Config` IS A CREDENTIAL STORE IMPLEMENTED AS A FORM
+
+Following the DoubleTick fields led to a singleton config form,
+`Eko_RS_App_Config[Config_Singleton == "main"]`, holding:
+
+```
+DoubleTick_API_Key          DoubleTick_From_Number     DoubleTick_From_Number1
+DoubleTick_Template_Name    DoubleTick_Template        PDF_Host_Url_Override
+Analytics_Refresh_Token
+```
+
+**And `DoubleTick_API_Key` is never read.** Only two fields are consulted
+(`Accounts.ds:22853-22854`):
+
+```deluge
+fromNumber   = ifnull(config.DoubleTick_From_Number,  "918169019090");
+templateName = ifnull(config.DoubleTick_Template_Name,"revenue_share_statement");
+```
+
+There is **no `config.DoubleTick_API_Key` anywhere in the file.** All three call sites
+use the literal instead.
+
+**That is the sharper version of the defect.** It is not merely "a key is hardcoded" —
+**the configuration field intended to hold it exists, is on a form, appears as a
+column on the `Eko_RS_App_Config Report` (`Accounts.ds:14172`), and is bypassed.**
+Anyone rotating the key through the UI would change a field nothing reads and conclude
+they had rotated it. From-number and template *are* configurable; the credential is
+not.
+
+Two further things in that form:
+
+**`Analytics_Refresh_Token` is stored in a Creator data record**, read by
+`Standalone.proxyAnalytics` (`Accounts.ds:22638`) — which then carries **hardcoded
+client credentials**:
+
+```deluge
+clientId     = "1000.9UCJULS38ST1M6MPFFL2O3WVSFR1DG"
+clientSecret = "8fac366d1cd3f6a87a91b2c727c713073d6a3a7684"
+orgId        = "60042406851"                    <- OUR Analytics org, exactly
+```
+
+So there is a **second hardcoded credential pair** in the DS, and the org id matches
+the one our `AnalyticsClient` uses. **The rotation recommendation now has a second
+reason:** the Analytics OAuth client is shared between the live Creator app and this
+rebuild, so revoking it takes down `proxyAnalytics` as well as us. A separate client
+for this app was already the advice; this makes it necessary rather than tidy.
+
+**Both functions are `Standalone.`** — and §16.4 already records that standalone
+Deluge functions are invocable as REST endpoints. `widgetSendWhatsApp` takes an
+arbitrary `to` number; `proxyAnalytics` takes an arbitrary `path`, `method`,
+`queryParams` and `body` and forwards them. Their real exposure depends on how each is
+published, which is worth checking — but the shape is a general-purpose proxy and a
+send-to-any-number, both holding credentials inline.
+
+**Also: a report displays an API key as a column.** `Eko_RS_App_Config Report`
+(`Accounts.ds:14154-14172`) lists `DoubleTick_API_Key`. With §3.3's permission matrix
+extracted but not wired to a gate, there is no field-level restriction on it.
+
+### 7D.5 The truncated nav item is almost certainly Revenue Share
+
+`Ekostay Revenue …` has been on the "need a screenshot" list purely because the rail
+truncates it. The evidence now points one way: an `Eko_RS_App_Config` form, an
+`Eko_RS_App_Config Report`, a `revenue_share_statement` WhatsApp template, and spec
+§2's open question *"Revenue Share split across the `ers` app and the `Eko_RS_*`
+forms"*.
+
+So it is the **Revenue Share** module, and it owns the config form above. Recorded as
+a strong inference, not a fact — the label is still cut off and no screenshot of the
+screen exists.
+
+### 7D.6 A SECOND FILTER OPERATOR, from the background of the screenshot
+
+The report behind the panel is Bank, carrying a live filter chip:
+
+```
+SEARCH   Amount is "1713…"   (x)          ->   Showing 1 of 1
+```
+
+**Creator spells equality `is`, not `equals`** — and applies it to a **number**
+column. `ReportFilter` documented that only `contains` had ever been seen and that
+`equals` was inferred. Now two operators are verified and one label was wrong.
+
+Changed: `is` / `is not` are the canonical labels in `TEXT_OPERATORS`,
+`NUMBER_OPERATORS` and `DATE_OPERATORS`, with `OPERATOR_ALIASES` accepting the old
+`equals` / `not equals` so no saved filter breaks. `FilterBar`'s on-screen note now
+says two operators are confirmed rather than one.
+
+Also worth having: `Showing 1 of 1` on a filtered report, which confirms the footer
+reports the **filtered** count and is a live counterexample to the `Showing 1000 of
+###` seen everywhere else.
+
+### 7D.7 What this means for the rebuild
+
+- **Nothing to build for App Preferences itself.** It is a platform screen; the nav
+  item should link out, exactly as Accounts does. `[TODO]` for Husain: embedded or
+  linked, same open question as Accounts
+- **The integration inventory is now complete and small**: Books (live, connection),
+  WorkDrive (live, connection), two unnamed `Zoho OAuth` connections, DoubleTick
+  (hardcoded, three sites), Analytics (hardcoded client + token in a config record)
+- **`Eko_RS_App_Config` must be modelled as configuration, not as a form** when
+  Revenue Share is built, and the credential fields must not be report columns
+
+---
+
 ## 8. Label divergence — pick one per concept
 
 | Concept | Variants seen |

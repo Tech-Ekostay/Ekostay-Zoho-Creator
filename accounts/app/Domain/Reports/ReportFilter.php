@@ -18,12 +18,21 @@ use InvalidArgumentException;
  * So a filter is a COLUMN, an OPERATOR and a VALUE, displayed as a dismissable chip
  * — not the free-text box this app had. That much is verified.
  *
- * WHAT IS INFERRED, and says so on screen: the rest of the operator list. Only
- * `contains` has been seen. `equals`, `not equals`, `starts with`, `ends with`,
- * `is empty`, `is not empty` and the numeric/date comparisons are the obvious
- * companions and are offered, but no screenshot confirms Creator's exact menu. The
- * §10 field notes only ever verified `=` and `!=` on the Analytics side, which is a
- * different surface.
+ * A SECOND OPERATOR IS NOW VERIFIED, and it changes a label. The App Preferences
+ * screenshot of 27-Aug-2026 caught a Bank filter chip in the background:
+ *
+ *     SEARCH   Amount is "1713…"   (x)              -> Showing 1 of 1
+ *
+ * So Creator's equality operator is spelled **`is`**, not `equals`, and it applies to
+ * a NUMBER column. `is` is therefore the canonical label here and `equals` is kept as
+ * an accepted alias, because renaming an operator would break any saved filter that
+ * already uses the old word. Same for `is not` / `not equals`.
+ *
+ * WHAT IS STILL INFERRED, and says so on screen: the rest of the list. `starts with`,
+ * `ends with`, `is empty`, `is not empty` and the remaining numeric/date comparisons
+ * are the obvious companions and are offered, but no screenshot confirms Creator's
+ * exact menu. The §10 field notes only ever verified `=` and `!=` on the Analytics
+ * side, which is a different surface.
  *
  * ---------------------------------------------------------------------------
  * COLUMNS ARE WHITELISTED, AND THAT IS NOT OPTIONAL. A filter names a column, and a
@@ -51,17 +60,20 @@ final class ReportFilter
      * the default a user gets.
      */
     public const TEXT_OPERATORS = [
-        'contains', 'not contains', 'equals', 'not equals',
+        'contains', 'not contains', 'is', 'is not',
         'starts with', 'ends with', 'is empty', 'is not empty',
     ];
 
+    /** Accepted but not offered: the pre-27-Aug-2026 spellings of `is` / `is not`. */
+    public const OPERATOR_ALIASES = ['equals' => 'is', 'not equals' => 'is not'];
+
     public const NUMBER_OPERATORS = [
-        'equals', 'not equals', 'greater than', 'less than',
+        'is', 'is not', 'greater than', 'less than',
         'greater or equal', 'less or equal', 'is empty', 'is not empty',
     ];
 
     public const DATE_OPERATORS = [
-        'equals', 'not equals', 'on or after', 'on or before', 'is empty', 'is not empty',
+        'is', 'is not', 'on or after', 'on or before', 'is empty', 'is not empty',
     ];
 
     public const BOOLEAN_OPERATORS = ['is true', 'is false'];
@@ -118,7 +130,9 @@ final class ReportFilter
     {
         foreach ($filters as $filter) {
             $label = (string) ($filter['column'] ?? '');
-            $operator = (string) ($filter['operator'] ?? 'contains');
+            $operator = self::OPERATOR_ALIASES[
+                (string) ($filter['operator'] ?? 'contains')
+            ] ?? (string) ($filter['operator'] ?? 'contains');
             $value = $filter['value'] ?? null;
 
             if ($label === '') {
@@ -219,7 +233,7 @@ final class ReportFilter
 
                 return;
 
-            case 'equals':
+            case 'is':
                 // Text equality stays case-insensitive for the same reason as
                 // `contains`; numbers and dates compare exactly.
                 $type === 'text'
@@ -228,7 +242,7 @@ final class ReportFilter
 
                 return;
 
-            case 'not equals':
+            case 'is not':
                 $type === 'text'
                     ? $query->where($column, 'not ilike', $value)
                     : $query->where($column, '<>', $value);
