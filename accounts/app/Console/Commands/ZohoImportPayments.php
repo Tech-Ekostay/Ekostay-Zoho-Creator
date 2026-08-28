@@ -97,6 +97,33 @@ class ZohoImportPayments extends Command
         }
     }
 
+    /**
+     * `18-Jun-2026 05:36:17` — Creator's platform stamp, date AND time.
+     *
+     * Separate from `date()` because that one truncates to 11 characters and returns a
+     * date string, which threw the time away. Every report in this app leads with
+     * `Added Time` and shows both halves (`27-Aug-2026 19:06:48`), so losing the time
+     * loses the column's whole purpose — and the ordering that depends on it.
+     */
+    private function stamp(?string $v): ?string
+    {
+        $v = $v === null ? '' : trim($v);
+
+        if ($v === '') {
+            return null;
+        }
+
+        foreach (['d-M-Y H:i:s', 'd-M-Y H:i', 'd-M-Y'] as $format) {
+            try {
+                return Carbon::createFromFormat($format, $v)->toDateTimeString();
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
     private function yes(?string $v): bool
     {
         return strtolower(trim((string) $v)) === 'yes';
@@ -242,7 +269,31 @@ class ZohoImportPayments extends Command
                     'payment_reference_number' => $this->text($r['Payment Reference Number'] ?? null),
                     'remarks' => $this->text($r['Accounts Remarks'] ?? null),
                     'expense_by' => $this->text($r['Expense By'] ?? null),
+
+                    /*
+                     * CREATOR'S FOUR PLATFORM FIELDS — and three of them were dropped
+                     * until 28-Aug-2026.
+                     *
+                     * The export carries `Added Time`, `Modified Time`, `Added User` and
+                     * `Modified User`, and only `added_user` was mapped. So `added_time`
+                     * was NULL on all 53,280 rows, which had two consequences:
+                     *
+                     *   1. The `Added Time` column rendered blank on every report that
+                     *      leads with it.
+                     *   2. `order by added_time desc, id desc` degenerated to `id desc`
+                     *      — import-file order — so the newest payment was NOT at the top
+                     *      of All Payments. Husain saw 21697 sitting between 21317 and
+                     *      21370 and reasonably read the whole sync as stale.
+                     *
+                     * `TracksCreatorAudit` did not save it either: this importer writes
+                     * through `DB::table()->upsert()` in batches, which bypasses model
+                     * events by design — 53,280 model saves would be far slower. So the
+                     * values have to be mapped here, explicitly.
+                     */
+                    'added_time' => $this->stamp($r['Added Time'] ?? null),
                     'added_user' => $this->text($r['Added User'] ?? null),
+                    'modified_time' => $this->stamp($r['Modified Time'] ?? null),
+                    'modified_user' => $this->text($r['Modified User'] ?? null),
                     'accounts_bills' => $this->yes($r['Accounts Bills'] ?? null),
 
                     'created_at' => now(),

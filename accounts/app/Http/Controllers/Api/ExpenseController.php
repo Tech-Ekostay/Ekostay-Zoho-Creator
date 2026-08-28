@@ -119,7 +119,14 @@ class ExpenseController extends Controller
         $query = Expense::query()
             ->with(['villa', 'primaryVilla', 'location', 'itemCategory', 'masterCategory',
                 'coaAccount', 'bankAccount', 'billingCycle'])
-            ->orderByDesc('added_time')
+            /*
+             * NULLS LAST, EXPLICITLY. Postgres sorts NULLs FIRST on a DESC order, so
+             * `order by added_time desc` floated the 40 rows with no timestamp above
+             * all 53,240 real ones — the top of All Payments was blank rows, which
+             * reads exactly like a broken sync. A missing stamp is missing data and
+             * belongs at the END, not presented as the newest thing in the system.
+             */
+            ->orderByRaw('added_time desc nulls last')
             ->orderByDesc('id');
 
         $filter = $this->filterable();

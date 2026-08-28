@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Rail from './components/Rail';
 import ReportBar from './components/ReportBar';
@@ -64,8 +64,66 @@ const NOT_BUILT_REASON = {
   backend_payments: 'Form only; no list screenshot exists yet.',
 };
 
+/**
+ * The report named in `#/<key>`, if it is one we can render.
+ *
+ * Validated against `nav.js` rather than trusted: a stale bookmark or a typo must fall
+ * back to a working screen, not render an empty one. `built: false` keys ARE allowed
+ * through — they render the honest "not built yet, and here is why" panel, which is a
+ * real destination.
+ */
+function reportFromHash() {
+  const key = (window.location.hash || '').replace(/^#\/?/, '').trim();
+
+  if (key === '') {
+    return 'payments';
+  }
+
+  const known = NAV.flatMap((item) => [item.key, ...(item.children ?? []).map((c) => c.key)]);
+
+  return known.includes(key) ? key : 'payments';
+}
+
 export default function App() {
-  const [report, setReport] = useState('all_item_categories');
+  /*
+   * REFRESH USED TO LAND ON SETTINGS. The initial state was hardcoded to
+   * `all_item_categories` — one of the eight Settings reports — a leftover from when
+   * Settings was the screen being built. Every reload dropped the reader there
+   * regardless of where they had been (Husain, 28-Aug-2026).
+   *
+   * Now the report lives in the URL hash, so a refresh returns you to the same screen
+   * and a link can be sent to someone. An unknown or absent hash falls back to
+   * `payments`, which is the app's main working screen — not `accounts`, which is an
+   * external dashboard and renders nothing here.
+   */
+  const [report, setReport] = useState(reportFromHash);
+
+  /*
+   * Keep the hash in step, so a refresh returns here and the URL can be shared.
+   *
+   * `replaceState` rather than assigning `location.hash`: assigning pushes a history
+   * entry per navigation, which turns the browser Back button into a tour of every
+   * report the reader glanced at instead of taking them out of the app.
+   */
+  const go = (key) => {
+    setReport(key);
+
+    try {
+      window.history.replaceState(null, '', `#/${key}`);
+    } catch {
+      // A sandboxed or file:// context can refuse replaceState. Navigation still works;
+      // only the refresh-remembers-where-you-were part is lost.
+    }
+  };
+
+  /* Back/forward and a hand-edited hash both still navigate. */
+  useEffect(() => {
+    const onHash = () => setReport(reportFromHash());
+
+    window.addEventListener('hashchange', onHash);
+
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
 
   const navItem = NAV.find((item) => item.key === report)
     ?? NAV.flatMap((item) => item.flyout ?? []).find((child) => child.key === report);
@@ -76,7 +134,7 @@ export default function App() {
 
   return (
     <div className="zc-app">
-      <Rail active={report} onNavigate={setReport} />
+      <Rail active={report} onNavigate={go} />
 
       <main className="zc-main">
         <div className="zc-appbar">
@@ -88,7 +146,7 @@ export default function App() {
         {report === 'bills' ? (
           // Bills owns Create_Payment, so it can send the user to Payments after
           // minting one (§7.2 opens the new payment in Creator).
-          <BillsModule onCreatePayment={() => setReport('payments')} />
+          <BillsModule onCreatePayment={() => go('payments')} />
         ) : report === 'payments' ? (
           /*
            * PAYMENTS' `+` NO LONGER GOES TO BILLS. That was wrong, and Husain

@@ -118,6 +118,40 @@ class PaymentController extends Controller
          * nothing is worse than one that errors: the unfiltered result reads as the
          * filtered one.
          */
+
+        /*
+         * AN EXPLICIT, TOTAL ORDERING — and it was missing until 28-Aug-2026.
+         *
+         * This index had NO `order by` at all, which caused two separate faults:
+         *
+         *  1. Postgres returned rows in whatever order the plan produced, so the newest
+         *     payment was not at the top. Husain reported "still not getting the live
+         *     data" partly for this reason: 21697 WAS present, sitting between 21317 and
+         *     21370 where nobody would look for it.
+         *
+         *  2. It silently broke the paging added the same day. `PagesReports` documents
+         *     that offset paging is only correct when the sort is TOTAL — without one,
+         *     page 2 can repeat or skip rows the reader never sees. Wiring paging into an
+         *     unordered query violated the precondition the trait itself states.
+         *
+         * `added_time desc, id desc` matches every other report here and puts the newest
+         * first, which is what makes "did my payment arrive?" answerable. The `id`
+         * tiebreak is what makes it total: `added_time` is null on plenty of imported
+         * rows and ties on many more.
+         *
+         * The live All Payments report's own sort order is NOT verified — no screenshot
+         * records it — so this is chosen for correctness and consistency, and flagged as
+         * assumed rather than replicated.
+         */
+            /*
+             * NULLS LAST, EXPLICITLY. Postgres sorts NULLs FIRST on a DESC order, so
+             * `order by added_time desc` floated the 40 rows with no timestamp above
+             * all 53,240 real ones — the top of All Payments was blank rows, which
+             * reads exactly like a broken sync. A missing stamp is missing data and
+             * belongs at the END, not presented as the newest thing in the system.
+             */
+        $query->orderByRaw('added_time desc nulls last')->orderByDesc('id');
+
         $filter = $this->filterable();
         $filters = $this->requestedFilters($request);
 
