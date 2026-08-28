@@ -6,6 +6,7 @@ import BillsModule from './modules/BillsModule';
 import PaymentsModule from './modules/PaymentsModule';
 import SettingsModule from './modules/SettingsModule';
 import ExpensesModule from './modules/ExpensesModule';
+import PendingApprovalsModule from './modules/PendingApprovalsModule';
 import VendorMasterModule from './modules/VendorMasterModule';
 import { NAV } from './nav';
 
@@ -59,7 +60,6 @@ const NOT_BUILT_REASON = {
   schedule_payments: 'Gated: depends on §11 versioned payroll configuration with effective dates. Without it, re-running a month silently re-decides old payslips.',
   expense_observations: 'Spec §13 — needs the observation rules settled first.',
   backend_expenses: '31 columns, 135 fields. Addendum §4 has corrections but the form is unverified.',
-  pending_approvals: '24 columns; depends on the approval engine, which §8.5 leaves hand-rolled in Deluge.',
   payment_requests: 'Three views, the clearest evidence for the §3.3 permission matrix (addendum §6). Needs authorisation wired first.',
   backend_payments: 'Form only; no list screenshot exists yet.',
 };
@@ -114,6 +114,18 @@ export default function App() {
            * of the live report covering the full horizontal scroll.
            */
           <ExpensesModule />
+        ) : report === 'pending_approvals' ? (
+          /*
+           * All Pending Approvals — 24 columns, order verified from seven screenshots,
+           * and the FIRST screen here that moves money. The three action buttons sit
+           * mid-table because that is where the live report puts them.
+           *
+           * `Approve` / `Reject` / `Pay` are wired, unlike every other action button in
+           * this app: DecideApproval and MarkPaymentPaid are transcribed from the DS and
+           * verified end to end. There is still no authentication behind them, and the
+           * page says so.
+           */
+          <PendingApprovalsModule />
         ) : VENDOR_REPORTS.has(report) ? (
           /*
            * Both vendor nav keys render the same report. Creator has two and no

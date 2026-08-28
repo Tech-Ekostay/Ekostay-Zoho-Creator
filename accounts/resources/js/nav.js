@@ -60,7 +60,7 @@ export const NAV = [
     ],
   },
   { key: 'backend_expenses', label: 'Backend Expenses', built: false },
-  { key: 'pending_approvals', label: 'Pending Approvals', built: false },
+  { key: 'pending_approvals', label: 'Pending Approvals', built: true },
   { key: 'app_preferences', label: 'App Preferences', built: false },
   {
     key: 'payment_requests',

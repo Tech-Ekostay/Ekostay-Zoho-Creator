@@ -96,6 +96,16 @@ class PendingApproval extends Model
             : $atLevel->contains(fn ($a) => $a->approved === true);
     }
 
+    /**
+     * Compare a status without being defeated by casing — the same reason
+     * `Payment::statusIs()` exists. `Paid` / `paid` / `PAID` all occur across this
+     * app (addendum §8), and this record carries TWO status columns that can disagree.
+     */
+    public function statusIs(string $candidate): bool
+    {
+        return strcasecmp(trim((string) $this->status), trim($candidate)) === 0;
+    }
+
     public function isOpen(): bool
     {
         return $this->next_level_approval_required === true;

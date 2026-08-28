@@ -117,6 +117,19 @@ class Payment extends Model
         return $this->belongsTo(Villa::class);
     }
 
+    /**
+     * `Bank Name` on the reports — a COA row, not a separate bank table.
+     *
+     * §17.5 settled that COA doubles as the bank master: 44 rows carry `Bank = true`
+     * and 9 of those are not typed `bank`, so the flag is the authority and the type
+     * is not. Added 27-Aug-2026 because Pending Approvals shows `Bank Name` and
+     * nothing had ever needed to resolve `bank_coa_account_id` before.
+     */
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(CoaAccount::class, 'bank_coa_account_id');
+    }
+
     public function billPayments(): HasMany
     {
         return $this->hasMany(PaymentBillPayment::class)->orderBy('position');
