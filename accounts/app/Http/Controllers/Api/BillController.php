@@ -48,6 +48,7 @@ use Illuminate\Support\Facades\DB;
 class BillController extends Controller
 {
     use Concerns\FiltersReports;
+    use Concerns\PagesReports;
 
     /** Column labels in report order. §6.1's "which All Bills report is live" is open. */
     private const COLUMNS = [
@@ -111,15 +112,23 @@ class BillController extends Controller
 
         $matched = (clone $query)->count();
 
-        // 1000, matching Creator's page size — see PaymentController::index.
-        $bills = $query->limit(1000)->get();
+        /*
+         * ONE PAGE, plus whether another exists. `limit(1000)` was a hard CEILING:
+         * row 1,001 was unreachable, so a filtered nil result was indistinguishable
+         * from a truncated one — the exact confusion server-side filtering was added
+         * to remove. The client now appends as it scrolls (Husain, 28-Aug-2026).
+         */
+        $offset = $this->requestedOffset($request);
+        $page = $this->page($query, $offset);
+        $bills = $page['rows'];
 
         return response()->json([
             'report' => 'bills',
             'title' => 'All Bills',
             'columns' => self::COLUMNS,
-            'total' => Bill::query()->count(),
-            'matched' => $matched,
+            ...$this->pagingEnvelope(
+                $offset, $page['next_offset'], $matched, Bill::query()->count(),
+            ),
             'filter_schema' => $filter->schema(),
             'filters' => $filters,
             'rows' => $bills->map(fn (Bill $bill): array => $this->row($bill))->all(),

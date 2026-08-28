@@ -51,6 +51,7 @@ use RuntimeException;
 class PendingApprovalController extends Controller
 {
     use Concerns\FiltersReports;
+    use Concerns\PagesReports;
 
     /**
      * Verbatim, in the order the live report displays them.
@@ -138,7 +139,16 @@ class PendingApprovalController extends Controller
         }
 
         $matched = (clone $query)->count();
-        $rows = $query->limit(1000)->get();
+
+        /*
+         * ONE PAGE, plus whether another exists. `limit(1000)` was a hard CEILING:
+         * row 1,001 was unreachable, so a filtered nil result was indistinguishable
+         * from a truncated one — the exact confusion server-side filtering was added
+         * to remove. The client now appends as it scrolls (Husain, 28-Aug-2026).
+         */
+        $offset = $this->requestedOffset($request);
+        $page = $this->page($query, $offset);
+        $rows = $page['rows'];
 
         return response()->json([
             'report' => 'pending-approvals',
@@ -146,8 +156,9 @@ class PendingApprovalController extends Controller
             'columns' => self::COLUMNS,
             'actions' => self::ACTIONS,
             'column_hints' => self::COLUMN_HINTS,
-            'total' => PendingApproval::query()->count(),
-            'matched' => $matched,
+            ...$this->pagingEnvelope(
+                $offset, $page['next_offset'], $matched, PendingApproval::query()->count(),
+            ),
             'filter_schema' => $filter->schema(),
             'filters' => $filters,
             // Said out loud, because a queue with buttons looks like a control.

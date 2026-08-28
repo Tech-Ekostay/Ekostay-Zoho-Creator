@@ -5,6 +5,7 @@ import FilterBar from '../components/FilterBar';
 import RecordDetail from '../components/RecordDetail';
 import BillForm from './BillForm';
 import { ddMmmYyyy, inr } from '../lib/format';
+import usePagedReport from '../lib/usePagedReport';
 
 /**
  * All Bills — §6, and the module everything else flows from. A payment is created
@@ -24,13 +25,10 @@ const MONEY = new Set([
 ]);
 
 export default function BillsModule({ onCreatePayment }) {
-  const [data, setData] = useState(null);
   const [options, setOptions] = useState(null);
-  const [error, setError] = useState(null);
 
   /* Creator-style filters: column + operator + value, applied server-side. */
   const [filters, setFilters] = useState([]);
-  const [filterError, setFilterError] = useState(null);
 
   /*
    * DEPEND ON THE SERIALISED FILTERS, NOT THE ARRAY.
@@ -61,19 +59,16 @@ export default function BillsModule({ onCreatePayment }) {
   const [viewing, setViewing] = useState(null);
   const [notice, setNotice] = useState(null);
 
-  const load = useCallback(() => {
-    setError(null);
-    fetch(`/api/bills${filters.length ? `?filters=${encodeURIComponent(JSON.stringify(filters))}` : ''}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((body) => {
-        if (body.reason === 'bad_filter') { setFilterError(body.message); return; }
-        setData(body);
-      })
-      .catch((e) => setError(String(e.message ?? e)));
-  }, [filterKey]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /*
+   * 1,000 rows a page, appended as the reader scrolls — 17,161 bills, so the old
+   * `limit(1000)` left 16,161 of them unreachable.
+   */
+  const {
+    data, rows: pagedRows, error, setError, filterError, setFilterError,
+    loadingMore, hasMore, loadMore, reload: load,
+  } = usePagedReport('/api/bills', filters);
 
   useEffect(() => {
-    load();
     fetch('/api/bills/options')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then(setOptions)
@@ -91,15 +86,23 @@ export default function BillsModule({ onCreatePayment }) {
       .catch((e) => setError(String(e.message ?? e)));
   }, [editing]);
 
+  /*
+   * `term` IS STILL A CLIENT-SIDE FILTER, and that is a known limitation rather than a
+   * choice. It matches only the rows currently loaded, so with paging it now searches
+   * however many pages the reader has scrolled through instead of a fixed 1,000 — less
+   * wrong than before and still wrong. `filters` (the chips) are server-side and cover
+   * every row; this box does not. Converting it belongs with the Bills filter work, not
+   * with paging.
+   */
   const rows = useMemo(() => {
-    const all = data?.rows ?? [];
+    const all = pagedRows;
     const needle = term.trim().toLowerCase();
     if (needle === '') return all;
 
     return all.filter((row) =>
       (data?.columns ?? []).some((label) => String(row[label] ?? '').toLowerCase().includes(needle))
     );
-  }, [data, term]);
+  }, [pagedRows, term]);
 
   const columns = (data?.columns ?? []).map((label) => ({
     key: label,
@@ -174,7 +177,7 @@ export default function BillsModule({ onCreatePayment }) {
       {error && <div style={{ padding: 14, color: 'var(--bad)' }}>Failed to load: {error}</div>}
       {!data && !error && <div style={{ padding: 14, color: 'var(--ink3)' }}>Loading…</div>}
 
-      {data && data.rows.length === 0 && (
+      {data && rows.length === 0 && (
         <div style={{ padding: 20, color: 'var(--ink3)' }}>
           <p style={{ marginTop: 0 }}>No bills yet.</p>
           <p style={{ fontSize: 12 }}>
@@ -185,7 +188,7 @@ export default function BillsModule({ onCreatePayment }) {
         </div>
       )}
 
-      {data && data.rows.length > 0 && (
+      {data && rows.length > 0 && (
         <ReportGrid
           columns={columns}
           rows={rows}
@@ -198,6 +201,9 @@ export default function BillsModule({ onCreatePayment }) {
            * not something reached through a detail view.
            */
           onSelect={(row) => { setSelectedId(row.id); setViewing(row.id); }}
+          onLoadMore={loadMore}
+          loadingMore={loadingMore}
+          hasMore={hasMore}
         />
       )}
 

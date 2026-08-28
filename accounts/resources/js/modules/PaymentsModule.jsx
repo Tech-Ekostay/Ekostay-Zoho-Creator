@@ -5,6 +5,7 @@ import RecordDetail from '../components/RecordDetail';
 import FilterBar from '../components/FilterBar';
 import PaymentForm from './PaymentForm';
 import { ddMmmYyyy, inr, rupees, sameStatus } from '../lib/format';
+import usePagedReport from '../lib/usePagedReport';
 
 /**
  * All Payments — §7, and the first screen in this app with a write path behind it.
@@ -30,8 +31,6 @@ import { ddMmmYyyy, inr, rupees, sameStatus } from '../lib/format';
 const SETTLED = ['paid'];
 
 export default function PaymentsModule() {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
 
   /*
@@ -50,7 +49,6 @@ export default function PaymentsModule() {
    * Payments screenshot shows.
    */
   const [filters, setFilters] = useState([]);
-  const [filterError, setFilterError] = useState(null);
 
   const [adding, setAdding] = useState(false);
   const [options, setOptions] = useState(null);
@@ -66,20 +64,18 @@ export default function PaymentsModule() {
       .catch(() => setOptions(null));
   }, []);
 
-  const load = useCallback(() => {
-    setError(null);
-    fetch(`/api/payments${filters.length ? `?filters=${encodeURIComponent(JSON.stringify(filters))}` : ''}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
-      .then((body) => {
-        // A rejected filter comes back 422 with the allowed columns named. Show it;
-        // a silently unfiltered grid reads as a filtered one.
-        if (body.reason === 'bad_filter') { setFilterError(body.message); return; }
-        setData(body);
-      })
-      .catch((e) => setError(String(e)));
-  }, [filters]);
-
-  useEffect(load, [load]);
+  /*
+   * 1,000 rows a page, appended as the reader scrolls. 52,639 payments, so the old
+   * `limit(1000)` left 51,639 unreachable — and a search for a payment at row 5,000
+   * came back empty in a way indistinguishable from "no such payment".
+   *
+   * A rejected filter still surfaces: `filterError` comes from the hook, which shows the
+   * server's message rather than leaving an unfiltered grid reading as a filtered one.
+   */
+  const {
+    data, rows, error, setError, filterError, setFilterError,
+    loadingMore, hasMore, loadMore, reload: load,
+  } = usePagedReport('/api/payments', filters);
 
   /** Pull the detail — the split grid lives there, not on the list row. */
   useEffect(() => {
@@ -140,12 +136,14 @@ export default function PaymentsModule() {
   };
 
   /*
-   * NO CLIENT-SIDE FILTERING ANY MORE. This used to lowercase-match the loaded rows,
-   * which quietly meant "search the first 1,000 of 52,638" — a payment at row 5,000
-   * read as absent rather than off-page. The server returns exactly the rows that
-   * match, so the grid renders what it is given.
+   * NO CLIENT-SIDE FILTERING, AND NO 1,000-ROW HORIZON EITHER.
+   *
+   * This once lowercase-matched the loaded rows, which quietly meant "search the first
+   * 1,000 of 52,639" — a payment at row 5,000 read as absent rather than off-page. The
+   * server does the filtering. And since 28-Aug-2026 it also PAGES: `rows` comes from
+   * `usePagedReport` and accumulates 1,000 at a time as the reader scrolls, so row 5,000
+   * is now genuinely reachable rather than merely correctly counted.
    */
-  const rows = data?.rows ?? [];
 
   return (
     <>
@@ -182,7 +180,7 @@ export default function PaymentsModule() {
       {error && <div style={{ padding: 14, color: 'var(--bad)' }}>Failed to load: {error}</div>}
       {!data && !error && <div style={{ padding: 14, color: 'var(--ink3)' }}>Loading…</div>}
 
-      {data && data.rows.length === 0 && filters.length > 0 && (
+      {data && rows.length === 0 && filters.length > 0 && (
         <div style={{ padding: 20, color: 'var(--ink3)' }}>
           <p style={{ marginTop: 0 }}>No payment matches these filters.</p>
           <p style={{ fontSize: 12 }}>
@@ -192,7 +190,7 @@ export default function PaymentsModule() {
         </div>
       )}
 
-      {data && data.rows.length === 0 && filters.length === 0 && (
+      {data && rows.length === 0 && filters.length === 0 && (
         <div style={{ padding: 20, color: 'var(--ink3)' }}>
           <p style={{ marginTop: 0 }}>No payments yet.</p>
           <p style={{ fontSize: 12 }}>
@@ -204,13 +202,16 @@ export default function PaymentsModule() {
         </div>
       )}
 
-      {data && data.rows.length > 0 && (
+      {data && rows.length > 0 && (
         <ReportGrid
           columns={columns}
           rows={rows}
           total={filters.length > 0 ? data.matched : data.total}
           selectedId={selected}
           onSelect={(row) => setSelected(row.id)}
+          onLoadMore={loadMore}
+          loadingMore={loadingMore}
+          hasMore={hasMore}
         />
       )}
 

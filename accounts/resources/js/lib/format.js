@@ -120,11 +120,19 @@ export function isGoZeroTime(value) {
  * evidence wins. Reproducing `###` was faithful to the document and wrong about the
  * product, which is the worst kind of wrong — it looked deliberate.
  *
- * The 1000 cap on the SHOWN count stays: Creator does page at 1000, and the live
- * footer says `Showing 1000` against a 66,407 total.
+ * THE 1000 CAP IS GONE, 28-Aug-2026. It was right while the server returned at most
+ * 1,000 rows: `Showing 1000 of 66407` was both what Creator said and what was true.
+ * The reports now page at 1,000 and APPEND as the reader scrolls, so the shown count
+ * genuinely reaches 2,000 and 3,000 — and capping the display at 1,000 would have made
+ * the footer lie about a list the reader can see is longer.
+ *
+ * The shown count is grouped too. `Showing 12000 of 66407` reads as a glitch beside
+ * `66,407`; both halves of one sentence should count the same way.
  */
 export function showing(shown, total) {
-  return `Showing ${Math.min(shown, 1000)} of ${inr(String(total ?? 0), 0)}`;
+  const n = Math.max(0, Number(shown) || 0);
+
+  return `Showing ${inr(String(n), 0)} of ${inr(String(total ?? 0), 0)}`;
 }
 
 /**

@@ -52,6 +52,14 @@ use Illuminate\Validation\Rule;
  */
 class PaymentController extends Controller
 {
+    /*
+     * NOTE: this controller carries its OWN `requestedFilters()` (see near the bottom)
+     * rather than using `Concerns\FiltersReports`, because it predates that trait. Not
+     * refactored here — unifying them is a separate change from adding paging, and
+     * touching the filter path on the 52,639-row report needs its own verification.
+     */
+    use Concerns\PagesReports;
+
     /** Column labels in report order — see the docblock on why this is provisional. */
     private const COLUMNS = [
         'Payment No',
@@ -136,13 +144,22 @@ class PaymentController extends Controller
          * count — a reviewer comparing against the live screen would see a difference.
          * Caught by rendering it against the 52,638 imported payments.
          */
-        $payments = $query->limit(1000)->get();
+        /*
+         * ONE PAGE, plus whether another exists. `limit(1000)` was a hard CEILING:
+         * row 1,001 of 52,639 was unreachable, so a filtered nil result was
+         * indistinguishable from a truncated one — the exact confusion server-side
+         * filtering was added to remove. The client appends as it scrolls.
+         */
+        $offset = $this->requestedOffset($request);
+        $page = $this->page($query, $offset);
+        $payments = $page['rows'];
 
         return response()->json([
             'report' => 'all_payments',
             'columns' => self::COLUMNS,
-            'total' => Payment::query()->count(),
-            'matched' => $matched,
+            ...$this->pagingEnvelope(
+                $offset, $page['next_offset'], $matched, Payment::query()->count(),
+            ),
             'filter_schema' => $filter->schema(),
             'filters' => $filters,
             'rows' => $payments->map(fn (Payment $p): array => $this->row($p))->all(),

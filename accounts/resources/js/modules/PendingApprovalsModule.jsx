@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ReportBar from '../components/ReportBar';
 import ReportGrid from '../components/ReportGrid';
 import FilterBar from '../components/FilterBar';
 import RecordDetail from '../components/RecordDetail';
 import { ddMmmYyyy, rupees } from '../lib/format';
+import usePagedReport from '../lib/usePagedReport';
 
 /**
  * All Pending Approvals — 24 columns, and the first screen here that MOVES money.
@@ -139,29 +140,20 @@ function ActionDialog({ action, row, onCancel, onConfirm }) {
 }
 
 export default function PendingApprovalsModule() {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
   const [filters, setFilters] = useState([]);
-  const [filterError, setFilterError] = useState(null);
   const [selected, setSelected] = useState(null);
   const [detail, setDetail] = useState(null);
   const [notice, setNotice] = useState(null);
   const [dialog, setDialog] = useState(null);
 
-  const filterKey = JSON.stringify(filters);
-
-  const load = useCallback(() => {
-    setError(null);
-    fetch(`/api/pending-approvals${filters.length ? `?filters=${encodeURIComponent(JSON.stringify(filters))}` : ''}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((body) => {
-        if (body.reason === 'bad_filter') { setFilterError(body.message); return; }
-        setData(body);
-      })
-      .catch((e) => setError(String(e.message ?? e)));
-  }, [filterKey]);   // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => { load(); }, [load]);
+  /*
+   * 1,000 rows a page, appended as the reader scrolls. The live queue is 14,815 rows
+   * (addendum §19), so the old `limit(1000)` made 13,815 of them unreachable.
+   */
+  const {
+    data, rows, error, filterError, setFilterError,
+    loadingMore, hasMore, loadMore, reload: load,
+  } = usePagedReport('/api/pending-approvals', filters);
 
   useEffect(() => {
     if (selected === null) { setDetail(null); return; }
@@ -283,7 +275,7 @@ export default function PendingApprovalsModule() {
       {error && <div style={{ padding: 14, color: 'var(--bad)' }}>Failed to load: {error}</div>}
       {!data && !error && <div style={{ padding: 14, color: 'var(--ink3)' }}>Loading…</div>}
 
-      {data && data.rows.length === 0 && (
+      {data && rows.length === 0 && (
         <div style={{ padding: 20, color: 'var(--ink3)' }}>
           <p style={{ marginTop: 0 }}>
             {filters.length > 0 ? 'No approval matches these filters.' : 'Nothing awaiting approval.'}
@@ -298,13 +290,16 @@ export default function PendingApprovalsModule() {
         </div>
       )}
 
-      {data && data.rows.length > 0 && (
+      {data && rows.length > 0 && (
         <ReportGrid
           columns={columns}
-          rows={data.rows}
+          rows={rows}
           total={filters.length > 0 ? data.matched : data.total}
           selectedId={selected}
           onSelect={(row) => setSelected(row.id === selected ? null : row.id)}
+          onLoadMore={loadMore}
+          loadingMore={loadingMore}
+          hasMore={hasMore}
         />
       )}
 
