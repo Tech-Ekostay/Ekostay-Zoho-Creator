@@ -598,6 +598,28 @@ every status comparison misses part of the data.
 
 ---
 
+## Field types come from the DS, not from screenshots
+
+`Accounts.ds` declares every form field's `type`, `displayname`, `row`, `column` and —
+for each picklist and list — the query that populates it. `form Payment` alone carries
+**130 declared fields**, parsed to `docs/payment_form_fields.json`:
+
+```
+checkbox 28 · picklist 21 · text 21 · INR 11 · list 9 · textarea 7 · section 8
+email 5 · date 4 · radiobuttons 4 · number 3 · upload file 3 · grid 3 · datetime 1 · url 1
+```
+
+A screenshot shows what a control looks like; the DS says what it **is**. So do not ask
+for screenshots to learn a control type — parse the form.
+
+**What screenshots ARE for: VISIBILITY.** The DS declares 130 fields and the live form
+shows about 40. `Payment No.`, `Backend Payment Date`, `Haewaya TimeStamp` and
+`_staffLoanProcessed` are all declared in column 1 and absent from the screen. The DS
+gives order and type; the screenshot gives the visible set. Neither substitutes for the
+other. Addendum §21.
+
+---
+
 ## Verify by rendering. Every time.
 
 The v1 failure was ~4,000 lines of CSS written without once looking at it.

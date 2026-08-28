@@ -3906,3 +3906,131 @@ confidently wrong answer before the shape was checked.
 allocation of §6.3. It also carries **`Bill No` AND `Bill No_1`**, confirming from a
 second direction the duplicate `Bill No` pair first seen on Backbend Payments (§7.5),
 where both copies were blank and canonicality could not be decided.
+
+---
+
+## 21. The Payment form's control types come from the DS, not from screenshots
+
+Husain: *"I dont have the option to enter the bill number in payments add page. Also I
+need the fields to be a dropdown or lookup or textbox, etc as per creator itself… if that
+is not mentioned in the md file I can give you the screenshots for all the pages again."*
+
+**No screenshots are needed for the control types.** `Accounts.ds:7273-8673` declares all
+**130 fields** of `form Payment` with `type`, `displayname`, `row`, `column` and, for
+every picklist and list, the **query that populates it**. Parsed to
+`docs/payment_form_fields.json`.
+
+```
+checkbox 28 · picklist 21 · text 21 · INR 11 · list 9 · textarea 7 · section 8
+email 5 · date 4 · radiobuttons 4 · number 3 · upload file 3 · grid 3
+datetime 1 · url 1 · submit 1
+```
+
+A screenshot shows what a control looks like; the DS says what it **is**, and which rows
+feed it. That is the stronger source and it was sitting in the repo.
+
+### 21.1 What screenshots ARE still needed for: VISIBILITY
+
+The DS declares 130 fields and the live form shows about 40. Comparing the DS layout
+against Husain's 28-Aug screenshot of the Accounts Payable case:
+
+| DS declares, column 1 | on screen? |
+|---|---|
+| COA · Requested Date · Payment Date · Due Date | yes |
+| Item Category · Master Category · Payment Mode · Bank Name | yes |
+| Status · Expense By | yes |
+| **Payment No. · Backend Payment Date · Haewaya TimeStamp · `_staffLoanProcessed`** | **no** |
+
+So the DS gives the **order and the type**; the screenshot gives the **visible set**.
+Neither substitutes for the other, and that is the division to work to from here.
+
+### 21.2 THE BILL NO PICKER, fully specified
+
+`Accounts.ds:7479`:
+
+```
+Bill_No1
+    type = list                                    <- MULTI-select, not a textbox
+    displayname = "Bill No"
+    values = Bills[Vendor_Name.ID == input.Vendor_Name && Status == "Draft"
+                   || Status == "Overdue" || Status == "Partially Paid"].ID
+    displayformat = [Bill_No]                       <- shows Bill_No, stores the ID
+    sortorder = ascending
+    row = 1  column = 2  height = 60px  width = medium
+```
+
+**It is vendor-dependent**: pick the vendor, and that vendor's open bills appear. That is
+the mechanic behind Husain's rule that adding a bill number moves the COA to Accounts
+Payable (§20).
+
+**And `Bill No` is the duplicate pair, RESOLVED for this form.** Two fields share the
+label — `Bill_No` (`text`) and `Bill_No1` (`list`) — and the screenshot shows exactly one
+`Bill No`, rendered as a `-Select-` picker. So **the `list` is live and the `text` copy is
+hidden**, which settles for the Payment form what §7.5 could not settle for Backbend
+Payments, where both copies were blank.
+
+**`Vendor Order Booking No.`** sits directly beneath it, also `type = list`, also
+vendor-scoped, against `fb.Vendor_Order_Booking`. It carries
+`advanced field search = true` — and the screenshot shows a **magnifying-glass button** on
+that field and on no other. So that attribute renders as a search affordance; worth
+knowing wherever else it appears.
+
+### 21.3 A `&&`/`||` PRECEDENCE BUG IN THE BILL FILTER
+
+Read the filter again with Deluge's precedence, where `&&` binds tighter than `||`:
+
+```
+(Vendor_Name == input.Vendor_Name && Status == "Draft")
+   || Status == "Overdue"
+   || Status == "Partially Paid"
+```
+
+**The vendor test applies ONLY to `Draft` bills.** Every `Overdue` and every
+`Partially Paid` bill in the system is offered against *any* vendor. The evident intent
+is `Vendor == input.Vendor && Status in (Draft, Overdue, Partially Paid)`, which needs
+brackets the source does not have.
+
+This is the same defect class already on the register — *"a `&&` where `||` was meant,
+making an IGST0 branch dead code"* — and it is the second instance found.
+
+**Latent in our data, live in Creator.** Our 17,161 bills are 17,158 `Paid`, two null,
+one `Payment InProgress`, one `Submit for approval`: no `Overdue`, no `Partially Paid`,
+so nothing is currently mis-offered here. Live almost certainly has them.
+
+**DECISION: implement the intent, log the deviation.** Offering another vendor's bill for
+payment is a money-movement error, not a cosmetic one, and there is precedent — D1 fixed
+§7.2's TDS sign rather than reproducing it. Recorded as **D10**.
+
+### 21.4 AND OUR BILLS WERE RECONSTRUCTED, WHICH EMPTIES THE PICKER
+
+A standing note reads: *"There is no Bills view in the accounts workspace. `expenses` is
+the nearest candidate."* That was written against a 16-view registry. **There is one**,
+found 28-Aug-2026 with both child grids:
+
+```
+Bills                     443703000000062641
+Bills_Amount Category     443703000001623416    §6.2's line items
+Bills_Split Payment       443703000001623128    the allocation grid
+```
+
+The cost of not knowing: `zoho:import-bills` **reconstructs** bills from the expenses
+export, and the reconstruction produced 17,158 `Paid` and no `Draft`. The Bill No picker
+offers Draft, Overdue and Partially Paid — **so it would render empty for every vendor**,
+and that is a data gap, not a form bug. The statuses were lost in reconstruction, not
+absent live.
+
+All three are now registered. Importing `bills` properly — rather than deriving it — is
+what makes the picker usable, and it is the prerequisite for testing the bill-to-payment
+flow at all.
+
+### 21.5 The order of work this implies
+
+1. **Import `bills`** from its own table. Without real statuses the picker is empty and
+   the flow cannot be tested.
+2. **Add `Bill No` to the Payment form** as a vendor-scoped multi-select, with the
+   bracketing corrected (D10).
+3. **Bring the rest of the form's controls to the declared types**, using
+   `docs/payment_form_fields.json` as the specification and the screenshots for
+   visibility.
+4. `Vendor Order Booking No.` needs the F&B app's `Vendor_Order_Booking` table, which is
+   in the `(Zoho Creator-F&B)` set and not yet registered.

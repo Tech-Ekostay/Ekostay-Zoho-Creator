@@ -205,6 +205,45 @@ final class ZohoViews
                 .'account and the input to the cutover takeover.',
         ],
 
+        /*
+         * ---- BILLS, and a standing claim corrected ------------------------
+         *
+         * §Zoho-connection notes say: "There is no Bills view in the accounts workspace.
+         * `expenses` is the nearest candidate and whether it is a bill or an
+         * `Expenses_Bills` row is unestablished." That was written against a 16-view
+         * registry. **There is one**, with both child grids, found 28-Aug-2026.
+         *
+         * The cost of not knowing: `zoho:import-bills` RECONSTRUCTS bills from the
+         * expenses export, and the 17,161 rows it produced are 17,158 `Paid` plus three
+         * odds — no `Draft`, no `Overdue`, no `Partially Paid`. So the Payment form's
+         * Bill No picker, which offers exactly those three statuses, has nothing to show
+         * for any vendor. The statuses were lost in the reconstruction, not absent live.
+         */
+        'bills' => [
+            'id' => '443703000000062641',
+            'workspace' => 'accounts',
+            'label' => 'Bills',
+            'large' => true,
+            'note' => 'THE REAL BILLS TABLE. Import this rather than reconstructing from '
+                .'`expenses` — reconstruction produced 17,158 Paid and no Draft, which '
+                .'empties the Payment form Bill No picker.',
+        ],
+        'bills_amount_category' => [
+            'id' => '443703000001623416',
+            'workspace' => 'accounts',
+            'label' => 'Bills_Amount Category (line items)',
+            'large' => true,
+            'note' => 'The `Amount_Category` of §6.2 — line items, distinct from the split '
+                .'allocation. The DS settled that difference; this is the data.',
+        ],
+        'bills_split_payment' => [
+            'id' => '443703000001623128',
+            'workspace' => 'accounts',
+            'label' => 'Bills_Split Payment (the allocation grid)',
+            'large' => true,
+            'note' => 'villa x category x cycle per bill — the grid `SplitAllocator` owns.',
+        ],
+
         // ---- approvals ---------------------------------------------------
         'approval' => [
             'id' => '443703000001623056',
