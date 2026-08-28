@@ -123,7 +123,7 @@ documented dirty data is intact and was confirmed directly against the files:
 | `F&B STAFF MEDICAL EXPENSE ` trailing space, only such name | yes, 1 of 135 |
 | `Expense Type` unset on 103 of 135 item categories | yes |
 | `Haewaya ID` empty on all 135 — sync key unpopulated | yes |
-| `Exclude for Observation` true on 1 → exclusion is inert | yes |
+| `Exclude for Observation` true on 1 → ~~exclusion is inert~~ | count yes, **conclusion WRONG** |
 | 9 COA rows with `Bank = true` not typed `bank`, incl. `Security Deposit` | yes |
 | `EKOSTAY IDFC LLP` twice, different record IDs | yes |
 | `Account Code` populated on 6 of 144 | yes |
@@ -132,6 +132,18 @@ documented dirty data is intact and was confirmed directly against the files:
 | `Copacabana Villa Calangute` **and** `Copacabana Villa- Calangute` | yes |
 | test record `fcgfhbjnh` | yes |
 | all 144 COA IDs are 18-char JSON **strings** | yes |
+
+**`Exclude for Observation` is NOT inert — corrected 27-Aug-2026.** The one category
+it excludes is `EXPERIENCES REFUND`, which is the whole Backbend Payments refunds
+channel (addendum §7.1). One of 135 by count, not marginal in effect. And its two
+siblings disagree: `FOOD REFUND` and `STAY REFUND` are both excluded from profit but
+**not** from observation, while `REFUND-stay-*` and `REFUND-food-*` both exist live —
+so stay and food refunds show up in Expense Observations and experiences refunds do
+not. Looks like an oversight; needs Husain. Addendum §7C.3.
+
+There are **three** exclusion columns, which is what §3.1's "do not implement all of
+them" is counting: `exclude_for_profit` (12 of 135), `exclude_for_observation` (1),
+`exclude_item_category` (**0** — entirely unused).
 
 **One correction to how the data reads.** The addendum's "`Nature` three times"
 is true of the *source*, not of the recovered master. `All_Approvals.Villa Name`

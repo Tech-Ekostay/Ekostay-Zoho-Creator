@@ -219,7 +219,9 @@ Zoho app pointers · Ekostay … · the Backend Payments list
 Accounts · **Bank** *(captured 27-Aug-2026 — 30 cols, inline-editable, Print-only
 panel, fed from Zoho Books; addendum §7B)* · Payments · Bills · Expenses ·
 Schedule Payments ·
-Expense Observations · Masters *(Vendor Master, All Vendor Masters)* ·
+**Expense Observations** *(captured 27-Aug-2026 — the only GROUPED report in the app,
+villa bands with true subtotals plus `Show Summary`; addendum §7C)* ·
+Masters *(Vendor Master, All Vendor Masters)* ·
 Settings *(8 reports, see addendum §2; **All Approvals + the Approvers grid
 captured 27-Aug-2026**, addendum §11.7)* · Backend Expenses · Pending Approvals ·
 App Preferences · Payment Requests *(3 views)* · Zoho app pointers - Payment Ap… ·

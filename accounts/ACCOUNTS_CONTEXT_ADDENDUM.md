@@ -1324,6 +1324,179 @@ above.
 
 ---
 
+## 7C. Expense Observations — captured 27-Aug-2026
+
+Five screenshots: the report, the detail panel, and the form in both a full-page and a
+**modal** presentation. Report `All Expense Observations` (plural), form
+`Expense Observation` (singular). Footer `Showing 1000 of ###` plus **`Show Summary`**,
+as Bank has.
+
+**Report columns (6):** `Villa Name` · `Location` · `Head Office` · `Amount`
+(right-aligned) · `Observation Notes` (**button**) · `Date`.
+
+### 7C.1 The first GROUPED report in the app, with real subtotals
+
+Nothing else in Accounts does this. Rows are grouped by villa under a grey band
+carrying a checkbox, and each group closes with a **subtotal row in pink**:
+
+```
+☐ Brooklyn Villa
+    Brooklyn Villa   Igatpuri                  ₹    56,736.00
+                                               ₹    56,736.00     <- subtotal
+☐ Casa Bella
+    Casa Bella       Lonavala  Central Office  ₹ 2,12,700.10
+    Casa Bella       Lonavala  Central Office  ₹    11,700.10
+    Casa Bella       Lonavala  Central Office  ₹ 2,14,700.10
+                                               ₹ 4,39,100.30     <- subtotal
+```
+
+**The subtotal is a true sum, checked to the paisa:** 212700.10 + 11700.10 +
+214700.10 = 439100.30 exactly. So this is a grouped aggregate, not a repeated header.
+
+Two things follow for the rebuild. **A grouped report with subtotals is a UI
+capability nothing else here needs** — group bands, group checkboxes, a footer row per
+group and `Show Summary`. And **the amounts carry paisa**: all three Casa Bella rows
+end `.10`, which is worth noting beside §11.8's finding that the approval bands are
+whole-rupee while money is `decimal(16,4)`. Real amounts in this system are not round.
+
+### 7C.2 The form and the detail disagree on order — a fourth time, and by two swaps
+
+**Form (layout) order.** `Location` is **first** and mandatory (red border):
+
+```
+Location* · Villa Name · Head Office · Amount (₹) · Expense Type ·
+Month & Year · Observation Notes (textarea) · Attachment      [Update] [Cancel]
+```
+
+**Detail (declaration) order** — villa and location swapped, notes and attachment
+swapped:
+
+```
+Villa Name · Location · Head Office · Amount · Expense Type ·
+Month & Year · Attachment · Observation Notes
+```
+
+Fourth screen confirming §4.3 / §6.7 / §7.5: **record both orders; neither derives
+from the other.** Here it is two independent transpositions rather than one block
+being moved.
+
+`Location` first, `Villa Name` second, matches §11.5 — **villa derives FROM location
+on this form**, as on the Approval form, and Bills remains the outlier.
+
+**The form appears in two presentations**: full-page with the `Expense Observation`
+title bar, and as a **centred modal** over the dimmed report with a dark `×`. Same
+fields, same buttons. Creator opening one form two ways depending on the entry point.
+
+### 7C.3 THE `Exclude for Observation` FLAG IS NOT INERT — AND ITS SIBLINGS DISAGREE
+
+`CLAUDE.md`'s master-data table records: *"`Exclude for Observation` true on 1 →
+**exclusion is inert**"*. **That reading was wrong, and this screen is what the flag
+is for.**
+
+The one category it excludes is **`EXPERIENCES REFUND`** — which is exactly the
+`Item Category` on the Backbend Payments refunds channel (§7.1). So the flag does not
+exclude nothing; it excludes a whole channel. One of 135 by count, but not marginal.
+
+And the sibling comparison is the real finding:
+
+| category | `exclude_for_profit` | `exclude_for_observation` |
+|---|---|---|
+| `EXPERIENCES REFUND` | yes | **YES** |
+| `FOOD REFUND` | yes | **no** |
+| `STAY REFUND` | yes | **no** |
+
+**Three sibling refund categories. All three excluded from profit. Only one excluded
+from observation.** And `REFUND-stay-*` and `REFUND-food-*` both exist in Backbend
+Payments — I have both on screen — so **stay and food refunds appear in Expense
+Observations while experiences refunds do not.**
+
+That asymmetry has no visible justification and looks like an oversight rather than a
+policy. `[TODO]` for Husain: **should `FOOD REFUND` and `STAY REFUND` also carry
+`Exclude for Observation`?** If yes, the observation figures currently include refunds
+that were meant to be out.
+
+Recorded as a correction to our own note, not a new discovery of the data: the count
+(1 of 135) was right and the conclusion drawn from it ("inert") was wrong. Counting
+told us the size and not the meaning.
+
+**There is a THIRD exclusion column**, and it changes how §3.1's warning reads:
+
+```
+exclude_for_profit        12 of 135   the 3 refunds, GOVERNMENT TDS, the 4 *_PERSONAL
+                                      categories, PETTY, INTERNAL TRANSFER,
+                                      F&B STOREROOM PURCHASE, PAYMENT REVERSE
+exclude_for_observation    1 of 135   EXPERIENCES REFUND
+exclude_item_category      0 of 135   nothing
+```
+
+`exclude_for_profit`'s twelve are a coherent set — non-P&L movements — and they
+include `PETTY` and `INTERNAL TRANSFER`, the same two that carry
+`Disallow Manual Creation` (§8, §7B.9). Three exclusion mechanisms, one of them
+entirely unused. §3.1 says "do not implement all of them"; now we know how many
+"all" is.
+
+### 7C.4 `Head Office` is per-observation, not derived from the villa
+
+The report shows `Head Office` = `Central Office` for Casa Bella and Casa Elara and
+**blank** for Brooklyn Villa — all in the same two locations (Igatpuri, Lonavala), so
+it is not a function of location either.
+
+Checked against our masters: **179 of 254 villas carry a `head_office_id`, and all
+three of these villas carry none.** So the observation record holds a Head Office its
+villa does not. **Do not derive this field** — it is set on the record, and the form
+offers it as its own dropdown.
+
+*(A first pass at this check read a non-existent `head_office` attribute and printed
+"(blank)" for every villa, which would have supported a wrong conclusion by accident.
+The column is `head_office_id`. Worth a line because the failure mode was a probe that
+answered confidently without touching the data.)*
+
+### 7C.5 The three villas on screen are three of the eight leading-space names
+
+```
+"Brooklyn Villa"   exact match 0   trimmed match 1   stored as [ Brooklyn Villa]
+"Casa Bella"       exact match 0   trimmed match 1   stored as [ Casa Bella]
+"Casa Elara"       exact match 0   trimmed match 1   stored as [ Casa Elara]
+```
+
+**Every villa visible on this screen fails an exact-name join** and succeeds on a
+trimmed one. §3 records eight leading-space villa names arising from the comma-packed
+`Villa Name` string; this is the first screen where they are *all* the data there is.
+
+A live demonstration of the no-trim rule's consequence: storage must stay verbatim,
+**and every join to a villa name must trim on the comparison, never on the column.**
+Any importer for this screen that matches villas exactly will resolve zero of three.
+
+### 7C.6 `Expense Type` is `Direct` / `Indirect`, and unset on 103 of 135
+
+The form's `Expense Type` dropdown is blank on the sample. The vocabulary comes from
+the item-category master: **`Direct` and `Indirect`, with 103 of 135 categories
+carrying neither.** So a field that classifies an observation is unpopulated on 76% of
+the categories it would classify by.
+
+### 7C.7 Smaller findings
+
+- **`Month & Year` = `January - 2026`** — the dashed-with-spaces form, matching
+  `BillingCycle::label()` exactly. **Fifth screen** to use a cycle label and the second
+  to agree with our canonical spelling (Bank was the first). It is a **single-select
+  lookup**, so it points at `Billing_Cycles` — but the field is labelled
+  **`Month & Year`**, not `Billing Cycles` as it is on Bank, Backbend Payments and
+  Pending Approvals. A field-label divergence on top of §8's value-spelling one
+- **`Observation Notes` is a button on the report and a textarea on the form** — the
+  sixth duplicate-representation pair in this app (§4.2, §6.3, §7.5, §7B.1, §7B.7).
+  The textarea is blank on the sampled record, so what the button does when the note is
+  empty is unknown
+- **`Date` is a report column with no matching form field.** The detail panel lists
+  eight fields and `Date` is not among them, and the column is blank on every visible
+  row. Either an orphan column or a platform field surfaced under a different name.
+  `[TODO]` low priority, but do not invent a `date` column for it
+- Panel bar is the standard `Edit` · `Delete` · `More ⌄` — so unlike Bank (§7B.1),
+  observations are editable and deletable from the panel
+- All three villas and both locations resolve against our masters (on a trimmed
+  match), and `January - 2026` is seeded. **The FK layer is ready for this screen**
+
+---
+
 ## 8. Label divergence — pick one per concept
 
 | Concept | Variants seen |
@@ -1340,6 +1513,7 @@ above.
 | Module name | `Backend Payments` (form) · `Backbend Payments` (rail) |
 | Bank match action | header **`Match & UnMatch`** · button **`Match & Unmatch`** (Bank, 27-Aug-2026) — one screen, two casings |
 | Bank transaction status | `uncategorized` · `duplicate` · `matched` (DS views) · **`Withdrawal Matched`** — three casings in one column, and `Withdrawal Matched` is also a BOOLEAN field on the same record (§7B.3) |
+| Billing cycle FIELD label | **`Billing Cycles`** (Bank, Backbend Payments, Pending Approvals) · **`Month & Year`** (Expense Observations, 27-Aug-2026) — one lookup, two field names, on top of the four value spellings below |
 | **Billing cycle label** | **`July - 2026`** (`payment_master`) · **`Jul 2026`** (`expenses`) · **`August - 2026`** (All Expenses report) · **`August-2026`** (Backbend Payments, 27-Aug-2026) — four spellings of one cycle. All four ARE aliased in `ZohoImportBills::cycleMap()`, which registers five forms per cycle; a mismatch here cost 26,720 split legs once |
 | **Approval-pending status** | **`Sent for Approval` · `Submit for Approval`** — both live on Payment Requests, on rows that otherwise look alike (27-Aug-2026, §6.5). Two states or two spellings is **unresolved**, and it decides whether a status comparison misses half the queue — exactly the `Payment InProgress` trap in §10 |
 
