@@ -628,12 +628,18 @@ org this rebuild uses.** So the Analytics client is shared between live Creator 
 us, and revoking it takes down `Standalone.proxyAnalytics` too. A separate OAuth
 client for this app was already the recommendation; this makes it necessary.
 
-Added 27-Aug-2026, and the mechanism behind the register's worst entry. **A trash
-bin EXISTS** — `Deleted_Payments`, an 18th nav item, archiving a deleted payment with
-a deleted-by stamp and its split grid. **But `Accounts.ds:31027` guards the archive
-on `COA.Account_Name != "Accounts Payable"`, and §7.2 forces every payment onto
-`Accounts Payable`** — so the normal path writes NO archive row. That is how
-`Delete Paid Payment` destroyed 17 payments while a visible trash bin sat empty.
+Added 27-Aug-2026, **and corrected 28-Aug**. A trash bin EXISTS — `Deleted_Payments`,
+a rail item, archiving a deleted payment with a deleted-by stamp and its split grid —
+**and it holds 982 records.** The first reading of `Accounts.ds:31027`'s
+`COA != "Accounts Payable"` guard concluded the bin sat empty, because §7.2 forces
+every payment onto that account. Wrong: §7.2 is true of `Create_Payment` (payments made
+FROM A BILL) and that is only **2,571 of 52,639** payments. 91% sit on `Expense` and
+archive correctly.
+
+So the defect is narrower and arguably worse: the exception covers precisely the
+**bill-derived trade payables**, the payments with a vendor invoice behind them. A bin
+that holds salary reversals but not settled supplier payments looks reliable and is
+not. Addendum §7H.1.
 Three more losses even when it fires: `Status` overwritten to `Draft`, `Expense_By`
 reassigned to the deleter, and `Payable_Amount` recomputed. Plus a one-token bug at
 `:31022` — `Deleted_By_User` is assigned without its `fetdele.` prefix, so a SECOND

@@ -14,9 +14,14 @@ import { ddMmmYyyy, rupees } from '../lib/format';
  *
  * FOUR THINGS THE SCREENSHOTS SETTLED:
  *
- *  1. **`Gross Amount` prints at THREE decimals** (₹58,614.140). Every other money
- *     column in this app is two. The server sends the precision per column so this is
+ *  1. **`Gross Amount` prints at THREE decimals** (₹58,614.140) while `Payable Amount`
+ *     takes two, on the same row. The server sends the precision per column so this is
  *     not a magic number in the view.
+ *
+ *     CORRECTED 28-Aug-2026: this said "every other money column in this app is two".
+ *     The Deleted Payments Report does the same thing — `₹ 18,000.000` beside
+ *     `₹ 18,000.00` — so three decimals is a property of `Gross Amount` wherever it
+ *     appears, not a quirk of this one report.
  *  2. **`Pay` is solid on `Approved` rows and pale on `Sent for Approval`** — five pale
  *     and four solid on the live screenshots. Enablement is per row, from the server's
  *     `can`, never computed here from a status string.

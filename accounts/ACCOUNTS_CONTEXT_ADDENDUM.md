@@ -1922,6 +1922,242 @@ is built, that config must land as configuration and not as a form with a report
 
 ---
 
+## 7H. Deleted Payments — captured 28-Aug-2026, and §7F.2 was wrong
+
+Nine screenshots. **~72 columns**, footer **`Showing 982 of 982`**, and a detail panel
+whose action bar reads **`Restore` · `Delete permanently` · `More ⌄`**.
+
+### 7H.1 CORRECTED — the trash bin is NOT empty. It holds 982 records
+
+§7F.2 read `Accounts.ds:31027`'s guard —
+
+```deluge
+if (COA.Account_Name != "Accounts Payable") { ... insert into Deleted_Payments ... }
+```
+
+— alongside §7.2's "`Create_Payment` forces every payment onto `Accounts Payable`", and
+concluded: *"the normal path writes NO archive row… that is how `Delete Paid Payment`
+destroyed 17 payments while a visible trash bin sat empty."*
+
+**The bin has 982 rows, and the `COA` column reads `Expense` and `Staff Loan`.** So the
+guard fires most of the time. Counted against our 52,639 imported payments:
+
+```
+Expense                      47,782      91%
+Accounts Payable              2,571     4.9%
+Payment Reverse               1,122
+Haewaya EKOSTAY Hospitality     187
+...
+```
+
+**Only 4.9% of payments sit on `Accounts Payable`.** So the guard **archives ~91% and
+skips ~5%** — the reverse of what §7F.2 claimed.
+
+**Where the reasoning went wrong:** §7.2's statement is about `Create_Payment`, the
+path that makes a payment FROM A BILL, and that is true — those 2,571 are the
+bill-derived ones. The error was treating `Create_Payment` as "the normal path". It is
+not: 91% of payments arrive by another route (direct entry, Salary Payouts, Haewaya,
+Bank's `Create Payment`), and those all archive correctly.
+
+**The defect is narrower than stated and arguably worse.** The exception is not the
+majority — it is precisely the **bill-derived trade payables**, the payments with a
+vendor invoice behind them and the ones most likely to matter in a dispute. A trash
+bin that covers salary reversals and petty cash but not settled supplier payments is
+worse than one that covers nothing, because it looks reliable.
+
+Recorded as a correction to our own inference, not to the data. The count was there to
+be checked and was not checked before the conclusion was written.
+
+### 7H.2 What the archive confirms, on 10 real rows
+
+§7F.3 predicted three losses from reading the insert. All three are visible:
+
+| | |
+|---|---|
+| `Status` | **`Draft`** on every row — a settled payment archived as a draft |
+| `Payment Status` | **`Open`** on every row |
+| `Paid` | **`false`** on every row |
+
+So the archived record actively denies it was ever paid. `Verified`, `Multiple Villa`,
+`Approved`, `Delete Record`, `Bank Reconciliation`, `Link Updated` are all `false` too.
+
+**`Delete Record` is false on all 982**, which is the flag
+`Accounts.DeletePermanentlyTrash` sets to true before purging (§7F.5). So nothing has
+been permanently deleted through that path, or the flag is reset after.
+
+### 7H.3 `Deleted By` is an email, and two of the five are personal Gmail accounts
+
+```
+suchitrasaroj5@gmail.com        <- gmail
+mansi.p@ekostay.com
+varun@ekostayhospitality.com
+komaltakale28@gmail.com         <- gmail
+```
+
+Two observations worth raising, both factual:
+
+- **Two personal Gmail addresses hold delete rights on payments.** Not a rebuild
+  concern — an access concern for the live app
+- **Two company domains are in use**: `ekostay.com` and `ekostayhospitality.com`. That
+  matters because `DeletePermanentlyTrash` compares against the literal
+  `"husain@ekostayhospitality.com"` (§7F.5), so the hardcoded check is domain-specific
+  and a user on the other domain fails it regardless of who they are
+
+And the identity spaces differ **on one row**: `Deleted By` is an email while
+`Expense By` is a login handle (`suchitrasaroj53`, `mansi.p`, `ekostay`,
+`komaltakale28`). Third identity representation in this app after display names and
+login handles (§6.9).
+
+### 7H.4 `Restore` is a per-row button; `Delete permanently` is panel-only
+
+`Restore` is column 1, solid on every row. `Delete permanently` appears **only on the
+detail panel**, beside `Restore`. So the destructive action is one click further away
+than the recoverable one — which is the right shape, and worth preserving.
+
+§7F.5's `Created == false` gate means a restored record refuses permanent deletion.
+So the intended lifecycle is **archive → restore, or archive → purge, never both**.
+
+### 7H.5 `Gross Amount` at three decimals on a SECOND report
+
+```
+Gross Amount    ₹ 18,000.000    ₹ 50,000.000    ₹ 46,153.000    ₹ 5,193.000
+Payable Amount  ₹ 18,000.00     ₹ 50,000.00     ₹ 46,153.00
+```
+
+§5 recorded three decimals as a Pending Approvals oddity and
+`PendingApprovalsModule` said "every other money column in this app is two". **Both
+were too narrow.** Three decimals follows `Gross Amount` wherever it appears; the
+module docblock is corrected.
+
+### 7H.6 `Particulars` names the generators
+
+- `Created From Salary Payouts - Billing Cycle:July - 2026 - Amount:17686.00`
+- `5193 SOCIAL MEDIA TEAM REIMBURSEMENT APPROVED BY VARUN SIR FROM LLP1`
+- `LOAN DEDUCTION FROM AUG AND SEPT`
+- `Test entry`
+
+**`Created From Salary Payouts`** — so Salary Payouts stamps its cycle and amount into
+the particulars, which is a usable provenance marker. Note `Amount:17686.00` against
+`Gross Amount ₹18,000.000` on the same row: plausibly gross versus net after PF/PT/ESIC
+rather than a disagreement, unlike Backbend Payments' 11000-vs-7500 (§7.7).
+
+`Test entry` at `₹5,000.000` is test data that reached live and was deleted.
+
+### 7H.7 `_staffLoanProcessed` — the underscore is in the LABEL, not the field
+
+`Accounts.ds:12156` and `13635`:
+
+```deluge
+staffLoanProcessed as "_staffLoanProcessed"
+```
+
+So the field is `staffLoanProcessed` and someone prefixed its **display name** with an
+underscore — probably to mark it internal or sort it out of the way. It reached a
+report anyway. **Preserve the label verbatim**, underscore and camelCase both; it is
+the only field in this app named that way.
+
+### 7H.8 Three more duplicate column labels, and three columns for one concept
+
+The report carries **`Item Category` twice** and **`Bill No` twice** — the fifth and
+sixth duplicate-label pairs (§4.2, §6.3, §7.5, §7B.1). Both copies of `Item Category`
+are populated and identical (`STAFF SALARY` / `STAFF SALARY`), unlike §4.2's pairs
+where one was dead.
+
+And **`Billing Year`, `Billing Months` and `Billing Cycles`** are three separate
+columns for one concept, with only `Billing Cycles` populated (`July - 2026`,
+`August - 2026` — the dashed form, sixth screen to agree with `label()`).
+
+Also new and unexplained: `OCR`, `Verification Call`, `Vendor Order Booking No.`,
+`Payment_folder` (underscore again), `Haewaya TimeStamp` beside `Timestamp Date`.
+
+---
+
+## 7I. THE SCREEN INVENTORY WAS WRONG — 46 forms and 50 reports, not 28 screens
+
+The rail in these screenshots shows **three items never seen before**, below
+`Deleted Payments`:
+
+- **Husain Office Modules** — `form Husain_Office_Module` (`:6190`),
+  `All Husain Office Modules` report (`:13716`), keyed on a payment
+  (`Husain_Office_Module[Payment == input.ID]`)
+- **Match Transaction** — `form Match_Transaction` (`:7177`)
+- **Flagged** — `form Flagged_Payments` (`:6028`), `Flagged Payments Report` (`:14050`)
+
+So I have been reporting progress against a denominator that was never verified.
+Counted from the DS: **46 forms and 50 reports in `Accounts.ds` alone**, which is
+consistent with `CLAUDE.md`'s standing goal of 77 forms / 61 reports across Accounts +
+Admin + F&B. The "28 screens" figure was the **nav rail**, and the rail is longer than
+recorded.
+
+**This also corrects §7F.7**, which said `Debit_Match_Payments` "has 32 DS references
+and no rail entry" and guessed it was what Bank's `Match & UnMatch` writes to. There
+are **two** match forms and **two** match reports — `Match_Transaction` /
+`All Match Payments` and `Debit_Match_Payments` / `Debit Match Payments Report` — and
+`Match Transaction` does have a rail entry. Which one the Bank button writes to is
+still unestablished.
+
+### 7I.1 The full report inventory, from the DS
+
+**And it resolves the last truncated label:** the nav item reading
+`Zoho app pointers - Payment Ap…` is **`Zoho app pointers - Payment Apr-Jun (1)
+Report`** — a quarter-scoped pointer table.
+
+```
+Bank (5 views, which is the ⌄ chevron)
+  All Bank Transactions · Admin Bank Transactions · LLP Bank Transactions
+  LLP Bank Transactions - old · View Bank Transactions
+
+Payments (6)
+  All Payments · Payments · View Payments · LLP Payments
+  All Payments - Hussain          <- note TWO s's
+  Deleted Payments Report
+
+Bills (3)          All Bills (x2, same name) · LLP Bills
+Expenses (3)       All Expenses · LLP Expenses · All Expense Observations
+Approvals (2)      All Approvals · All Pending Approvals
+Requests (2)       All Payment Requests · User Payment Requests
+Backend (2)        All Backend Expenses · All Backbend Payments
+Matching (2)       All Match Payments · Debit Match Payments Report
+Scheduling (4)     All Schedule Payments · All Scheduled Payments   <- note the "d"
+                   Payments Scheduled Report · Salary Payout Schedule Report
+Salary (1)         Salary Payouts Report
+Settings (6)       All Billing Cycles · All Item Categories · All Master Categories
+                   All Taxes · COA Report · TDS Report
+Masters (2)        Vendor Master · All Vendor Masters
+Config (3)         Auto Numbers · Block Payment Date · Sync Locks Report
+Flagged (1)        Flagged Payments Report
+Husain (1)         All Husain Office Modules
+Pointers (1)       Zoho app pointers - Payment Apr-Jun (1) Report
+Revenue Share (6)  Eko_RS_App_Config · Eko_RS_Flags · Eko_RS_Pdf_Staging
+                   Eko_RS_Send_Log · Eko_RS_Settings · Eko_RS_Statements
+```
+
+### 7I.2 Four things in that list worth acting on
+
+1. **`Ekostay Revenue Share` is a six-report subsystem**, not one screen — statements,
+   PDF staging, a send log, flags, and two config tables. §7D.4 established
+   `Eko_RS_App_Config` is a credential store; `Eko_RS_Send_Log` presumably logs the
+   DoubleTick sends. Scope it as a subsystem when it comes up
+2. **`All Schedule Payments` and `All Scheduled Payments` both exist** — two reports
+   differing by one letter, on the screen still blocked on payroll bands. Added to §8
+3. **`All Bills` appears TWICE with the same display name.** Spec §6.1 asks "which
+   All Bills report is live"; the answer is that there are literally two and the name
+   cannot distinguish them
+4. **`Sync Locks Report` is new and relevant.** A lock table is how this app would
+   coordinate its Books/Analytics syncs — and the export concurrency limit is shared
+   account-wide with Tushar's live tracker (§9). If Creator already has a lock table,
+   our scheduler should read it rather than invent a second mechanism.
+   `[TODO]` worth one screenshot
+
+### 7I.3 How progress will be reported from here
+
+The remaining-screens list has been counted against the rail, which was never the real
+inventory. From now on it is counted against **the 50 reports above**, with the rail
+noted separately where it differs. That makes the number larger and honest rather than
+smaller and wrong.
+
+---
+
 ## 8. Label divergence — pick one per concept
 
 | Concept | Variants seen |
@@ -1938,6 +2174,9 @@ is built, that config must land as configuration and not as a form with a report
 | Module name | `Backend Payments` (form) · `Backbend Payments` (rail) |
 | Bank match action | header **`Match & UnMatch`** · button **`Match & Unmatch`** (Bank, 27-Aug-2026) — one screen, two casings |
 | Bank transaction status | `uncategorized` · `duplicate` · `matched` (DS views) · **`Withdrawal Matched`** — three casings in one column, and `Withdrawal Matched` is also a BOOLEAN field on the same record (§7B.3) |
+| Schedule Payments report | **`All Schedule Payments`** · **`All Scheduled Payments`** — two separate reports, one letter apart (DS, 28-Aug-2026, §7I.1) |
+| Husain / Hussain | **`Husain Office Modules`** (one s) · **`All Payments - Hussain`** (two) — both are screen names |
+| Internal flag label | field `staffLoanProcessed`, label **`_staffLoanProcessed`** — the underscore is in the DISPLAY NAME only (§7H.7), and it reached a report |
 | Billing cycle FIELD label | **`Billing Cycles`** (Bank, Backbend Payments, Pending Approvals) · **`Month & Year`** (Expense Observations, 27-Aug-2026) — one lookup, two field names, on top of the four value spellings below |
 | **Billing cycle label** | **`July - 2026`** (`payment_master`) · **`Jul 2026`** (`expenses`) · **`August - 2026`** (All Expenses report) · **`August-2026`** (Backbend Payments, 27-Aug-2026) — four spellings of one cycle. All four ARE aliased in `ZohoImportBills::cycleMap()`, which registers five forms per cycle; a mismatch here cost 26,720 split legs once |
 | **Approval-pending status** | **`Sent for Approval` · `Submit for Approval`** — both live on Payment Requests, on rows that otherwise look alike (27-Aug-2026, §6.5). Two states or two spellings is **unresolved**, and it decides whether a status comparison misses half the queue — exactly the `Payment InProgress` trap in §10 |
