@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Domain\Bills\Money;
 use App\Domain\Payments\CreatePaymentFromBill;
+use App\Domain\Payments\PaymentSaveRules;
 use App\Domain\Payments\PaymentFormCalculator;
 use App\Domain\Payments\PaymentNumber;
 use App\Domain\Payments\PaymentStatus;
@@ -581,8 +582,41 @@ class PaymentController extends Controller
 
         $legs = $data['legs'] ?? [];
 
-        // §6.4 rule 1 / §7.4's missing check. Compared at whole rupees as Creator
-        // has it, with the sub-rupee residual surfaced rather than hidden.
+        /*
+         * CREATOR'S SAVE-TIME RULES, all 22 of them.
+         *
+         * Every field above is `nullable`, which is right for the request SHAPE and
+         * wrong for the business rules: it let a payment be created with no vendor, no
+         * COA, no billing cycle and no particulars, none of which Creator permits. The
+         * rules live in three `on validate` handlers (`Accounts.ds:28524`, `:30970`,
+         * `:32089`) and are transcribed in `PaymentSaveRules`.
+         *
+         * Returned ALL AT ONCE rather than one per round trip (D13) — Creator alerts on
+         * the first failure because a form can only show one alert; an API has no such
+         * excuse. `first_message` carries what Creator itself would have said, so a
+         * reviewer comparing behaviour has it.
+         */
+        $rules = new PaymentSaveRules;
+        $broken = $rules->check($data + ['is_new' => true]);
+
+        if ($broken !== []) {
+            return response()->json([
+                'message' => $broken[0]['message'],
+                'reason' => 'creator_validation',
+                'broken_rules' => $broken,
+                /*
+                 * Said out loud when it matters: the Disallow Manual Creation rule
+                 * cannot fire on our data, because `disable` is set on 0 of 135 item
+                 * categories while the addendum records PETTY and INTERNAL TRANSFER as
+                 * disabled live. A caller must be able to tell "nothing is disallowed"
+                 * from "we do not know what is disallowed".
+                 */
+                'disable_flag_known' => PaymentSaveRules::disabledCategoriesKnown(),
+            ], 422);
+        }
+
+        // §6.4 rule 1 / §7.4's missing check, kept as the arithmetic gate behind the
+        // rules above: this one reports the actual figures, which a message cannot.
         if ($legs !== [] && isset($data['amount'])) {
             $sum = '0';
             foreach ($legs as $leg) {

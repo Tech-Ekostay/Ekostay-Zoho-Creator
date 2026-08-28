@@ -598,6 +598,30 @@ every status comparison misses part of the data.
 
 ---
 
+## The flow audit — index first, then work the list
+
+Husain asked for the whole DS checked against how Creator actually works. 63,225 lines is
+too many to spelunk per question, so `docs/parse_ds_handlers.py` indexes every workflow
+handler with its form and event — **360 of them** — into `docs/ds_handler_index.json`.
+
+    on add or edit 216 · on user input of 180 · on load 60 · on add 44 · on edit 36
+    on success 24 · on validate 15 · subform rows 9 · on delete 5
+
+**The 15 `on validate` handlers are the business rules** — the ways Creator says no — and
+they were audited first. Pass 1 found that the Payment form refuses a save on **22
+conditions** where this app refused on 2; all 22 are now in
+`App\Domain\Payments\PaymentSaveRules`, wired into `storeDirect`, one test each naming
+its DS line. Addendum §22.
+
+Passes still to run, in order of how directly each touches money: the other 12 validates
+(including **`Block_Payment`**, the cutoff no screenshot ever supplied) · the 180
+`on user input` handlers, of which `PaymentFormCalculator` covers four · the 216
+`on add or edit` · the 24 `on success` · the 5 delete guards · and a `&& ... ||`
+precedence sweep, because three separate instances of that bug are now on the register
+(D10, D11, and the IGST0 branch) and three is a pattern.
+
+---
+
 ## Field types come from the DS, not from screenshots
 
 `Accounts.ds` declares every form field's `type`, `displayname`, `row`, `column` and —

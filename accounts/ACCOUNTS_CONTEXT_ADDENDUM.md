@@ -4034,3 +4034,161 @@ flow at all.
    visibility.
 4. `Vendor Order Booking No.` needs the F&B app's `Vendor_Order_Booking` table, which is
    in the `(Zoho Creator-F&B)` set and not yet registered.
+
+---
+
+## 22. THE FLOW AUDIT — pass 1 of N: the Payment form's save rules
+
+Husain: *"Check the entire ds and make sure everything is according to the flow, how
+everything works in creator. If you want you can work in multiple prompts for this."*
+
+`Accounts.ds` is 59,063 lines and `Admin.ds` 4,162. Spelunking it per question has been
+the pattern so far and it keeps finding things late. So this pass builds the **index
+first** and then works through it, and later passes continue from the same index.
+
+### 22.1 The handler inventory
+
+`scratchpad/ds_handlers.py` parses every workflow handler with its form and event. **360
+handlers**, and the event mix says where the risk is:
+
+| event | count | what it is |
+|---|---|---|
+| `on add or edit` | 216 | fires on save — the workflow |
+| `on user input of` | 180 | browser-side field logic: arithmetic, dependent pickers |
+| `on load` | 60 | defaults and field visibility |
+| `on add` / `on edit` | 44 / 36 | create- and edit-only workflow |
+| `on success` | 24 | after-save side effects |
+| **`on validate`** | **15** | **the rules that REFUSE a save** |
+| `on add row of` / `on delete row of` | 5 / 4 | subform grids |
+| `record event = on delete` | 5 | delete-time guards |
+
+**The 15 validates are the highest-value target** and were audited first: they are small,
+they are the business rules, and every one of them is a way Creator says no that this app
+must also say no to.
+
+By form: **Payment 3 · Deleted_Payments 3 · Vendor_Master 2 · Bills 2 ·
+Payments_Scheduled 1 · Match_Payments 1 · Husain_Office_Module 1 ·
+Debit_Match_Payments 1 · Block_Payment 1.**
+
+### 22.2 THE FINDING: Creator refuses a payment on 22 conditions; this app refused on 2
+
+The Payment form's three validates (`:28524` 192 lines, `:30970` 505, `:32089` 5) carry
+22 rules. `PaymentController::storeDirect()` had every field `nullable` — correct for the
+request *shape*, and silent about the business rules. Only the split balance (D2) and the
+delete guard (D4) were enforced.
+
+So a payment could be created with **no vendor, no COA, no billing cycle, no particulars
+and no payment date**, and the app would accept it.
+
+All 22 are now in `App\Domain\Payments\PaymentSaveRules`, wired into `storeDirect`, with
+one test each naming its DS line. An empty POST now returns nine refusals in Creator's
+own wording:
+
+```
+Please add Item Category to proceed          Please add Particulars to proceed
+Please Select vendot to proceed              Please add the Gross Amount to proceed
+Please select COA to Proceed                 Please add the Split amount to continue.
+Please add Billing Cycle                     Please Select Payment Date to Proceed
+                                             Amount and Total Amount cannot be null
+```
+
+The typo `vendot` is Creator's and is reproduced: it is what the user sees, and a
+reviewer comparing screens would notice it corrected.
+
+### 22.3 The rule Husain described, found verbatim
+
+`Accounts.ds:28567`:
+
+```deluge
+if (COA.Account_Name == "Accounts Payable")
+{
+    if (Bill_No1.size() == 0 && Vendor_Order_Booking_No.size() == 0)
+    {
+        alert "Please Select Bill No or Vendor Order Booking to proceed";
+        cancel submit;
+    }
+}
+```
+
+**With COA = Accounts Payable, a payment must name a bill or a vendor order booking.**
+That is the tie between the bill path and Accounts Payable (§20), and it is why
+`Vendor Order Booking No.` sits directly beneath `Bill No` on the form: they are
+alternatives, not unrelated fields.
+
+### 22.4 Rules nobody had recorded
+
+Four are new to the documentation entirely:
+
+- **`STAFF LOAN` is exclusive.** With it selected, no other item category may be
+  (`:28677`)
+- **`STAFF LOAN` demands the `Staff Loan` bank** (`:28682`) — and note the casing:
+  `STAFF LOAN` on the category, `Staff Loan` on the bank. Both literal, both preserved
+- **The item category declares its own COA and bank**, and the payment's must match
+  (`:28687`, `:28695`). Our schema already carries `coa_account_id` and
+  `bank_coa_account_id` on `item_categories`, so this was modellable and unmodelled
+- **A payment cannot be created already `Paid`** (`:32097`, *"Paid Status can't be
+  created"*). It has to walk the flow. `MarkPaymentPaid` remains the legitimate route
+
+And one that changes how the Bill Payments grid reads: the sum of its `Payable_Amount`
+must equal the payment's `Payable_Amount`, **but only when `Accounts_Bills == false`** —
+that checkbox switches the whole reconciliation off (`:28540`).
+
+### 22.5 A THIRD `&&`/`||` PRECEDENCE BUG — D11
+
+`Accounts.ds:28563`:
+
+```deluge
+if (Bank_Name == null && Status == "Submit for Approval" || Status == "Paid")
+```
+
+`&&` binds tighter, so this is `(bank is null AND submitting) OR (status is Paid)`.
+**Editing any Paid payment demands a bank even when one is set** — reproduced faithfully,
+a settled payment would be unsaveable.
+
+Third instance of the class already on the register (*"a `&&` where `||` was meant,
+making an IGST0 branch dead code"*), and the second found in two days after D10's bill
+filter. **Implemented as the evident intent** and logged as **D11**: a bank is required
+once the payment is submitted or paid.
+
+That is now three precedence faults in `Accounts.ds`. It is worth treating as a pattern
+rather than three coincidences — a sweep for `&& ... ||` across all 59,063 lines is
+queued for a later pass.
+
+### 22.6 `External_Payment` BYPASSES TWO RULES — D12, preserved
+
+`:28671` and `:28706` both gate on `External_Payment == false`, so a payment arriving
+through the `External.*` API may use item categories **disallowed for manual creation**
+and skip the removelist check.
+
+Reproduced rather than closed. The bypass is load-bearing for an integration we do not
+own, and rejecting rows Creator accepts would break it. Recorded so it is a decision
+rather than an oversight.
+
+### 22.7 A DATA GAP the rule exposed
+
+`Disable == true` is set on **0 of 135** item categories — not our import losing it:
+`master-data/All_Item_Categories.json` itself has none. The addendum records `PETTY` and
+`INTERNAL TRANSFER` as disabled, and §7B.9 confirmed `INTERNAL TRANSFER` in active use by
+the bank generator, which is exactly what a manual-entry block looks like.
+
+So the flag is presumably set live and absent from the 12-Aug export. **Until it is
+imported, our pickers offer categories Creator blocks**, and the rule cannot fire.
+`PaymentSaveRules::disabledCategoriesKnown()` exists so a caller can distinguish "nothing
+is disallowed" from "we do not know" — and `storeDirect` returns it on every rejection.
+
+The `Item Category` Analytics table would settle it and is not registered.
+
+### 22.8 What the next passes cover
+
+Ordered by how directly each touches money:
+
+1. **The remaining 12 validates** — Bills (2), Vendor_Master (2), Deleted_Payments (3),
+   Payments_Scheduled, Match_Payments, Debit_Match_Payments, Husain_Office_Module, and
+   **`Block_Payment`**, which is the cutoff never supplied by screenshot
+2. **The 180 `on user input` handlers** — the arithmetic and the dependent pickers.
+   `PaymentFormCalculator` covers four of them; the other 176 are unaudited
+3. **The 216 `on add or edit`** — what happens AFTER a save: status moves, generated
+   records, the `Expenses_Bills` posting that does not exist here yet
+4. **The 24 `on success`** — notifications and cross-app calls
+5. **The 5 `record event = on delete`** — against D4's reversal model
+6. **A `&& ... ||` precedence sweep** across both files, per §22.5
