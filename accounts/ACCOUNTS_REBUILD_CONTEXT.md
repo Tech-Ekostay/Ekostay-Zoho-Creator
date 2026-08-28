@@ -415,9 +415,30 @@ Invoice_Amount = Amount + GST_Amount
 Payable_Amount = Invoice_Amount − (Amount × TDS.TDS_Precentage / 100)
 ```
 
-`[TODO]` **Which is authoritative for Bills?** The Bills version subtracts `Paid_Amount`
-(Payable = outstanding balance); the Payment version does not (Payable = invoice net of TDS).
-Different quantities, same field name.
+~~`[TODO]` **Which is authoritative for Bills?**~~ **ANSWERED 28-Aug-2026, and the question
+was malformed.** There are not two competing formulas for one field — there are two
+DIFFERENT FIELDS that share a name because they live on different objects:
+
+| where | how it is set | what it means |
+|---|---|---|
+| `Bill.Payable_Amount` | `InvoiceAmount - ifnull(TDSTotal,0)` (`Accounts.ds:22490`, with `Paid_Amount = 0` set on the next line) | invoice net of TDS |
+| `Payment.Payable_Amount` | `Invoice_Amount - (Amount × TDS%/100)` (the form handler above) | invoice net of TDS — **the same quantity** |
+| `Bill_Payments[].Payable_Amount` | **clamped**, not computed: `Accounts.ds:28243-28259` caps it at `row.Bill_Amount` and at `balAmount`, alerting *"Payable Amount Can't be more than Bill Amount"* and *"Payable Amount is more than the Balance Amount"* | how much of THIS bill THIS payment pays |
+
+So the header formula is consistent across Bill and Payment, and it is confirmed a third
+time by the delete archive, which recomputes `Amount + GST_Amount - TDS_Amount`
+(addendum §7F.3) — algebraically identical.
+
+The "subtracts `Paid_Amount`" behaviour is not a formula at all: it is a **ceiling on a
+user-entered allocation** in the `Bill_Payments` subform. Nothing computes
+`invoice - paid`; the user types an amount and Creator refuses to let it exceed the
+outstanding balance.
+
+**What this means for the rebuild.** The header field is a derived total and should be
+computed, never stored from input. The subform field is an input with a validated
+ceiling. Note `Bill_Payments` is a different grid from `Split_Payments` — the first is
+which bills a payment settles, the second is the villa × category × cycle allocation that
+`SplitAllocator` owns — so this clamp does not touch the split arithmetic.
 
 **`Split_Equally == true`** distributes with the **remainder on the last row**:
 ```
