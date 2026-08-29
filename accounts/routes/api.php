@@ -95,6 +95,22 @@ Route::post('/payments/recalculate', [PaymentController::class, 'recalculate']);
 Route::get('/payments', [PaymentController::class, 'index']);
 Route::get('/payments/{payment}', [PaymentController::class, 'show']);
 Route::post('/payments', [PaymentController::class, 'store']);
+/*
+ * `Update Payment` — ALWAYS ENABLED in Creator, and this route did not exist.
+ *
+ * Husain: "Right now, on edit nothing is working." It was not working because
+ * there was nothing to call: the module carried an `editDisabledReason` citing
+ * §7.6, which was a misreading. §7.6 forbids DELETING a settled payment and
+ * REISSUING a number; it says nothing about editing, and the DS gives the
+ * `Update Payment` custom action on All Payments no `condition` at all.
+ *
+ * PATCH rather than PUT, deliberately. Creator's form posts the whole record, but
+ * the COA-driven field lock at `Accounts.ds:24240` means a locked field is one the
+ * form may legitimately not send at all — and under PUT, absent and cleared are
+ * the same request. PATCH keeps "not sent" distinguishable from "set to null",
+ * which is what the lock needs to be enforceable.
+ */
+Route::patch('/payments/{payment}', [PaymentController::class, 'update']);
 Route::post('/payments/{payment}/reverse', [PaymentController::class, 'reverse']);
 
 /*

@@ -6,8 +6,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Domain\Bills\Money;
 use App\Domain\Payments\CreatePaymentFromBill;
-use App\Domain\Payments\PaymentSaveRules;
+use App\Domain\Payments\PaymentFieldState;
 use App\Domain\Payments\PaymentFormCalculator;
+use App\Domain\Payments\PaymentSaveRules;
 use App\Domain\Payments\PaymentNumber;
 use App\Domain\Payments\PaymentStatus;
 use App\Domain\Payments\ReversalRefusedException;
@@ -222,6 +223,62 @@ class PaymentController extends Controller
                 'reverses_payment_no' => $payment->reverses?->payment_no ?? '',
                 'reversed_by_payment_no' => $payment->reversal?->payment_no ?? '',
             ],
+
+            /*
+             * WHAT THE FORM MAY RENDER, from `Accounts.ds:24240` via PaymentFieldState.
+             *
+             * Sent rather than re-derived in the browser. The rule is COA-dependent and
+             * status-dependent and it is enforced by `update()`; a form computing it
+             * independently is a form that can disagree with the guard that will reject
+             * it, and the user finds out by having a save refused for a field the screen
+             * let them type in.
+             *
+             * `editable` is the ONLY state a save may change. `is_editable` is false
+             * exactly for the reversal pair, which is a deviation from Creator noted on
+             * `update()` — Creator leaves `Update Payment` enabled on everything.
+             */
+            'field_states' => PaymentFieldState::for(
+                $payment->coaAccount?->account_name,
+                $payment->status,
+            ),
+            'is_accounts_payable' => PaymentFieldState::isAccountsPayable(
+                $payment->coaAccount?->account_name,
+            ),
+            'is_editable' => ! $payment->isReversal() && $payment->reversal === null,
+
+            /*
+             * THE RECORD IN FORM SHAPE, which `payment` above is not.
+             *
+             * `row()` returns DISPLAY labels — "Payment No", "Vendor Name", "Amount" —
+             * because that is what the grid and the detail view render. An edit form
+             * needs the field names it will POST BACK, and seeding it from display
+             * labels is how a form silently loads blank and then saves those blanks
+             * over a real record.
+             *
+             * Built from `currentState()`, the same method the save rules are judged
+             * against, so what the form loads and what the server validates cannot be
+             * two different pictures of one payment.
+             */
+            'form' => array_map(
+                fn (mixed $v): mixed => $v instanceof \DateTimeInterface ? $v->format('Y-m-d') : $v,
+                $this->currentState($payment),
+            ) + [
+                'id' => $payment->id,
+                'Payment No' => $payment->payment_no ?? '',
+                'field_states' => PaymentFieldState::for(
+                    $payment->coaAccount?->account_name,
+                    $payment->status,
+                ),
+                'legs' => $payment->splitPayments->map(fn ($leg): array => [
+                    'villa_id' => (string) ($leg->villa_id ?? ''),
+                    'item_category_id' => (string) ($leg->item_category_id ?? ''),
+                    'billing_cycle_id' => (string) ($leg->billing_cycle_id ?? ''),
+                    'amount' => (string) ($leg->amount ?? ''),
+                ])->all(),
+            ],
+            // DS fields the form cannot render because they have no column here yet —
+            // Bill_No1 and Vendor_Order_Booking_No, the two Husain asked for.
+            'unbuilt_fields' => PaymentFieldState::missingColumns(),
             'bill_payments' => $payment->billPayments->map(fn ($r): array => [
                 'bill_no' => $r->bill?->bill_no ?? '',
                 'bill_amount' => $r->bill_amount ?? '',
@@ -271,6 +328,342 @@ class PaymentController extends Controller
             'payable_amount' => $payment->payable_amount,
             'split_legs' => $payment->splitPayments->count(),
         ], 201);
+    }
+
+    /**
+     * Fields `update()` writes, grouped by how they are cast on the way in.
+     *
+     * Money is normalised to fixed-scale strings, booleans are cast, everything else
+     * is assigned. `payment_no` IS DELIBERATELY ABSENT from all three — §7.6 and D3:
+     * a number, once allocated off `auto_numbers`, belongs to that record forever, and
+     * the safest way to guarantee that is for no edit path to name the column.
+     *
+     * @var list<string>
+     */
+    private const MONEY_FIELDS = [
+        'amount', 'gst_amount', 'tds_amount', 'pt_amount', 'esic_amount', 'pf_amount',
+        'payable_amount', 'total_amount', 'original_amount',
+    ];
+
+    /** @var list<string> */
+    private const PLAIN_FIELDS = [
+        'coa_account_id', 'vendor_id', 'bank_coa_account_id', 'location_id',
+        'item_category_id', 'master_category_id', 'tds_rate_id', 'tax_id',
+        'status', 'payment_status', 'payment_mode', 'gst_type',
+        'payment_date', 'due_date', 'requested_date',
+        'particulars', 'remarks', 'management_remarks', 'payment_reference_number',
+        'haewaya_id', 'payment_by', 'expense_by', 'ca_email', 'payment_source',
+        'haewaya_utr_number', 'billing_year',
+    ];
+
+    /** @var list<string> */
+    private const BOOLEAN_FIELDS = [
+        'gst_needed', 'split_equally', 'multiple_villa', 'verified', 'accounts_bills',
+    ];
+
+    /**
+     * `Update Payment` — `Accounts.ds`, All Payments, and it is ALWAYS ENABLED.
+     *
+     * THIS ROUTE DID NOT EXIST, and its absence was deliberate and wrong. Husain:
+     * "Right now, on edit nothing is working." `PaymentsModule` carried an
+     * `editDisabledReason` reading "A payment is not editable. §7.6 makes its number,
+     * amounts and split legs immutable once issued." That was a MISREADING of §7.6,
+     * which forbids DELETING a settled payment and REISSUING a number — neither of
+     * which is editing. The DS is unambiguous: the `Update Payment` custom action on
+     * All Payments carries no `condition` at all, so Creator lets any payment be
+     * opened and saved. The block is withdrawn, and what §7.6 actually protects is
+     * enforced field by field below instead of by refusing the whole screen.
+     *
+     * So this is deliberately NOT a mirror of `storeDirect`. Four things differ:
+     *
+     *  1. `payment_no` is never in the request and never assigned, and
+     *     `PaymentNumber::allocate()` is not called on this path at all.
+     *  2. `PaymentSaveRules` runs with `is_new = false`, so "Paid Status can't be
+     *     created" (`Accounts.ds:32097`) does not fire. It is a CREATE rule; a payment
+     *     that reached `Paid` legitimately must still be saveable.
+     *  3. The COA-driven field lock from `Accounts.ds:24240` is enforced, through the
+     *     same `PaymentFieldState` the form renders from.
+     *  4. A reversing entry, and a payment already reversed, are refused — see below.
+     */
+    public function update(Request $request, Payment $payment): JsonResponse
+    {
+        /*
+         * D4's pair is immutable, and this is a DEVIATION: Creator would allow it.
+         *
+         * Creator has no reversal model — it hard-deletes, at 14 unguarded sites — so
+         * it has nothing to protect here and leaves `Update Payment` enabled on
+         * everything. Ours nets a villa x category x cycle to zero across two records,
+         * and that netting is the single property the whole reversal model exists to
+         * guarantee. Edit either half and it silently stops holding.
+         */
+        if ($payment->isReversal() || $payment->reversal !== null) {
+            return response()->json([
+                'message' => $payment->isReversal()
+                    ? 'This is a reversing entry. It records what was reversed and cannot itself be edited.'
+                    : 'This payment has been reversed. Editing it would leave the reversal pair no longer netting to zero.',
+                'reason' => 'reversal_pair_immutable',
+            ], 422);
+        }
+
+        $data = $request->validate($this->fieldRules());
+        $legs = $data['legs'] ?? null;
+
+        /*
+         * THE FIELD LOCK, from `Accounts.ds:24240`.
+         *
+         * Evaluated against the COA the payment will HAVE after this save, not the one
+         * it has now — Creator re-runs that branch `on user input of COA`, so switching
+         * a payment onto Accounts Payable hides Amount and reveals Payable Amount in
+         * the same interaction. Reading the stored COA instead would let the first save
+         * after a COA change write a field the form had already hidden.
+         */
+        $coaName = array_key_exists('coa_account_id', $data)
+            ? CoaAccount::find($data['coa_account_id'])?->account_name
+            : $payment->coaAccount?->account_name;
+
+        $status = $data['status'] ?? $payment->status;
+        $states = PaymentFieldState::for($coaName, $status);
+        $violations = [];
+
+        foreach (PaymentFieldState::readOnly($coaName, $status) as $field) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+
+            /*
+             * Sending a field back UNCHANGED is not an edit. A form that renders a
+             * disabled field still posts it, and refusing that would make the lock
+             * impossible to satisfy from the very screen Creator draws.
+             */
+            if ($this->sameValue($payment->getAttribute($field), $data[$field])) {
+                continue;
+            }
+
+            $violations[] = [
+                'field' => $field,
+                'state' => $states[$field],
+                'message' => sprintf(
+                    'With COA "%s" and status "%s", Creator renders %s as %s (Accounts.ds:24240).',
+                    $coaName ?? 'unset',
+                    $status ?? 'unset',
+                    $field,
+                    $states[$field],
+                ),
+            ];
+        }
+
+        if ($violations !== []) {
+            return response()->json([
+                'message' => $violations[0]['message'],
+                'reason' => 'field_locked',
+                'violations' => $violations,
+                'field_states' => $states,
+            ], 422);
+        }
+
+        /*
+         * Creator's 22 save rules, with `is_new = false`.
+         *
+         * Merged over the STORED record rather than run on the request alone: a PATCH
+         * that changes only the remarks must still be judged against the payment's
+         * vendor and COA, or every partial edit would fail "Please Select vendot to
+         * proceed" for a vendor that is present in the database and merely absent from
+         * this request.
+         */
+        $merged = $this->currentState($payment);
+
+        foreach ($data as $key => $value) {
+            $merged[$key] = $value;
+        }
+
+        $merged['is_new'] = false;
+
+        // `null` legs means "this request did not touch the grid", which is a different
+        // thing from "the grid is now empty" — so judge the rules against the stored legs.
+        $merged['legs'] = $legs ?? $payment->splitPayments->map(fn ($leg): array => [
+            'villa_id' => $leg->villa_id,
+            'item_category_id' => $leg->item_category_id,
+            'billing_cycle_id' => $leg->billing_cycle_id,
+            'amount' => $leg->amount,
+        ])->all();
+
+        $broken = (new PaymentSaveRules)->check($merged);
+
+        if ($broken !== []) {
+            return response()->json([
+                'message' => $broken[0]['message'],
+                'reason' => 'creator_validation',
+                'broken_rules' => $broken,
+                'disable_flag_known' => PaymentSaveRules::disabledCategoriesKnown(),
+            ], 422);
+        }
+
+        // §6.4 rule 1 again, on the POST-SAVE figures: the legs tie to the gross whether
+        // this request changed the legs, the gross, or only one of the two.
+        $effectiveLegs = $merged['legs'];
+        $gross = $merged['amount'] ?? null;
+
+        if ($effectiveLegs !== [] && $gross !== null) {
+            $sum = '0';
+
+            foreach ($effectiveLegs as $leg) {
+                $sum = Money::add($sum, (string) $leg['amount']);
+            }
+
+            if (! Money::equalsAtRupees($sum, Money::normalise((string) $gross))) {
+                return response()->json([
+                    'message' => sprintf(
+                        'The split legs sum to %s but the gross is %s. §6.4 rule 1 ties the legs to '
+                        .'the gross, so this would misstate every downstream villa-month-category figure.',
+                        $sum, Money::normalise((string) $gross),
+                    ),
+                    'reason' => 'unbalanced_split',
+                ], 422);
+            }
+        }
+
+        DB::transaction(function () use ($payment, $data, $legs): void {
+            foreach (self::MONEY_FIELDS as $field) {
+                if (array_key_exists($field, $data)) {
+                    $payment->{$field} = $data[$field] === null
+                        ? null
+                        : Money::normalise((string) $data[$field]);
+                }
+            }
+
+            foreach (self::PLAIN_FIELDS as $field) {
+                if (array_key_exists($field, $data)) {
+                    $payment->{$field} = $data[$field];
+                }
+            }
+
+            foreach (self::BOOLEAN_FIELDS as $field) {
+                if (array_key_exists($field, $data)) {
+                    $payment->{$field} = (bool) $data[$field];
+                }
+            }
+
+            if (array_key_exists('billing_months', $data)) {
+                // Comma-packed as Creator stores it, per storeDirect. Splitting it later
+                // is a parse, not a split(',').
+                $payment->billing_months = $data['billing_months'] === null
+                    ? null
+                    : implode(',', $data['billing_months']);
+            }
+
+            $payment->save();
+
+            if ($legs === null) {
+                return;
+            }
+
+            /*
+             * RECONCILE the legs; never clear and rebuild.
+             *
+             * §5.1/§15.1 is explicit about this and `SplitAllocator` already does it on
+             * the bill side. A delete-then-insert would mint new ids for rows that did
+             * not change, and every downstream reference to a split leg — the
+             * `Backend_*` allocation snapshot especially — would point at a row that no
+             * longer exists.
+             */
+            $existing = $payment->splitPayments()->orderBy('position')->get();
+
+            foreach (array_values($legs) as $position => $leg) {
+                $attributes = [
+                    'villa_id' => $leg['villa_id'],
+                    'item_category_id' => $leg['item_category_id'],
+                    'billing_cycle_id' => $leg['billing_cycle_id'],
+                    'amount' => Money::normalise((string) $leg['amount']),
+                    'position' => $position,
+                ];
+
+                $row = $existing->get($position);
+
+                if ($row === null) {
+                    $payment->splitPayments()->create($attributes);
+                } else {
+                    $row->fill($attributes)->save();
+                }
+            }
+
+            foreach ($existing->slice(count($legs)) as $surplus) {
+                $surplus->delete();
+            }
+        });
+
+        return $this->show($payment->fresh());
+    }
+
+    /**
+     * The stored record in request shape, so a partial edit can be judged whole.
+     *
+     * @return array<string, mixed>
+     */
+    private function currentState(Payment $payment): array
+    {
+        $state = [];
+
+        foreach ([...self::MONEY_FIELDS, ...self::PLAIN_FIELDS, ...self::BOOLEAN_FIELDS] as $field) {
+            $state[$field] = $payment->getAttribute($field);
+        }
+
+        $state['billing_months'] = $payment->billing_months === null
+            ? null
+            : explode(',', $payment->billing_months);
+
+        /*
+         * BILLING CYCLES AND ITEM CATEGORIES LIVE ON THE LEGS, not on the header.
+         *
+         * There is no `billing_cycle_ids` column and no pivot: `storeDirect` only ever
+         * writes a cycle through `legs.*.billing_cycle_id`, which is right — §5.2 makes
+         * each leg the ledger entry and the cycle is a property of the entry, not of
+         * the payment. So a stored payment's cycles have to be READ BACK from its legs.
+         *
+         * Getting this wrong is not subtle and it is how the first run of these tests
+         * failed: `PaymentSaveRules` refused every partial edit with "Please add
+         * Billing Cycle" for a payment whose legs each named one.
+         */
+        $state['billing_cycle_ids'] = $payment->splitPayments
+            ->pluck('billing_cycle_id')->filter()->unique()->values()->all();
+
+        $state['item_category_ids'] = $payment->splitPayments
+            ->pluck('item_category_id')
+            ->push($payment->item_category_id)
+            ->filter()->unique()->values()->all();
+
+        return $state;
+    }
+
+    /**
+     * Is a posted value the same as the stored one?
+     *
+     * Loose on purpose, and used only to let an UNCHANGED locked field through. A date
+     * arrives as `2026-08-29` and is stored as a Carbon; an id arrives as the string
+     * `"7"` from a form and is stored as int 7. A strict comparison would call both of
+     * those an edit and make the lock unsatisfiable from Creator's own screen.
+     *
+     * MONEY IS COMPARED AT SCALE and never as floats, which is the whole reason no
+     * float touches a rupee figure anywhere in this app.
+     */
+    private function sameValue(mixed $stored, mixed $posted): bool
+    {
+        if ($stored === null || $posted === null) {
+            return $stored === $posted;
+        }
+
+        if ($stored instanceof \DateTimeInterface) {
+            return $stored->format('Y-m-d') === (string) $posted;
+        }
+
+        if (is_bool($stored)) {
+            return $stored === (bool) $posted;
+        }
+
+        if (is_numeric($stored) && is_numeric($posted)) {
+            return Money::equals((string) $stored, (string) $posted);
+        }
+
+        return (string) $stored === (string) $posted;
     }
 
     /**
@@ -406,6 +799,41 @@ class PaymentController extends Controller
                 'January', 'February', 'March', 'April', 'May', 'June',
                 'July', 'August', 'September', 'October', 'November', 'December',
             ],
+
+            /*
+             * THE COA-DRIVEN FORM SHAPE, published rather than re-implemented.
+             *
+             * `Accounts.ds:24240` switches the Payment form between two genuinely
+             * different screens on the COA, and the browser has to know which one to
+             * draw the moment the user picks a COA — before any save.
+             *
+             * The obvious way to do that is to write the `if` again in JavaScript, and
+             * that is exactly the drift `PaymentFieldState` exists to prevent: a form
+             * that computes the rule independently is a form that can disagree with the
+             * guard which will reject it, and the user finds out by having a save
+             * refused for a field the screen let them type into.
+             *
+             * So the three reachable states are enumerated HERE, from the one authority,
+             * and the browser only has to LOOK ONE UP. `accounts_payable_coa_ids` is
+             * what it keys on, because the form holds a COA id and the rule is written
+             * against an account name.
+             */
+            'field_states' => [
+                'accounts_payable' => PaymentFieldState::for(
+                    PaymentFieldState::ACCOUNTS_PAYABLE, PaymentStatus::DRAFT,
+                ),
+                'accounts_payable_paid' => PaymentFieldState::for(
+                    PaymentFieldState::ACCOUNTS_PAYABLE, PaymentStatus::PAID,
+                ),
+                'other' => PaymentFieldState::for('Expense', PaymentStatus::DRAFT),
+            ],
+            'accounts_payable_coa_ids' => CoaAccount::all()
+                ->filter(fn (CoaAccount $c): bool => PaymentFieldState::isAccountsPayable($c->account_name))
+                ->pluck('id')->map(fn ($id): string => (string) $id)->values()->all(),
+
+            // Declared so the form can SAY the two fields are missing rather than
+            // simply not showing them — see PaymentFieldState::COLUMN_FOR.
+            'unbuilt_fields' => PaymentFieldState::missingColumns(),
         ]);
     }
 
@@ -469,33 +897,21 @@ class PaymentController extends Controller
     }
 
     /**
-     * Create a payment DIRECTLY — not from a bill.
+     * The Payment form's field rules — the request SHAPE, shared by create and edit.
      *
-     * WHY THIS EXISTS. §7.2's `Create_Payment` was the only creation path the three
-     * context docs describe, so this app was built as though a payment could only be
-     * made from a bill, and Payments' `+` sent the user to Bills. Husain corrected
-     * that on 25-Aug-2026: **a payment can be entered directly.** None of the `.md`
-     * files record it; the Payment form in Accounts.ds is the evidence that it is a
-     * first-class form with its own 130 fields.
+     * These were inline in `storeDirect`. `update()` needs exactly the same set, and
+     * a second copy is how a create path and an edit path start accepting different
+     * things: the same argument that put column order in one `ReportRegistry` read by
+     * both the report controller and the write controller.
      *
-     * WHAT IS ENFORCED, and why each one:
+     * SHAPE ONLY. Every field here is `nullable` because Creator's business rules are
+     * not shape rules — they live in `PaymentSaveRules`, which both callers run next.
      *
-     *  - **The number comes from the counter under a row lock** (`PaymentNumber`),
-     *    never from the request. The counters were 363 and 1,283 behind live until
-     *    `zoho:reconcile-counters` ran; a client-supplied number would reissue.
-     *  - **Split legs must balance the gross** if any are supplied — §6.4 rule 1 and
-     *    §7.4's missing check (D2). A direct payment with no legs is allowed, because
-     *    the form allows it; one with legs that do not tie is refused.
-     *  - **No billing cycle is created.** §6.4: deriving a cycle from a month name is
-     *    the defect that put a junk `"9-2026"` row into live accounting. Cycles must
-     *    already exist and are validated by id.
-     *  - **One transaction.** Creator inserts the payment then its subforms with no
-     *    transaction anywhere; a part-written payment silently misstates the ledger
-     *    (§5.2).
+     * @return array<string, mixed>
      */
-    public function storeDirect(Request $request): JsonResponse
+    private function fieldRules(): array
     {
-        $data = $request->validate([
+        return [
             'coa_account_id' => ['nullable', 'integer', 'exists:coa_accounts,id'],
             'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
             'bank_coa_account_id' => ['nullable', 'integer', 'exists:coa_accounts,id'],
@@ -578,7 +994,37 @@ class PaymentController extends Controller
             'legs.*.item_category_id' => ['required_with:legs', 'integer', 'exists:item_categories,id'],
             'legs.*.billing_cycle_id' => ['required_with:legs', 'integer', 'exists:billing_cycles,id'],
             'legs.*.amount' => ['required_with:legs', 'numeric'],
-        ]);
+        ];
+    }
+
+    /**
+     * Create a payment DIRECTLY — not from a bill.
+     *
+     * WHY THIS EXISTS. §7.2's `Create_Payment` was the only creation path the three
+     * context docs describe, so this app was built as though a payment could only be
+     * made from a bill, and Payments' `+` sent the user to Bills. Husain corrected
+     * that on 25-Aug-2026: **a payment can be entered directly.** None of the `.md`
+     * files record it; the Payment form in Accounts.ds is the evidence that it is a
+     * first-class form with its own 130 fields.
+     *
+     * WHAT IS ENFORCED, and why each one:
+     *
+     *  - **The number comes from the counter under a row lock** (`PaymentNumber`),
+     *    never from the request. The counters were 363 and 1,283 behind live until
+     *    `zoho:reconcile-counters` ran; a client-supplied number would reissue.
+     *  - **Split legs must balance the gross** if any are supplied — §6.4 rule 1 and
+     *    §7.4's missing check (D2). A direct payment with no legs is allowed, because
+     *    the form allows it; one with legs that do not tie is refused.
+     *  - **No billing cycle is created.** §6.4: deriving a cycle from a month name is
+     *    the defect that put a junk `"9-2026"` row into live accounting. Cycles must
+     *    already exist and are validated by id.
+     *  - **One transaction.** Creator inserts the payment then its subforms with no
+     *    transaction anywhere; a part-written payment silently misstates the ledger
+     *    (§5.2).
+     */
+    public function storeDirect(Request $request): JsonResponse
+    {
+        $data = $request->validate($this->fieldRules());
 
         $legs = $data['legs'] ?? [];
 

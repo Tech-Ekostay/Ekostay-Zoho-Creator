@@ -4192,3 +4192,227 @@ Ordered by how directly each touches money:
 4. **The 24 `on success`** — notifications and cross-app calls
 5. **The 5 `record event = on delete`** — against D4's reversal model
 6. **A `&& ... ||` precedence sweep** across both files, per §22.5
+
+---
+
+## 23. EDIT — the route that did not exist, and the form that changes shape with the COA
+
+Husain: *"I need all the columns on the index page and edit page to be like this. Right
+now, on edit nothing is working."*
+
+The share link could not be read — `claude.ai/share/…` returns the app shell, not the
+conversation — so the screenshots in it are unavailable. Most of what was being asked for
+turned out to be extractable from the DS anyway; the part that is not is named in §23.8.
+
+### 23.1 Every report's columns, extracted
+
+`docs/parse_ds_report_columns.py` extracts every report's column list from the DS, with
+each action button and the condition that enables it, into `docs/ds_report_columns.json`.
+**50 reports.** Comparing that against the screenshots settles which source wins for what:
+
+| question | authority |
+|---|---|
+| Which columns EXIST | **the DS** |
+| Which are action BUTTONS, and when each is enabled | **the DS** |
+| What CONTROL each field is (dropdown, list, checkbox, INR…) | **the DS** (§21) |
+| Which columns are VISIBLE | **the screenshot** |
+| What ORDER they appear in | **the screenshot** |
+
+**The visibility half is not a technicality — it is most of the answer.** All Payments
+declares **138 columns**. The live report shows roughly twenty. So "all the columns like
+this" cannot mean the DS list; it means the visible subset, in the order the report
+displays it, and that only a screenshot supplies. Same shape as §21, where the Payment
+form declares 130 fields and shows about 40.
+
+Order is separately real. For All Pending Approvals the DS declares
+`Payment No · Status · Approval Level · …` while the live report leads with
+`Added Time · Payment Date · Approve · Reject`. **Creator reorders a report's columns in
+its UI without touching the DS**, so DS order is declaration order and screenshot order
+is the truth.
+
+### 23.2 All Pending Approvals is 28 columns, not the 24 built
+
+The four missed: **`Approvers`** (distinct from `Approved By`), **`Item Category`
+TWICE** (`Item_Category` and `Item_Category.Item_Category` — the seventh duplicate-label
+pair in this app), and **`[ACTION] test`**, always enabled, sitting on a live report.
+
+Two conditions previously reasoned are now VERIFIED:
+
+```
+Approve / Reject   Status == "Sent for Approval" && Approvers.Email == zoho.loginuserid
+Pay                Payment_No.Status == "Approved"
+```
+
+The first confirms what was logged as an assumption: Approve and Reject render pale on
+every row because **the signed-in user is not among the approvers**, and the match is on
+**email** — consistent with §11.7, where all 24 approvers resolved by email and none by
+name.
+
+### 23.3 Every action button now has its condition, and three change what is built
+
+```
+All Payments
+  Send for Approval   Status == "Submit for Approval" || "Rejected" || "Send for Approval"
+  Pay                 Status == "Approved" || Status == "Approval Not Required"
+  Update Payment      ALWAYS ENABLED
+  Unmatch Bank        bank_matched == true
+  Update Doc          Link_Updated == false && Supporting_Documents is not null || Bills1 is not null
+  test                ALWAYS ENABLED
+  Recoverable         ALWAYS ENABLED
+
+All Bills
+  Create Payment      Status == "Draft" || "Partially Paid" || (Status == "Overdue" && Books_ID …)
+```
+
+- **`Pay` also accepts `Approval Not Required`** — the empty-chain case `ApprovalRouter`
+  documents as real but rare. `MarkPaymentPaid` gates on `Approved` alone and would
+  refuse a payment Creator would pay
+- **`Send for Approval` tests all three spellings.** §8's label divergence is
+  functional, not cosmetic: a comparison knowing one spelling misses two thirds of the queue
+- **All Bills' `Create Payment` needs Draft, Partially Paid or Overdue**, which is why
+  our reconstructed bills (17,158 `Paid`) can create nothing (§21.4)
+
+**`All Payments - Hussain` runs a DIFFERENT `Pay` rule** from `All Payments` — it
+additionally requires `Bank_Name`, `Payable_Amount` and `Particulars` to be non-null.
+Two reports over one form with different gates.
+
+### 23.4 THE EDIT BLOCK WAS MINE, AND IT WAS WRONG
+
+Edit was disabled on four of five report modules. For Payments the stated reason was
+*"A payment is not editable. §7.6 makes its number, amounts and split legs immutable
+once issued."*
+
+**That is a misreading of §7.6**, which forbids DELETING a settled payment and REISSUING
+a number. It says nothing about editing, and the DS is unambiguous: the `Update Payment`
+custom action on All Payments carries **no `condition` at all**. Creator lets any payment
+be opened and saved. Withdrawn.
+
+There was also no route to call — only `POST /payments`, `/payments/direct`,
+`/payments/recalculate` and `/payments/{id}/reverse`. So "nothing is working" was
+literally true: the button was disabled and the endpoint behind it did not exist.
+
+**`PATCH /api/payments/{payment}` now exists.** It is deliberately not `storeDirect`
+with an id:
+
+1. `payment_no` is not in the shared field rules at all, so no edit path can name it
+   (§7.6, D3). `PaymentNumber::allocate()` is never called here
+2. `PaymentSaveRules` runs with `is_new = false`, so *"Paid Status can't be created"*
+   (`:32097`) does not fire — it is a CREATE rule, and a payment that reached `Paid`
+   legitimately must stay correctable
+3. The COA field lock below is enforced
+4. **D4's reversal pair is refused** — a deviation, stated as one: Creator would allow
+   it, because Creator has no reversal model. Ours nets a villa × category × cycle to
+   zero across two records, and editing either half silently breaks the one property
+   that model exists to guarantee
+
+PATCH rather than PUT, because a locked field is one the form may legitimately not send
+— and under PUT, absent and cleared are the same request.
+
+### 23.5 THE FORM CHANGES SHAPE WITH THE COA — `Accounts.ds:24240`
+
+The most useful find, and it matches Husain's screenshot line for line:
+
+```deluge
+if (COA.Account_Name == "Accounts Payable")
+{
+    hide Bill_Payments;
+    disable Bill_No;  disable Bill_No1;
+    disable Villa_Name;  disable Location;  disable Head_Office;
+    hide Amount;                    enable Payable_Amount;
+    hide TDS;  hide TDS_Amount;  hide GST;  hide GST_Amount;
+
+    if (Status == "Paid")           // <- part of §6.5's answer
+    {
+        disable Bill_No1;
+        disable Vendor_Order_Booking_No;
+    }
+}
+else
+{
+    show Amount;                    disable Payable_Amount;
+    hide Bill_No1;  hide Vendor_Order_Booking_No;  hide Bill_Payments;
+}
+```
+
+The two branches are genuinely different screens over one table:
+
+| | Accounts Payable | anything else |
+|---|---|---|
+| `Amount` | hidden | shown |
+| `Payable Amount` | **enabled** | disabled |
+| `Bill No` / `Bill No1` | shown, **disabled** | hidden |
+| `Vendor Order Booking No.` | shown | hidden |
+| `TDS` / `GST` and their amounts | hidden | shown |
+| `Bill Payments` grid | hidden | hidden |
+
+**This explains the screenshot exactly**: with Accounts Payable selected the form shows
+COA, Requested Date, Payment Date, Due Date, Item Category, Master Category, Payment
+Mode, Bank Name, Status, Expense By — **and no Amount, no TDS, no GST**, because this
+branch hides all four.
+
+Note the asymmetry, which is Creator's and not a transcription slip: on the payable
+branch `Bill_No`/`Bill_No1` are **disabled** (visible, greyed, filled from the bill);
+on the other they are **hidden** outright.
+
+**It also partly answers §6.5**, open since the spec was written. The Paid lock is
+**narrow**: two fields, `Bill_No1` and `Vendor_Order_Booking_No`, and only on the
+Accounts Payable branch. It says nothing about the other branch, so nothing is inferred
+for it. First evidence either way.
+
+`App\Domain\Payments\PaymentFieldState` holds this **once**. The server enforces it in
+`update()`; `/api/payments/options` publishes its three reachable outcomes so the form
+LOOKS ONE UP rather than re-implementing the `if` in JavaScript. A form that computes the
+rule independently is a form that can disagree with the guard that will reject it — the
+same argument that put column order in one `ReportRegistry`.
+
+### 23.6 A REAL BLOCKAGE, found by running the tests: no Accounts Payable payment can be saved
+
+`Accounts.ds:28567` refuses any Accounts Payable payment naming neither a Bill No nor a
+Vendor Order Booking. `PaymentSaveRules` enforces it faithfully (§22.3). But
+**`Bill_No1` and `Vendor_Order_Booking_No` have no column in this app**, so the rule
+cannot be SATISFIED from our form.
+
+**Every Accounts Payable payment is therefore unsaveable here, on create and on edit.**
+Not a new defect — the consequence of the gap Husain reported as *"I dont have the option
+to enter the bill number in payments add page"* — but it was invisible until edit
+existed to expose it. Pinned by a test that fails the day the fields land.
+
+`PaymentFieldState::COLUMN_FOR` maps every DS field to our column and maps these two to
+`null` deliberately, so `missingColumns()` reports the gap instead of it being an absence
+nobody notices.
+
+### 23.7 What the edit path is verified against
+
+`PaymentUpdateTest` — **17 tests, 52 assertions.** Suite now **232 passing, 1,323
+assertions** (was 215 / 1,271).
+
+Two test expectations were wrong on first run and were corrected rather than the code:
+
+- **The unbalanced-split edit is refused by Creator's own rule**, `split_balance` at
+  `:28540`, not by our arithmetic gate. The gate stays behind it — that rule is
+  conditional on `Accounts_Bills`, and the gate reports the two figures and their
+  difference, which a fixed message cannot — but the faithful refusal goes first
+- **`billing_cycle_ids` is not a column.** A payment's cycles live on its LEGS
+  (`storeDirect` only ever writes one through `legs.*.billing_cycle_id`, which is right:
+  §5.2 makes the leg the ledger entry). Reading them from the header made
+  `PaymentSaveRules` refuse every partial edit with *"Please add Billing Cycle"* for a
+  payment whose legs each named one
+
+**Playwright is not installed in this environment, so the verify-by-rendering step did
+not run.** Instead the endpoints were exercised against the real dev database: the read
+side returns correct `field_states` for a live Accounts Payable payment, and both guards
+were probed with writes that must be REFUSED — `payable_amount` on an Expense payment
+and `amount` on a payable one — both 422, both `Accounts.ds:24240` cited, and both
+records confirmed unmutated afterwards. **This is not a substitute for rendering the
+form**, which still needs doing.
+
+### 23.8 What is still needed, and it is narrow
+
+Screenshots, **pasted into the chat rather than linked**, of the pages whose VISIBLE SET
+and ORDER are not recorded. The DS supplies everything else:
+
+1. **All Payments** — the index column order, and the edit form scrolled to the bottom.
+   138 declared columns and 12 currently rendered; only the screenshot says which ~20
+2. **All Bills** — index order; the DS gives 9 columns on `Bills` and 28 on
+   `Expenses_Bills`, and which is live is §6.1's open question
+3. Any edit form whose visible set differs from its index

@@ -54,6 +54,7 @@ export default function PaymentsModule() {
   const [options, setOptions] = useState(null);
   const [detail, setDetail] = useState(null);
   const [reversing, setReversing] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [reason, setReason] = useState('');
   const [notice, setNotice] = useState(null);
 
@@ -226,6 +227,19 @@ export default function PaymentsModule() {
         amounts and legs being immutable once issued, which is why a correction is a
         reversing entry rather than an edit. The button says so instead of hiding.
       */}
+      {editing && options && detail && (
+        <PaymentForm
+          options={options}
+          payment={detail.form}
+          onClose={() => setEditing(false)}
+          onSaved={() => {
+            setEditing(false);
+            setNotice({ kind: 'ok', text: `Updated payment ${payment['Payment No']}.` });
+            load();
+          }}
+        />
+      )}
+
       {adding && options && (
         <PaymentForm
           options={options}
@@ -250,9 +264,26 @@ export default function PaymentsModule() {
               ? inr(payment[label])
               : (label.endsWith('Date') ? ddMmmYyyy(payment[label]) : payment[label]),
           }))}
+          /*
+           * EDIT IS ENABLED, and the reason it was not is worth keeping.
+           *
+           * This carried `editDisabledReason`: "A payment is not editable. §7.6 makes
+           * its number, amounts and split legs immutable once issued." That was a
+           * MISREADING. §7.6 forbids DELETING a settled payment and REISSUING a
+           * number; it says nothing about editing, and All Payments' `Update Payment`
+           * custom action in the DS carries no `condition` at all — Creator lets any
+           * payment be opened and saved.
+           *
+           * What §7.6 does protect is now enforced field by field instead of by
+           * refusing the whole screen: the number never moves, and `PaymentFieldState`
+           * locks whatever the COA and status lock. The one case still refused is D4's
+           * reversal pair, which `show()` reports as `is_editable: false`.
+           */
+          onEdit={detail?.is_editable === false ? undefined : () => setEditing(true)}
           editDisabledReason={
-            'A payment is not editable. §7.6 makes its number, amounts and split legs '
-            + 'immutable once issued — a correction is a reversing entry, not an edit.'
+            'This payment is part of a reversal pair. Editing either half would leave '
+            + 'the two entries no longer netting to zero, which is what the reversal '
+            + 'records. Creator would allow this; we do not (D4).'
           }
           onClose={() => setSelected(null)}
           extras={(

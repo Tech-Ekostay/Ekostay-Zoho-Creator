@@ -40,7 +40,18 @@ import { inr } from '../lib/format';
  */
 
 /** Sections in DS row order, with Creator's own names. */
-export default function PaymentForm({ options, onClose, onSaved }) {
+/*
+ * EDIT MODE. `payment` is the `/api/payments/{id}` payload, or null when adding.
+ *
+ * Husain: "Right now, on edit nothing is working." It was not working because the
+ * module refused to open this form at all, citing §7.6 — a misreading. §7.6 forbids
+ * DELETING a settled payment and REISSUING its number; the DS gives All Payments'
+ * `Update Payment` action no `condition` whatsoever, so Creator lets any payment be
+ * opened and saved. One form serves both, as Creator's does.
+ */
+export default function PaymentForm({ options, onClose, onSaved, payment = null }) {
+  const editing = payment !== null;
+
   const [form, setForm] = useState({
     coa_account_id: '',
     vendor_id: '',
@@ -85,6 +96,42 @@ export default function PaymentForm({ options, onClose, onSaved }) {
   });
 
   const [legs, setLegs] = useState([]);
+
+  /*
+   * SEED FROM THE RECORD ON OPEN, once.
+   *
+   * Keyed on the payment's id rather than the object, because `show()` is re-fetched
+   * after a save and a fresh object identity would re-seed the form over whatever the
+   * user had just typed.
+   *
+   * Only keys the form already declares are copied. A blind spread would pour the
+   * report's display columns ("Payment No", "Vendor Name") into form state alongside
+   * the snake_case field names, and the first save would post both.
+   */
+  useEffect(() => {
+    if (!editing) return;
+
+    setForm((current) => {
+      const seeded = { ...current };
+
+      for (const key of Object.keys(current)) {
+        const value = payment[key];
+
+        if (value === undefined || value === null) continue;
+
+        seeded[key] = Array.isArray(current[key])
+          ? (Array.isArray(value) ? value.map(String) : String(value).split(',').filter(Boolean))
+          : (typeof current[key] === 'boolean' ? Boolean(value) : String(value));
+      }
+
+      return seeded;
+    });
+
+    // The split grid is separate state, and it is not optional scenery: §5.2 makes
+    // each leg the ledger entry, and an edit form that loaded the header without the
+    // legs would save a payment whose legs no longer tie to its gross.
+    setLegs((payment.legs ?? []).map((leg) => ({ ...leg })));
+  }, [editing, payment?.id]);
 
   /*
    * CREATOR'S `on user input` HANDLERS, which this form did not have.
@@ -218,8 +265,20 @@ export default function PaymentForm({ options, onClose, onSaved }) {
       payload[key] = payload[key] === '' ? null : Number(payload[key]);
     }
 
-    fetch('/api/payments/direct', {
-      method: 'POST',
+    /*
+     * HIDDEN FIELDS ARE NOT SENT.
+     *
+     * Creator's form does not post a field it never rendered, and `update()` treats a
+     * hidden field in the body as an attempt to write a locked one. Disabled fields
+     * ARE still sent — Creator posts those, they are greyed rather than absent, and
+     * the server accepts them unchanged.
+     */
+    for (const key of Object.keys(payload)) {
+      if (stateOf(key) === 'hidden') delete payload[key];
+    }
+
+    fetch(editing ? `/api/payments/${payment.id}` : '/api/payments/direct', {
+      method: editing ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(payload),
     })
@@ -236,7 +295,46 @@ export default function PaymentForm({ options, onClose, onSaved }) {
       .finally(() => setSaving(false));
   };
 
-  const field = (key, node, hint, group = false) => (
+  /*
+   * WHICH FIELDS THIS COA ALLOWS — `Accounts.ds:24240`, LOOKED UP, NOT RE-DERIVED.
+   *
+   * Creator switches the Payment form between two genuinely different screens on the
+   * COA: Accounts Payable hides Gross, TDS and GST and enables Payable Amount; every
+   * other COA does the reverse. That is why the live screenshot of an Accounts
+   * Payable payment shows no Amount, no TDS and no GST — they are hidden, not absent.
+   *
+   * The branch itself lives in ONE place, `App\Domain\Payments\PaymentFieldState`,
+   * and `/api/payments/options` publishes its three reachable outcomes. Writing the
+   * `if` again here would be a second implementation of a rule the server enforces —
+   * and a form that disagrees with its own guard shows the user a field they may type
+   * into and then refuses the save.
+   *
+   * On an EXISTING record the state comes from the record itself, which also covers
+   * §6.5's Paid lock.
+   */
+  const fieldStates = useMemo(() => {
+    if (editing && payment.field_states) return payment.field_states;
+
+    const payableIds = options.accounts_payable_coa_ids ?? [];
+    const isPayable = payableIds.includes(String(form.coa_account_id));
+
+    if (!isPayable) return options.field_states?.other ?? {};
+
+    return form.status === 'Paid'
+      ? (options.field_states?.accounts_payable_paid ?? {})
+      : (options.field_states?.accounts_payable ?? {});
+  }, [editing, payment, options, form.coa_account_id, form.status]);
+
+  const stateOf = (key) => fieldStates[key] ?? 'editable';
+
+  const field = (key, node, hint, group = false) => {
+    const state = stateOf(key);
+
+    // Hidden is hidden. Creator does not render it and neither do we — rendering it
+    // greyed would suggest a field that exists on this branch and does not.
+    if (state === 'hidden') return null;
+
+    return (
     <div className="zc-field" key={key}>
       {group
         ? <span id={`p-${key}-label`} style={{ width: 190, flex: '0 0 190px', paddingTop: 6, color: 'var(--ink2)' }}>{LABELS[key]}</span>
@@ -247,22 +345,38 @@ export default function PaymentForm({ options, onClose, onSaved }) {
           <div className="zc-field-hint" style={{ color: 'var(--bad)' }}>{fieldErrors[key][0]}</div>
         )}
         {hint && <div className="zc-field-hint">{hint}</div>}
+        {state === 'disabled' && (
+          <div className="zc-field-hint">
+            Creator disables this field on this COA (Accounts.ds:24240).
+          </div>
+        )}
       </div>
     </div>
-  );
+    );
+  };
+
+  /*
+   * Every control asks `stateOf` whether it is live.
+   *
+   * A `disabled` attribute is NOT a security boundary and is not treated as one —
+   * `PaymentController::update()` refuses a locked field regardless. This is the
+   * replication: Creator greys these, so we grey these.
+   */
+  const locked = (key) => stateOf(key) !== 'editable';
 
   const text = (key, extra = {}) => (
-    <input id={`p-${key}`} className="zc-input" value={form[key]}
+    <input id={`p-${key}`} className="zc-input" value={form[key]} disabled={locked(key)}
       onChange={(e) => set(key, e.target.value)} {...extra} />
   );
 
   const money = (key) => (
     <input id={`p-${key}`} className="zc-input" inputMode="decimal" value={form[key]}
+      disabled={locked(key)}
       onChange={(e) => set(key, e.target.value)} placeholder="0.00" />
   );
 
   const select = (key, list, blank = '— none —') => (
-    <select id={`p-${key}`} className="zc-select" value={form[key]}
+    <select id={`p-${key}`} className="zc-select" value={form[key]} disabled={locked(key)}
       onChange={(e) => set(key, e.target.value)}>
       <option value="">{blank}</option>
       {(list ?? []).map((o) => (
@@ -273,6 +387,7 @@ export default function PaymentForm({ options, onClose, onSaved }) {
 
   const check = (key) => (
     <input id={`p-${key}`} type="checkbox" className="zc-check" checked={form[key]}
+      disabled={locked(key)}
       onChange={(e) => set(key, e.target.checked)} />
   );
 
@@ -303,8 +418,16 @@ export default function PaymentForm({ options, onClose, onSaved }) {
     c.map((leg, j) => (j === i ? { ...leg, [key]: value } : leg)));
 
   return (
-    <div className="zc-overlay" role="dialog" aria-modal="true" aria-label="Add Payment">
-      <div className="zc-overlay-head">Payment</div>
+    <div className="zc-overlay" role="dialog" aria-modal="true"
+      aria-label={editing ? 'Update Payment' : 'Add Payment'}>
+      <div className="zc-overlay-head">
+        Payment
+        {editing && (
+          <span style={{ marginLeft: 8, color: 'var(--ink2)', fontWeight: 400 }}>
+            {payment['Payment No']}
+          </span>
+        )}
+      </div>
 
       <div className="zc-overlay-body">
         {calcWarnings.length > 0 && (
@@ -489,7 +612,7 @@ export default function PaymentForm({ options, onClose, onSaved }) {
 
         <div className="zc-commit">
           <button type="button" className="zc-btn zc-btn-primary" disabled={saving} onClick={save}>
-            {saving ? 'Saving…' : 'Add'}
+            {saving ? 'Saving…' : (editing ? 'Update Payment' : 'Add')}
           </button>
           <button type="button" className="zc-btn" disabled={saving} onClick={onClose}>
             Cancel

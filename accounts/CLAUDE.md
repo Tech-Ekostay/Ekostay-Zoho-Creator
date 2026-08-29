@@ -212,7 +212,7 @@ is the thing under test.
 
 ```bash
 php artisan migrate:fresh --seed     # rebuild dev db from master-data/
-php artisan test                     # 136 tests, 1003 assertions
+php artisan test                     # 232 tests, 1323 assertions
 php artisan db:show --counts         # confirm the connection and row counts
 ```
 
@@ -357,6 +357,39 @@ screenshots alone would have got wrong: the header fields routing branches on ar
 live rules, and a null `Approval Type` on Level 1 is **deliberate**
 (`Accounts.ds:38137` nulls and disables it) so `currentLevelSatisfied()`'s
 null-means-Any default must stay.
+
+**PAYMENTS ARE EDITABLE, corrected 29-Aug-2026.** `PaymentsModule` refused to open an
+edit form, citing §7.6. That was a misreading — §7.6 forbids DELETING a settled payment
+and REISSUING a number, and the DS gives All Payments' `Update Payment` action **no
+`condition` at all**. `PATCH /api/payments/{payment}` now exists, and what §7.6 does
+protect is enforced field by field: the number is not in the shared field rules, so no
+edit path can name it. Only D4's reversal pair is refused, which is a stated deviation.
+Addendum §23.4.
+
+**THE PAYMENT FORM CHANGES SHAPE WITH THE COA** — `Accounts.ds:24240`. Accounts Payable
+hides Amount, TDS, TDS Amount, GST and GST Amount and ENABLES Payable Amount; every other
+COA does the reverse. That is why the live screenshot of a payable payment shows no
+Amount and no GST — hidden, not absent. The branch lives once in
+`App\Domain\Payments\PaymentFieldState`; `/api/payments/options` publishes its three
+outcomes so the form looks one up rather than re-implementing the `if`. It also gives the
+first evidence for **§6.5's Paid lock**, which is NARROW: `Bill_No1` and
+`Vendor_Order_Booking_No`, and only on the payable branch. Addendum §23.5.
+
+**NO ACCOUNTS PAYABLE PAYMENT CAN BE SAVED HERE.** `Accounts.ds:28567` demands a Bill No
+or a Vendor Order Booking on that COA, and **neither field has a column in this app**, so
+the rule cannot be satisfied — on create or on edit. This is the hard consequence of
+Husain's "I dont have the option to enter the bill number". `PaymentFieldState::COLUMN_FOR`
+maps both to `null` so `missingColumns()` reports the gap; a test fails the day they land.
+Addendum §23.6.
+
+**Report columns are extracted.** `docs/parse_ds_report_columns.py` →
+`docs/ds_report_columns.json`, **50 reports** with every action button and its enabling
+condition. Use it before asking for a screenshot to learn what a column IS. But the DS
+declares **138 columns on All Payments** against roughly twenty live, so **visibility and
+order still come from screenshots** — same division as §21's form fields. Three
+conditions there change built behaviour: `Pay` also accepts `Approval Not Required`,
+`Send for Approval` tests all three spellings, and All Bills' `Create Payment` needs
+Draft/Partially Paid/Overdue. Addendum §23.1-23.3.
 
 **Not built on Payments yet, and known:** the approval engine between
 `Submit for Approval` and `Paid` (§8.2's matrix is amount-banded and collides with
