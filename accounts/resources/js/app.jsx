@@ -6,6 +6,7 @@ import BillsModule from './modules/BillsModule';
 import PaymentsModule from './modules/PaymentsModule';
 import SettingsModule from './modules/SettingsModule';
 import ExpensesModule from './modules/ExpensesModule';
+import FnbModule from './modules/FnbModule';
 import PendingApprovalsModule from './modules/PendingApprovalsModule';
 import VendorMasterModule from './modules/VendorMasterModule';
 import { NAV } from './nav';
@@ -114,6 +115,13 @@ export default function App() {
            * of the live report covering the full horizontal scroll.
            */
           <ExpensesModule />
+        ) : report === 'fnb' ? (
+          /*
+           * F&B. Read-only, and it says so on screen: 22 tables share this schema
+           * per §2.1, but only one of Creator's 21 F&B reports has been
+           * screenshotted, so replicating the others would be inventing them.
+           */
+          <FnbModule />
         ) : report === 'pending_approvals' ? (
           /*
            * All Pending Approvals — 24 columns, order verified from seven screenshots,
