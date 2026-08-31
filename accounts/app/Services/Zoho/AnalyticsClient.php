@@ -182,6 +182,47 @@ class AnalyticsClient
     }
 
     /**
+     * Every view in a workspace, by name — METADATA, so it costs NO EXPORT SLOT.
+     *
+     * This matters more than it looks. The export concurrency limit is account-wide and
+     * shared with a live production application (§9), so the expensive question
+     * "does Analytics carry a table for this module?" must not be answered by trying an
+     * export and seeing what happens. `/restapi/v2/workspaces/{id}/views` is a plain
+     * GET against the metadata API: no bulk job is created, nothing queues, and Tushar's
+     * syncs are untouched.
+     *
+     * Added 28-Aug-2026 when the answer to "can we sync every module?" turned out to
+     * depend entirely on which views exist, and guessing would have cost slots.
+     *
+     * @return list<array{id: string, name: string, type: string}>
+     */
+    public function views(string $workspace): array
+    {
+        $workspaceId = ZohoViews::workspaceId($workspace);
+
+        $body = $this->decode(
+            $this->request()->get($this->url("/restapi/v2/workspaces/{$workspaceId}/views"))->body(),
+            "listing views in workspace {$workspace}",
+        );
+
+        $out = [];
+
+        foreach (($body['data']['views'] ?? []) as $view) {
+            $out[] = [
+                // §15.2: ids stay STRINGS. A view id is 18 digits like every other
+                // Creator/Analytics id and float() corrupts them.
+                'id' => (string) ($view['viewId'] ?? ''),
+                'name' => (string) ($view['viewName'] ?? ''),
+                'type' => (string) ($view['viewType'] ?? ''),
+            ];
+        }
+
+        usort($out, fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
+
+        return $out;
+    }
+
+    /**
      * Step 1 — create the job. Retries only on 8132, which is queuing for a slot
      * rather than failing, and which competes with a live production application.
      */

@@ -13,6 +13,4 @@ use RuntimeException;
  * Maps to 422. Every one of these is a refusal to move money, which is the whole
  * point of §7.6 — the Creator path this replaces refused nothing.
  */
-final class ReversalRefusedException extends RuntimeException
-{
-}
+final class ReversalRefusedException extends RuntimeException {}

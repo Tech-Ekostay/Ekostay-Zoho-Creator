@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Bills\Money;
 use App\Domain\Payments\CreatePaymentFromBill;
+use App\Domain\Payments\PaymentFormCalculator;
+use App\Domain\Payments\PaymentNumber;
 use App\Domain\Payments\PaymentStatus;
 use App\Domain\Payments\ReversalRefusedException;
 use App\Domain\Payments\ReversePayment;
 use App\Domain\Payments\UnbalancedPaymentException;
-use App\Domain\Bills\Money;
-use App\Domain\Payments\PaymentNumber;
+use App\Domain\Reports\ReportFilter;
 use App\Http\Controllers\Controller;
 use App\Models\Bill;
 use App\Models\BillingCycle;
@@ -26,6 +28,7 @@ use App\Models\Villa;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 /**
  * Payments — the first write endpoints in the application (§7).
@@ -49,6 +52,14 @@ use Illuminate\Support\Facades\DB;
  */
 class PaymentController extends Controller
 {
+    /*
+     * NOTE: this controller carries its OWN `requestedFilters()` (see near the bottom)
+     * rather than using `Concerns\FiltersReports`, because it predates that trait. Not
+     * refactored here — unifying them is a separate change from adding paging, and
+     * touching the filter path on the 52,639-row report needs its own verification.
+     */
+    use Concerns\PagesReports;
+
     /** Column labels in report order — see the docblock on why this is provisional. */
     private const COLUMNS = [
         'Payment No',
@@ -65,9 +76,58 @@ class PaymentController extends Controller
         'ID',
     ];
 
+    /**
+     * Which columns this report can be filtered on, and as what type.
+     *
+     * A WHITELIST, not a convenience. A column name arriving from a request and
+     * reaching a query builder is how arbitrary columns get read, and this table
+     * holds 52,638 payments. Anything not named here is rejected by name.
+     *
+     * `Vendor Name` filters THROUGH the relation, so a user filters on the name they
+     * can see rather than on a foreign key they cannot.
+     */
+    private function filterable(): ReportFilter
+    {
+        return new ReportFilter([
+            'Payment No' => ['column' => 'payment_no', 'type' => 'text'],
+            'Vendor Name' => ['column' => 'name', 'type' => 'text', 'relation' => 'vendor'],
+            'Payment Date' => ['column' => 'payment_date', 'type' => 'date'],
+            'Due Date' => ['column' => 'due_date', 'type' => 'date'],
+            'Amount' => ['column' => 'amount', 'type' => 'money'],
+            'TDS Amount' => ['column' => 'tds_amount', 'type' => 'money'],
+            'GST Amount' => ['column' => 'gst_amount', 'type' => 'money'],
+            'Payable Amount' => ['column' => 'payable_amount', 'type' => 'money'],
+            'Status' => ['column' => 'status', 'type' => 'text'],
+            'Payment Status' => ['column' => 'payment_status', 'type' => 'text'],
+            'Location' => ['column' => 'name', 'type' => 'text', 'relation' => 'location'],
+            'ID' => ['column' => 'creator_id', 'type' => 'text'],
+        ]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = Payment::query()->with(['vendor', 'location'])->latest('id');
+
+        /*
+         * Filters are applied to the QUERY, not to the page.
+         *
+         * The old free-text search filtered whatever the browser had already loaded
+         * — the first 1,000 of 52,638 — so a payment at row 5,000 came back as "no
+         * match" rather than "not on this page". An InvalidArgumentException here is
+         * a 422 with the allowed columns named, because a filter that silently does
+         * nothing is worse than one that errors: the unfiltered result reads as the
+         * filtered one.
+         */
+        $filter = $this->filterable();
+        $filters = $this->requestedFilters($request);
+
+        try {
+            $filter->apply($query, $filters);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage(), 'reason' => 'bad_filter'], 422);
+        }
+
+        $matched = (clone $query)->count();
 
         // Reversals are ledger rows and belong in the list by default; this lets a
         // caller ask for forward payments only without a second endpoint.
@@ -84,12 +144,24 @@ class PaymentController extends Controller
          * count — a reviewer comparing against the live screen would see a difference.
          * Caught by rendering it against the 52,638 imported payments.
          */
-        $payments = $query->limit(1000)->get();
+        /*
+         * ONE PAGE, plus whether another exists. `limit(1000)` was a hard CEILING:
+         * row 1,001 of 52,639 was unreachable, so a filtered nil result was
+         * indistinguishable from a truncated one — the exact confusion server-side
+         * filtering was added to remove. The client appends as it scrolls.
+         */
+        $offset = $this->requestedOffset($request);
+        $page = $this->page($query, $offset);
+        $payments = $page['rows'];
 
         return response()->json([
             'report' => 'all_payments',
             'columns' => self::COLUMNS,
-            'total' => Payment::query()->count(),
+            ...$this->pagingEnvelope(
+                $offset, $page['next_offset'], $matched, Payment::query()->count(),
+            ),
+            'filter_schema' => $filter->schema(),
+            'filters' => $filters,
             'rows' => $payments->map(fn (Payment $p): array => $this->row($p))->all(),
         ]);
     }
@@ -303,6 +375,65 @@ class PaymentController extends Controller
     }
 
     /**
+     * Recompute the form's derived fields — Creator's `on user input` handlers.
+     *
+     * WHY THIS IS A ROUND TRIP RATHER THAN JAVASCRIPT. Every other money rule in this
+     * app is server-side for one reason: there must be exactly one implementation of
+     * the arithmetic. `PaymentFormCalculator` shares `Money::percentageOf()` with the
+     * bill split, so a rate applied on the form and the same rate applied on a saved
+     * bill cannot drift apart. A JS copy would be a second place for the rounding to
+     * disagree, and §6.3 already warns that per-row TDS does not sum to header TDS —
+     * a discrepancy that is correct is impossible to tell from one that is a bug if
+     * two implementations exist.
+     *
+     * It answers with the whole derived set INCLUDING the rewritten split legs,
+     * because that is what the DS handler does: picking a TDS rate rewrites every
+     * leg's TDS, GST and Total.
+     */
+    public function recalculate(Request $request, PaymentFormCalculator $calculate): JsonResponse
+    {
+        $data = $request->validate([
+            'amount' => ['nullable', 'numeric'],
+            'gst_amount' => ['nullable', 'numeric'],
+            'pf' => ['nullable', 'numeric'],
+            'pt' => ['nullable', 'numeric'],
+            'esic' => ['nullable', 'numeric'],
+            'tds_rate_id' => ['nullable', 'integer', 'exists:tds_rates,id'],
+            'tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
+            'item_category_id' => ['nullable', 'integer', 'exists:item_categories,id'],
+            'legs' => ['nullable', 'array'],
+            'legs.*.amount' => ['nullable', 'numeric'],
+            // Opt in to the INTENDED salary formula instead of the live one. Off by
+            // default: the 52,638 imported payments were produced by the live path.
+            'apply_salary_deductions' => ['nullable', 'boolean'],
+        ]);
+
+        // The rate, not the id — the calculator works in percentages.
+        $tds = isset($data['tds_rate_id']) ? TdsRate::find($data['tds_rate_id']) : null;
+        $tax = isset($data['tax_id']) ? Tax::find($data['tax_id']) : null;
+        $category = isset($data['item_category_id']) ? ItemCategory::find($data['item_category_id']) : null;
+
+        $result = $calculate(
+            [
+                'amount' => $data['amount'] ?? '0',
+                'gst_amount' => $data['gst_amount'] ?? '0',
+                'pf' => $data['pf'] ?? '0',
+                'pt' => $data['pt'] ?? '0',
+                'esic' => $data['esic'] ?? '0',
+                'tds_percentage' => $tds?->tds_percentage ?? '0',
+                'gst_percentage' => $tax?->tax_percentage,
+                // Name, not id: the dead salary branch compares on the NAME, and the
+                // name is a live lookup key that must not be trimmed.
+                'item_category' => $category?->name,
+            ],
+            array_values($data['legs'] ?? []),
+            (bool) ($data['apply_salary_deductions'] ?? false),
+        );
+
+        return response()->json($result);
+    }
+
+    /**
      * Create a payment DIRECTLY — not from a bill.
      *
      * WHY THIS EXISTS. §7.2's `Create_Payment` was the only creation path the three
@@ -339,10 +470,34 @@ class PaymentController extends Controller
             'tds_rate_id' => ['nullable', 'integer', 'exists:tds_rates,id'],
             'tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
 
-            'status' => ['nullable', 'string', 'max:100'],
-            'payment_status' => ['nullable', 'string', 'max:100'],
-            'payment_mode' => ['nullable', 'string', 'max:100'],
-            'gst_type' => ['nullable', 'string', 'max:100'],
+            /*
+             * ENUMS ARE VALIDATED AGAINST THE PICKLIST, not merely length-checked.
+             *
+             * These were `['nullable','string','max:100']`, which accepts anything.
+             * §8 rule 11 of the field notes is explicit — "validate enums; never
+             * auto-create master data from a malformed value" — and §5.1 records the
+             * cost of not doing it: an API sent the month as `9` instead of
+             * `September`, Creator stored it literally and CONJURED a billing cycle
+             * called "9-2026" in live accounting.
+             *
+             * The lists come from the DS picklists verbatim, including the three
+             * spellings of one approval concept and the lowercase `paid`. Rule::in
+             * on dirty values is still validation: the point is that only the values
+             * Creator itself offers get through, not that they are tidy.
+             *
+             * `Open` is accepted on READ but is NOT in this list — it is live on
+             * 7,583 imported payments and absent from the picklist (addendum §10), so
+             * a form must not mint a new one.
+             */
+            'status' => ['nullable', Rule::in(PaymentStatus::statuses())],
+            'payment_status' => ['nullable', Rule::in(array_values(array_filter(
+                PaymentStatus::paymentStatuses(),
+                fn (string $v): bool => $v !== PaymentStatus::PS_OPEN,
+            )))],
+            'payment_mode' => ['nullable', Rule::in(['Online', 'Offline'])],
+            // `Enter Manully` is Creator's spelling. Validating against the correct
+            // spelling would reject every real record.
+            'gst_type' => ['nullable', Rule::in(['Predefined GST', 'Enter Manully'])],
 
             'amount' => ['nullable', 'numeric'],
             'gst_amount' => ['nullable', 'numeric'],
@@ -362,13 +517,16 @@ class PaymentController extends Controller
             'remarks' => ['nullable', 'string'],
             'management_remarks' => ['nullable', 'string'],
             'payment_reference_number' => ['nullable', 'string', 'max:255'],
+            'haewaya_id' => ['nullable', 'string', 'max:255'],
             'payment_by' => ['nullable', 'string', 'max:255'],
             'expense_by' => ['nullable', 'string', 'max:255'],
             'ca_email' => ['nullable', 'email', 'max:80'],
             'payment_source' => ['nullable', 'string', 'max:255'],
             'haewaya_utr_number' => ['nullable', 'string', 'max:255'],
 
-            'billing_year' => ['nullable', 'integer'],
+            // DS: number, maxchar 4. Bounded rather than left open — an
+            // unbounded year is how a cycle ends up filed under 20260.
+            'billing_year' => ['nullable', 'integer', 'digits:4'],
             'billing_months' => ['nullable', 'array'],
             'billing_cycle_ids' => ['nullable', 'array'],
             'billing_cycle_ids.*' => ['integer', 'exists:billing_cycles,id'],
@@ -489,6 +647,28 @@ class PaymentController extends Controller
             'payment_status' => $payment->payment_status,
             'split_legs' => count($legs),
         ], 201);
+    }
+
+    /**
+     * Filters off the request.
+     *
+     * Accepted as JSON in a single `filters` parameter rather than as bracketed
+     * array params, because a chip list is one value conceptually and PHP's nested
+     * query parsing is its own source of surprises.
+     *
+     * @return list<array{column?: string, operator?: string, value?: string}>
+     */
+    private function requestedFilters(Request $request): array
+    {
+        $raw = $request->query('filters');
+
+        if (! is_string($raw) || trim($raw) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? array_values(array_filter($decoded, 'is_array')) : [];
     }
 
     /** One list row. Nulls render as '' — Creator shows blanks, not "null". */

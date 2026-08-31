@@ -91,9 +91,10 @@ Husain for anything the files can answer.
 counting. `Primary Vendor` is the merge pointer, `Primary Status` flags the target,
 and `Main Primary` is not a merge field. Addendum §18.1.
 
-The `.ds` files are **git-ignored on purpose**: `Accounts.ds` line 22851 holds a
-live hardcoded DoubleTick API key. Rotate it before considering these for commit,
-even to a private repo. Structure and script only — no records.
+The `.ds` files are **git-ignored on purpose**: `Accounts.ds` holds the live DoubleTick
+API key at **three** lines (16768, 16780, 22851) and the **Analytics OAuth
+client_secret** at 22647. Rotate both before considering these for commit, even to a
+private repo. Structure and script only — no records. Addendum §7D.
 
 ### What the JSX is
 
@@ -123,7 +124,7 @@ documented dirty data is intact and was confirmed directly against the files:
 | `F&B STAFF MEDICAL EXPENSE ` trailing space, only such name | yes, 1 of 135 |
 | `Expense Type` unset on 103 of 135 item categories | yes |
 | `Haewaya ID` empty on all 135 — sync key unpopulated | yes |
-| `Exclude for Observation` true on 1 → exclusion is inert | yes |
+| `Exclude for Observation` true on 1 → ~~exclusion is inert~~ | count yes, **conclusion WRONG** |
 | 9 COA rows with `Bank = true` not typed `bank`, incl. `Security Deposit` | yes |
 | `EKOSTAY IDFC LLP` twice, different record IDs | yes |
 | `Account Code` populated on 6 of 144 | yes |
@@ -132,6 +133,18 @@ documented dirty data is intact and was confirmed directly against the files:
 | `Copacabana Villa Calangute` **and** `Copacabana Villa- Calangute` | yes |
 | test record `fcgfhbjnh` | yes |
 | all 144 COA IDs are 18-char JSON **strings** | yes |
+
+**`Exclude for Observation` is NOT inert — corrected 27-Aug-2026.** The one category
+it excludes is `EXPERIENCES REFUND`, which is the whole Backbend Payments refunds
+channel (addendum §7.1). One of 135 by count, not marginal in effect. And its two
+siblings disagree: `FOOD REFUND` and `STAY REFUND` are both excluded from profit but
+**not** from observation, while `REFUND-stay-*` and `REFUND-food-*` both exist live —
+so stay and food refunds show up in Expense Observations and experiences refunds do
+not. Looks like an oversight; needs Husain. Addendum §7C.3.
+
+There are **three** exclusion columns, which is what §3.1's "do not implement all of
+them" is counting: `exclude_for_profit` (12 of 135), `exclude_for_observation` (1),
+`exclude_item_category` (**0** — entirely unused).
 
 **One correction to how the data reads.** The addendum's "`Nature` three times"
 is true of the *source*, not of the recovered master. `All_Approvals.Villa Name`
@@ -267,6 +280,42 @@ via `docs/parse_permissions.py`; employees (475) from `All_Employee_Masters.csv`
 auto_numbers (1) from `Auto_Numbers.json` — the payment counter, which **must** be
 the real 20938 and not a fresh 1.
 
+**The payment counter is now GUARDED, and the guard lives in the seeder too.**
+Husain confirmed 27-Aug-2026 that `EKS/PY` comes from `Auto_Numbers`, and the live
+screenshot read `Payment No` **21621** against our 21309 — 312 numbers that
+already belong to real payments. `PaymentNumber::allocate()` now REFUSES while our
+counter sits at or below `auto_numbers.live_payment_no_observed`, and steps past any
+number already taken (Creator has that check at `Accounts.ds:20517`; we did not).
+
+`AutoNumberSeeder` carries the reading as `LIVE_PAYMENT_NO` / `LIVE_HAEWAYA_NO` /
+`LIVE_OBSERVED_AT`. **Update them when a fresh Auto Numbers screenshot arrives** —
+the master export is 12-Aug and cannot supply them. A `migrate:fresh --seed` without
+them silently disarms the guard, which is how the hole was found. Addendum §6.10-6.15.
+
+There are **four** series in that one row, and the report shows three: `Payment`,
+`Haewaya`, `Books_Payment` (never used, counter still 1) and **`External_Payment`**,
+which no screen displays and `Accounts.ds:20502` allocates from.
+
+**`EKS/PAY` IS A THIRD LIVE SERIES AND HAS NO COUNTER HERE.** Husain, 28-Aug-2026:
+`EKS/PAY` is COA **Accounts Payable** and `EKS/PY` is **Expense**. Verified: all 1,344
+`EKS/PAY` payments are on Accounts Payable and none on Expense, max number **1,781**.
+The prefix census is `EKS/Haewaya` 33,408 · `EKS/PY` 16,490 · `EKS/PAY` 1,344.
+
+**CORRECTED 28-Aug-2026: `EKS/PAY` IS RETIRED and is NOT a cutover blocker.** It ran
+2025-09-01 to 2026-05-05 and was replaced by `EKS/PY` for Accounts Payable in Q2 2026 —
+the handover is visible per quarter (2026 Q1: PAY 626 / PY 6; Q2: PAY 81 / PY 709; Q3:
+PY 434 only). Husain's rule is right about the SEMANTICS —
+`Creator.CreatePaymentfromBill` at `Accounts.ds:19018` does force COA to Accounts
+Payable — but it mints from `Payment_Series`, so bill-derived payments now take
+`EKS/PY`. Max `EKS/PAY` is 1,781 and final. **An importer must still ACCEPT `EKS/PAY`
+on read**, or 1,344 historical AP payments get dropped. Addendum §20.
+
+**USE PHP FOR EVERY CLOCK READING.** `app.timezone` is UTC, the shared-slot cron runs
+IST, and **Git Bash on Windows returns UTC when asked for `TZ=Asia/Kolkata`**. That
+half-hour offset put a 30-minute hole in the concurrency guard and then, once fixed,
+fooled the operator the same way half an hour later. The machine's bare `date` is IST
+and correct; `TZ=` is not. Addendum §19.4.
+
 **§17 steps 3–6 — done.** Roles and permissions are first-class tables (no string
 matching anywhere in the authorisation path, asserted), the Bills schema and its
 two child grids exist, and the split allocator/validator carry §6.3's
@@ -300,6 +349,15 @@ beside the real masters by accident.
 **Still gated:** Schedule Payments and Salary Payouts. They depend on §11's
 versioned payroll configuration with effective dates, which does not exist yet, and
 §17 is explicit that re-running a month without it silently re-decides old payslips.
+
+**The Approvers grid arrived 27-Aug-2026 and routing is unblocked** — amount bands,
+approver identities and `Approval Type`, all three approvers resolving against
+`employees` by email. Addendum §11.7-11.13. Two things came out of it that the
+screenshots alone would have got wrong: the header fields routing branches on are a
+**browser-side mirror** of the grid (`Accounts.ds:38118`) and are blank on all 16
+live rules, and a null `Approval Type` on Level 1 is **deliberate**
+(`Accounts.ds:38137` nulls and disables it) so `currentLevelSatisfied()`'s
+null-means-Any default must stay.
 
 **Not built on Payments yet, and known:** the approval engine between
 `Submit for Approval` and `Paid` (§8.2's matrix is amount-banded and collides with
@@ -373,6 +431,27 @@ names the two tabbed rows separately. The no-trim rule at 328x scale.
 **No write path on vendors**, deliberately: the merge *semantics* are settled, the
 merge *action* is not. And this is the most sensitive read in the app — PANs, GST
 numbers, phone numbers, bank details — with **no authorisation on it**.
+
+### Zoho Books is a THIRD plane, and its contract is already in the DS
+
+Bank was captured 27-Aug-2026 and Husain confirmed its transactions are **fetched
+from Zoho Books**. `Accounts.ds` carries a whole `Books.*` namespace — four
+status-filtered `banktransactions` fetches, plus `COA()`, `GetTaxes()`, `GetTDS()`,
+and a mostly-commented-out write side. Addendum §7B.5.
+
+**`organization_id` is `60040119506` — NOT the Analytics org `60042406851`.** Two
+different Zoho tenants; do not assume one id for the estate. The calls use
+`connection:"books"`, a named Creator Connection, so **no Books credential is
+exposed in these files** (unlike the DoubleTick key).
+
+This also explains three things in our own schema that were never labelled as Books
+artefacts: `coa_accounts.books_account_id` comes from `Books.COA()`, and the `taxes`
+(8) and `tds_rates` (35) masters come from `/settings/taxes`.
+
+Still needed from Husain: the per-account `account_id` list, a read-only Books OAuth
+client, and confirmation the org id is current. **Not** needed: endpoints, filters,
+pagination, the `transaction_id` dedup key, or the `Payment.Books_ID` →
+`Bank_Reconcilation` link — all in the DS.
 
 ### Zoho Analytics read plane wired, 25-Aug-2026
 
@@ -539,11 +618,57 @@ Several conclusions in this project were revised after better evidence.
 
 ## Live defects, independent of the rebuild
 
-Open and worth raising: hardcoded **DoubleTick API key** at `Accounts.ds` line
-22851 needs rotating · the **negative-HRA band** (₹21,001–21,099) is producing
-bad payslips today · **`Delete Paid Payment`** sits one click from a settled
-payment · duplicate approvals minting duplicate payments · approved requests
-with no payee · unresolved foreign keys on settled Backend Payments.
+Open and worth raising: the hardcoded **DoubleTick API key** appears **three times** —
+`Accounts.ds:16768`, `:16780` (the approval notification) and `:22851` (the
+revenue-share statement). **Rotate it WITH the deployment, not before**, and in all
+three places: a blind rotation silently stops approval notifications AND owner
+statements. **`Eko_RS_App_Config.DoubleTick_API_Key` exists and is never read**, so
+rotating through the UI changes a field nothing consults — and that field is a
+column on a report. Addendum §7D.3-7D.4. Related: **only 81 of 475 employees have a
+phone number**, so an approver from the other 394 is routed to correctly and never told
+
+Also open: the **negative-HRA band** (₹21,001–21,099) is producing bad payslips
+today · **`Delete Paid Payment`** sits one click from a settled
+payment · duplicate approvals minting duplicate payments · ~~approved requests
+with no payee~~ — **probably a reporting artefact, not missing data**: All Payment
+Requests binds the *lookup* half of the duplicate `Vendor Name` pair, so every
+`Add New Vendor` request shows a blank payee. Confirmed on one row 27-Aug-2026;
+addendum §6.4 names the ten-second check that settles it · ~~unresolved foreign
+keys on settled Backend Payments~~ — **a DISPLAY defect, not a data one**: all four
+ids across two records resolve (villas Casa Zul and Lakefront Villa, location
+Alibaug, and `Bank Name` via `coa.ekostay_id`). The form renders raw keys where a
+name belongs; the records are sound and need no repair. Addendum §7.2.
+
+**Both of those entries were reported from a screen rather than from the record
+behind it. Check the record before believing the column.**
+
+Also hardcoded, and found 27-Aug-2026: the **Analytics OAuth client_id and
+client_secret** at `Accounts.ds:22646-22648`, against org `60042406851` — **the same
+org this rebuild uses.** So the Analytics client is shared between live Creator and
+us, and revoking it takes down `Standalone.proxyAnalytics` too. A separate OAuth
+client for this app was already the recommendation; this makes it necessary.
+
+Added 27-Aug-2026, **and corrected 28-Aug**. A trash bin EXISTS — `Deleted_Payments`,
+a rail item, archiving a deleted payment with a deleted-by stamp and its split grid —
+**and it holds 982 records.** The first reading of `Accounts.ds:31027`'s
+`COA != "Accounts Payable"` guard concluded the bin sat empty, because §7.2 forces
+every payment onto that account. Wrong: §7.2 is true of `Create_Payment` (payments made
+FROM A BILL) and that is only **2,571 of 52,639** payments. 91% sit on `Expense` and
+archive correctly.
+
+So the defect is narrower and arguably worse: the exception covers precisely the
+**bill-derived trade payables**, the payments with a vendor invoice behind them. A bin
+that holds salary reversals but not settled supplier payments looks reliable and is
+not. Addendum §7H.1.
+Three more losses even when it fires: `Status` overwritten to `Draft`, `Expense_By`
+reassigned to the deleter, and `Payable_Amount` recomputed. Plus a one-token bug at
+`:31022` — `Deleted_By_User` is assigned without its `fetdele.` prefix, so a SECOND
+deletion records the time and nobody. Addendum §7F.
+
+**And `Accounts.DeletePermanentlyTrash(RecID, user)` at `:16192` checks authorisation
+by comparing its own `user` PARAMETER to a hardcoded `husain@ekostayhospitality.com`.**
+Caller-supplied identity, hardcoded email, standalone function — and standalone
+functions are REST-invocable. Same family as the three below.
 
 Added 22-Aug-2026, from the delete census in addendum §16.4: **`void
 DeleteAllRecords()` at `F_B.ds:4645`** wipes 14 F&B tables with

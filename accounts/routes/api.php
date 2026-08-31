@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\BillController;
+use App\Http\Controllers\Api\ExpenseController;
+use App\Http\Controllers\Api\PendingApprovalController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\SettingsRecordController;
 use App\Http\Controllers\Api\SettingsReportController;
@@ -87,6 +89,9 @@ Route::patch('/bills/{bill}', [BillController::class, 'update']);
  */
 Route::get('/payments/options', [PaymentController::class, 'options']);
 Route::post('/payments/direct', [PaymentController::class, 'storeDirect']);
+// The form's live arithmetic — Creator's `on user input` handlers. A round trip
+// rather than JS so there is exactly one implementation of the money rules.
+Route::post('/payments/recalculate', [PaymentController::class, 'recalculate']);
 Route::get('/payments', [PaymentController::class, 'index']);
 Route::get('/payments/{payment}', [PaymentController::class, 'show']);
 Route::post('/payments', [PaymentController::class, 'store']);
@@ -112,3 +117,51 @@ Route::post('/payments/{payment}/reverse', [PaymentController::class, 'reverse']
 Route::get('/vendors', [VendorController::class, 'index']);
 Route::get('/vendors/lookup', [VendorController::class, 'lookup']);
 Route::get('/vendors/{vendor}', [VendorController::class, 'show']);
+
+/*
+ * Expenses — the ledger (§5.2). 66,402 real rows.
+ *
+ * COLUMN ORDER IS VERIFIED from twelve screenshots of the live report covering the
+ * full horizontal scroll, which makes this the only report here whose order is seen
+ * rather than inferred. Nine of its columns render empty because the Analytics view
+ * does not carry them; ExpenseController names them rather than deriving them.
+ *
+ * No write route. `Update Expense` is a per-record action on the report and what it
+ * does is unverified — a button that mutates a ledger entry is not something to
+ * guess at.
+ */
+Route::get('/expenses', [ExpenseController::class, 'index']);
+Route::get('/expenses/{expense}', [ExpenseController::class, 'show']);
+
+/*
+|--------------------------------------------------------------------------
+| Pending Approvals — the first route here that MOVES money
+|--------------------------------------------------------------------------
+|
+| 24 columns, order verified from seven screenshots (27-Aug-2026). The three
+| actions sit MID-TABLE, between `Payment Date` and `Payable Amount`, which is
+| where the live report puts them.
+|
+| The write routes are the transitions that were missing until 65f5845: there were
+| eight write paths in this app and not one of them was a status change, so
+| `Draft -> Sent for Approval -> Approved -> Paid` was a diagram rather than a path.
+|
+| POST /pending-approvals/{id}/approve   tick the approver's row; advance or finalise
+| POST /pending-approvals/{id}/reject    flat, immediate, both records, reason REQUIRED
+| POST /pending-approvals/{id}/pay       gated on Approved — the pale button
+|
+| NO AUTHORISATION on any of them. §3.3's matrix is extracted and tested and is not
+| wired to a gate. `DecideApproval` checks the named approver is ON the record, which
+| is not the same as checking who is calling — and the index response says
+| `unauthenticated: true` so the UI cannot present this as a control. That is the
+| blocker before this is exposed to anyone, and it is the same gap that makes
+| `Accounts.DeletePermanentlyTrash` (addendum §7F.5) what it is.
+|
+| Deliberately absent: a DELETE route. §7.6 — a payment number, once issued, is never
+| reissued, and an approval is not the place to start deleting from.
+*/
+Route::get('/pending-approvals', [PendingApprovalController::class, 'index']);
+Route::get('/pending-approvals/{pendingApproval}', [PendingApprovalController::class, 'show']);
+Route::post('/pending-approvals/{pendingApproval}/approve', [PendingApprovalController::class, 'approve']);
+Route::post('/pending-approvals/{pendingApproval}/reject', [PendingApprovalController::class, 'reject']);
+Route::post('/pending-approvals/{pendingApproval}/pay', [PendingApprovalController::class, 'pay']);

@@ -79,8 +79,14 @@ Improvements come later, on his signal.
      `Accounts.ds` (7 vs 10 occurrences) — see addendum §10.
    - The trailing space on `F&B STAFF MEDICAL EXPENSE ` is confirmed present and
      is the only such name in 135 item categories.
-8. Footer reads `Showing N of M`. On reports over 1000 rows Creator prints
-   `Showing 1000 of ###` — it pages at 1000 and the total overflows the field.
+8. Footer reads `Showing N of M`. Creator pages at 1000, so the SHOWN count caps
+   there — but **M is the real total**.
+
+   **CORRECTED 27-Aug-2026, on Husain's screenshot.** This rule previously said
+   Creator prints `Showing 1000 of ###` because "the total overflows the field", and
+   the app reproduced the hashes faithfully. The live All Expenses footer reads
+   `Showing 1000 of 66407`. The hashes are a clipped or in-flight render, not the
+   settled output. Show the number.
 9. Zoho chrome: navy rail, pink active state, pink `＋`, pink primary buttons,
    `SEARCH` chip with field selector + `contains` + value.
 
@@ -193,8 +199,8 @@ picture. Faults this loop caught that static review did not:
 | `PaymentsModule.jsx` | Payments — list, detail, form, reverse dialog | column set assumed, see below |
 | `PendingApprovalsModule.jsx` | Pending Approvals — 24 cols, detail, form | |
 | `PaymentRequestsModule.jsx` | Payment Requests — 3 views | |
-| `BackendExpensesModule.jsx` | Backend Expenses — 31 cols, 135 fields | corrected this session |
-| `BackendPaymentsModule.jsx` | Backend Payments — **form only** | list not captured |
+| `BackendExpensesModule.jsx` | Backend Expenses — **32** cols, 136 fields seen | **report + detail verified 27-Aug-2026**, addendum §4 |
+| `BackendPaymentsModule.jsx` | Backbend Payments — 42 fields, 10-col report | **form + list + detail verified 27-Aug-2026**, addendum §7 |
 | `BillsModule.jsx` | Bills | from v1, needs the §3 chrome corrections |
 | `VendorMasterModule.jsx` | Vendor Master | from v1, same |
 
@@ -209,13 +215,31 @@ Accounts (first nav item) · Bank · Expenses · Expense Observations (spec §13
 Masters beyond Vendor Master · App Preferences · Preferred Approver ·
 Zoho app pointers · Ekostay … · the Backend Payments list
 
-### Nav rail — at least 17 items, not the 11 in v1
-Accounts · Payments · Bank · Bills · Expenses · Schedule Payments ·
-Expense Observations · Masters *(Vendor Master, All Vendor Masters)* ·
-Settings *(8 reports, see addendum §2)* · Backend Expenses · Pending Approvals ·
-App Preferences · Payment Requests *(3 views)* · Zoho app pointers - Payment Ap… ·
+### The inventory is 46 forms and 50 reports — NOT 28 screens
+
+**Counted from the DS 28-Aug-2026.** The "28 screens" figure tracked all along was the
+NAV RAIL, and the rail is longer than recorded: `Deleted Payments`, **`Husain Office
+Modules`**, **`Match Transaction`** and **`Flagged`** were all found by screenshot
+rather than by counting. The full 50-report inventory is in addendum §7I.1; it resolves
+the last truncated label (`Zoho app pointers - Payment Apr-Jun (1) Report`) and shows
+`Ekostay Revenue Share` is a **six-report subsystem**.
+
+Report remaining work against those 50, not against the rail.
+Accounts · **Bank** *(captured 27-Aug-2026 — 30 cols, inline-editable, Print-only
+panel, fed from Zoho Books; addendum §7B)* · Payments · Bills · Expenses ·
+Schedule Payments ·
+**Expense Observations** *(captured 27-Aug-2026 — the only GROUPED report in the app,
+villa bands with true subtotals plus `Show Summary`; addendum §7C)* ·
+Masters *(Vendor Master, All Vendor Masters)* ·
+Settings *(8 reports, see addendum §2; **All Approvals + the Approvers grid
+captured 27-Aug-2026**, addendum §11.7)* · Backend Expenses · Pending Approvals ·
+App Preferences *(**captured 27-Aug-2026 — Creator's Manage Integrations panel, a
+platform screen with no form to rebuild**; addendum §7D)* · Payment Requests *(3 views)* · Zoho app pointers - Payment Ap… ·
 **Backbend** Payments *(rail spells it Backbend, the form says Backend)* ·
 Preferred Approver · Ekostay …
+
+**Auto Numbers captured 27-Aug-2026** — four series in one singleton row, only three
+of them report columns, and the counter 312 behind live. Addendum §6.10-6.15.
 
 ---
 

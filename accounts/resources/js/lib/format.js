@@ -103,17 +103,36 @@ export function isGoZeroTime(value) {
 }
 
 /**
- * `Showing N of M`.
+ * `Showing N of M` — with the REAL total.
  *
- * EXCEPTION (handoff §2 rule 8): Creator pages at 1000, so on reports over 1000
- * rows it prints `Showing 1000 of ###` — the total overflows the field and comes
- * out as literal hashes. Reproduced, because a reviewer comparing against the
- * live screen will see `###` there.
+ * CORRECTS HANDOFF §2 RULE 8, on Husain's evidence of 27-Aug-2026. That rule says
+ * Creator prints `Showing 1000 of ###` above 1000 rows because "the total overflows
+ * the field", and this function reproduced the hashes faithfully. A screenshot of
+ * the live All Expenses footer reads:
+ *
+ *     Showing 1000 of 66407
+ *
+ * So the hashes are not what Creator settles on — they are a clipped or in-flight
+ * render of a real number, and the number is the total record count. Husain
+ * confirmed it directly: "that #### is actually the count of total records".
+ *
+ * The lesson is the one CLAUDE.md already states: the docs are partly inferred and
+ * evidence wins. Reproducing `###` was faithful to the document and wrong about the
+ * product, which is the worst kind of wrong — it looked deliberate.
+ *
+ * THE 1000 CAP IS GONE, 28-Aug-2026. It was right while the server returned at most
+ * 1,000 rows: `Showing 1000 of 66407` was both what Creator said and what was true.
+ * The reports now page at 1,000 and APPEND as the reader scrolls, so the shown count
+ * genuinely reaches 2,000 and 3,000 — and capping the display at 1,000 would have made
+ * the footer lie about a list the reader can see is longer.
+ *
+ * The shown count is grouped too. `Showing 12000 of 66407` reads as a glitch beside
+ * `66,407`; both halves of one sentence should count the same way.
  */
 export function showing(shown, total) {
-  const capped = Math.min(shown, 1000);
-  if (total > 1000) return `Showing ${capped} of ###`;
-  return `Showing ${shown} of ${total}`;
+  const n = Math.max(0, Number(shown) || 0);
+
+  return `Showing ${inr(String(n), 0)} of ${inr(String(total ?? 0), 0)}`;
 }
 
 /**

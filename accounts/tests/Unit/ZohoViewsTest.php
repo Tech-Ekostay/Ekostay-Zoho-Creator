@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\Zoho\ZohoViews;
+use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use Tests\TestCase;
@@ -124,7 +125,7 @@ class ZohoViewsTest extends TestCase
     {
         foreach ([0, 12, 24, 42, 48] as $taken) {
             try {
-                ZohoViews::assertScheduleIsClear($taken);
+                ZohoViews::assertMinuteIsClear($taken);
                 $this->fail("minute :{$taken} belongs to the expense tracker and was allowed");
             } catch (RuntimeException $e) {
                 $this->assertStringContainsString('expense tracker', $e->getMessage());
@@ -137,10 +138,67 @@ class ZohoViewsTest extends TestCase
     public function a_free_minute_is_allowed(): void
     {
         foreach ([5, 17, 33, 55] as $free) {
-            ZohoViews::assertScheduleIsClear($free);
+            ZohoViews::assertMinuteIsClear($free);
         }
 
         $this->assertTrue(true, 'no exception for a minute the other app does not use');
+    }
+
+    /**
+     * THE BUG THIS GUARD HAD UNTIL 28-Aug-2026.
+     *
+     * `app.timezone` is UTC; the expense tracker's cron runs on IST, which is UTC+5:30.
+     * The half-hour component means a minute-of-hour is a DIFFERENT NUMBER in the two
+     * zones, so comparing a UTC minute against IST cron minutes left :18, :30 and :54
+     * UTC unprotected — IST :48, :00 and :24, three of his five slots.
+     *
+     * These cases pin the conversion by fixing the clock, not by arithmetic on minutes.
+     */
+    #[Test]
+    public function the_guard_compares_in_the_crons_timezone_not_the_apps(): void
+    {
+        // 12:30 UTC is 18:00 IST — minute :00 in IST, which IS one of theirs.
+        // Before the fix this passed, because UTC minute :30 is not on the list.
+        $utcHalfPast = Carbon::parse('2026-08-28 12:30:00', 'UTC');
+
+        try {
+            ZohoViews::assertScheduleIsClear($utcHalfPast);
+            $this->fail('12:30 UTC is 18:00 IST, minute :00, which belongs to the expense tracker');
+        } catch (RuntimeException $e) {
+            $this->assertStringContainsString('Asia/Kolkata', $e->getMessage());
+        }
+    }
+
+    #[Test]
+    public function a_utc_minute_on_their_list_is_allowed_when_it_is_free_in_ist(): void
+    {
+        // 12:00 UTC is 17:30 IST — minute :30, which is NOT one of theirs. The old
+        // guard refused this for no reason, costing usable slots.
+        ZohoViews::assertScheduleIsClear(Carbon::parse('2026-08-28 12:00:00', 'UTC'));
+
+        $this->assertTrue(true, ':00 UTC is :30 IST and free');
+    }
+
+    #[Test]
+    public function every_one_of_their_five_slots_is_protected_through_the_utc_clock(): void
+    {
+        // Walk all five IST cron minutes as real instants and assert each is refused.
+        foreach ([0, 12, 24, 42, 48] as $istMinute) {
+            $instant = Carbon::parse(
+                sprintf('2026-08-28 18:%02d:00', $istMinute),
+                'Asia/Kolkata',
+            )->setTimezone('UTC');
+
+            try {
+                ZohoViews::assertScheduleIsClear($instant);
+                $this->fail(sprintf(
+                    'IST :%02d (UTC :%s) is theirs and was allowed',
+                    $istMinute, $instant->format('i'),
+                ));
+            } catch (RuntimeException $e) {
+                $this->assertStringContainsString('expense tracker', $e->getMessage());
+            }
+        }
     }
 
     /**

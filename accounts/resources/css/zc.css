@@ -260,6 +260,42 @@ html, body {
 .zc-multi-line { display: block; }
 
 /*
+ * ENDLESS SCROLL: THE FOUR LINES THAT MAKE IT CHEAP, 28-Aug-2026.
+ *
+ * The reports append 1,000 rows per page as the reader scrolls. At 24 columns that is
+ * 24,000 cells per page, and by page five the browser is laying out and painting 120,000
+ * cells on every scroll tick. That is the slowness Husain reported, made worse rather
+ * than better by loading more.
+ *
+ * `content-visibility: auto` lets the browser SKIP layout and paint for rows that are
+ * off screen, so a 10,000-row list costs roughly what a 1,000-row one did. No JS, no
+ * virtualiser, and — the reason it is right here rather than a windowing library —
+ * it does not care that rows are variable height. Six villas in one `Villa Name` cell
+ * is a real row (§6.2) and a fixed-height virtualiser would clip it.
+ *
+ * `contain-intrinsic-size: auto var(--row-h)` is what stops the scrollbar jumping. The
+ * `auto` keyword makes the browser REMEMBER each row's real measured height once it has
+ * been on screen, instead of assuming 27px forever; without it, scrolling back up past a
+ * tall `zc-multi` row would shift everything under the cursor.
+ */
+.zc-grid tbody tr {
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--row-h);
+}
+
+/*
+ * The prefetch trigger, one and a half viewports below the last row. Zero height and no
+ * borders: it must not read as an empty row at the end of the table.
+ */
+.zc-sentinel { height: 1px; width: 1px; }
+
+/*
+ * Shown ONLY when the reader outruns the prefetch. If this is visible often, the
+ * rootMargin in ReportGrid is too small.
+ */
+.zc-footer-note { margin-left: 10px; color: var(--ink3); font-style: italic; }
+
+/*
  * CORRECTION (handoff §3): status is a SOLID FILLED CELL on reports with
  * conditional formatting (All Payments, All Pending Approvals) — flat green
  * edge-to-edge behind the value. Not a chip. The four earlier modules use tinted

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Reports\ReportFilter;
 use App\Domain\Settings\ReportRegistry;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,6 +29,8 @@ use Illuminate\Support\Facades\DB;
  */
 class SettingsReportController extends Controller
 {
+    use Concerns\FiltersReports;
+
     public function index(): JsonResponse
     {
         return response()->json([
@@ -34,7 +38,49 @@ class SettingsReportController extends Controller
         ]);
     }
 
-    public function show(string $report): JsonResponse
+    /**
+     * The filter whitelist for a Settings report, read off the registry.
+     *
+     * Types come from the report's own `fields` declaration: `bool` becomes a boolean
+     * filter (is true / is false), a decimal becomes a number, everything else is
+     * text. `readonly` fields are still filterable — `ID` is read-only for EDITING
+     * and perfectly reasonable to filter on.
+     */
+    private function filterFor(array $definition): ReportFilter
+    {
+        $types = [];
+
+        foreach ($definition['fields'] ?? [] as $field) {
+            $types[$field['column']] = $field['type'] ?? 'text';
+        }
+
+        $whitelist = [];
+
+        foreach ($definition['columns'] as $label => $column) {
+            // A joined column (`master_categories.name`) keeps its qualified name.
+            $bare = str_contains($column, '.') ? substr($column, strrpos($column, '.') + 1) : $column;
+
+            /*
+             * QUALIFIED WITH THE TABLE. The item-categories report LEFT JOINs
+             * master_categories and BOTH tables have a `name` column, so an
+             * unqualified filter raises "column reference name is ambiguous" (42702).
+             * The registry stores the bare column because the grid selects it with an
+             * alias; a WHERE has no alias to lean on.
+             */
+            $whitelist[$label] = [
+                'column' => str_contains($column, '.') ? $column : $definition['table'].'.'.$column,
+                'type' => match ($types[$bare] ?? 'text') {
+                    'bool' => 'boolean',
+                    'decimal', 'number' => 'number',
+                    default => 'text',
+                },
+            ];
+        }
+
+        return new ReportFilter($whitelist);
+    }
+
+    public function show(Request $request, string $report): JsonResponse
     {
         $definition = ReportRegistry::get($report);
 
@@ -43,6 +89,27 @@ class SettingsReportController extends Controller
         }
 
         $query = DB::table($definition['table']);
+
+        /*
+         * FILTERS ARE DERIVED FROM THE REGISTRY, not hand-listed per report.
+         *
+         * `ReportRegistry` already maps label => db column and declares each field's
+         * type, so the filter whitelist can be built from the same definition the
+         * grid and the form read. One source, three consumers — the reason the
+         * registry exists at all is that a form and its grid must not be able to
+         * drift, and a filter is now the third thing that must agree with them.
+         *
+         * These reports hold 8 to 144 rows, so server-side filtering is not needed
+         * for scale here. It is done anyway for consistency: a user should not have
+         * to learn that filtering means something different on Settings than on
+         * Payments.
+         */
+        $filter = $this->filterFor($definition);
+        $filters = $this->requestedFilters($request);
+
+        if ($error = $this->applyFilters($filter, $query, $filters)) {
+            return response()->json(['message' => $error, 'reason' => 'bad_filter'], 422);
+        }
 
         // Item Category shows its master category's NAME, reached through the FK.
         if ($definition['table'] === 'item_categories') {
@@ -53,6 +120,8 @@ class SettingsReportController extends Controller
         $rows = $query->orderBy($definition['order'])->get();
 
         return response()->json([
+            'filter_schema' => $filter->schema(),
+            'filters' => $filters,
             'report' => $report,
             'title' => $definition['title'],
             'columns' => array_keys($definition['columns']),

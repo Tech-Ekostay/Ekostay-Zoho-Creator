@@ -13,6 +13,4 @@ use RuntimeException;
  * A distinct type rather than a bare RuntimeException because the HTTP layer maps
  * it to 422: it is a rejected write, not a server fault.
  */
-final class UnbalancedPaymentException extends RuntimeException
-{
-}
+final class UnbalancedPaymentException extends RuntimeException {}

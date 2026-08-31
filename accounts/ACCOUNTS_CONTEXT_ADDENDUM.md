@@ -126,46 +126,231 @@ splits and §13 observations, so `Nature` splits its expenses three ways.
 
 ---
 
-## 4. Backend Expenses — corrections
+## 4. Backend Expenses — verified 27-Aug-2026
 
-The existing module's 30-column order and all 135 fields were correct. Three fixes:
+**Sixteen screenshots of All Backend Expenses arrived 27-Aug-2026** — the full report
+scrolled horizontally to its last column, and the detail panel scrolled top to bottom.
+The edit form was deliberately not sent: "almost all textboxes which are the same",
+which is consistent with §13B's finding that 136 of 140 fields are declared `text`.
 
-1. **The report shows `multipe_hccc_names` twice** — populated, then blank. One of
-   three duplicate field pairs.
-2. **`receiver_details` renders empty for every row** although the record holds
-   `upi://pay?pa=…`. The column is bound to the dead member of the pair.
-   `[TODO]` which member of each pair is canonical: report order says the
-   populated one is declared first, detail-panel order says second.
-3. Footer is `Showing 1000 of ###`; rows are content-height, driven by
-   `assets_path` wrapping over several lines.
+This section was previously **corrections**. It is now **verified**, with one
+`[TODO]` closed, one column added, and five new findings.
 
-**From the field dump**
+### 4.1 The report column order is confirmed — and there are 32, not 31
 
-- `duplicate_date` is `0001-01-01T00:00:00Z` — **Go zero time**. The source system
-  is Go and unset dates are year 1, so `duplicate_date < X` matches everything
-- **A second approval engine**, ~30 fields: `lvl_one_amt` 1000 / `lvl_two_amt`
-  3000 / `lvl_three_amt` 5000 / `lvl_four_amt` 0, each with `_msg` and `_name`,
-  plus `verify_by_lvl_*`, `verify_lvl_*`, `lvl_*_approve_msg`/`_time`,
-  `verification_lvl`, `verification_option`, `verification_type`,
-  `lvl_verification_status`. Amount-banded multi-level approval, unaware of the
-  Settings `Approval` matrix that does the same job with different bands
-- **Nine `cron_event_*` idempotency flags**; only `cron_event_paid` is set.
-  `cron_event_duplicate_bill` is 0 alongside `dup_checked: false` and an empty
-  `dup_key` — duplicate detection exists and has never run
-- **Seven amount fields**, and the authoritative-sounding one is empty:
-  `dr_amount` 1700 is real, `tr_total_amount` blank, the other five 0. Totals must
-  use `dr_amount` gated on `transaction_type == "DR"`
-- `balance` holds a running wallet balance; `lat`/`long` capture where the
-  transaction happened (15.5191541, 73.7747725 = North Goa, matching the villa).
-  Nothing uses either
-- **`multipe_hccc_names` will not join to the villa master.** Format is
-  `group-property` with an inconsistent group: `Alibaug-CASA ROYALE`,
-  `Lonavala-Lonavala`, `Central Office-Central Office`, `EKOSTAY-Avante Villa`,
-  `6bhk kihim-6bhk kihim`, `Goa-General`. And the names differ in case and suffix
-  from Settings (`CASA ROYALE` vs `Casa Royale`, `LAKEFRONT` vs `Lakefront Villa`,
-  `Avante Villa` vs `Avante Villa- Calangute`). **This needs a mapping table, not
-  a normalisation function**
-- `receiver_name` is literally `User` on some records
+Every column in §13B's list appears in exactly the recorded order, and `tr_location`
+is confirmed last (the horizontal scrollbar reaches its end). One column was missing
+from the list:
+
+```
+ 8  multipe_hccc_names     populated   "Nama (Tropicana)-EKOSTAY"
+ 9  multipe_hccc_names     BLANK       <- this one was not in the list
+10  remark_cat_name
+```
+
+The two sit **adjacent**. §4 already recorded that the report shows the field twice;
+§13B's column list did not include the second. **32 columns.**
+
+### 4.2 `[TODO]` CLOSED — the textarea copy is canonical, the text copy is dead
+
+The question was: of the three duplicate pairs (`multipe_hccc_names`, `remark_txt`,
+`receiver_details`, each declared once as `text` and once as `textarea`), which member
+is canonical — "report order says the populated one is declared first, detail-panel
+order says second".
+
+**Answered, on one record, for all three pairs at once.** Record
+`292482000010971002` shows:
+
+| field | early copy | late copy |
+|---|---|---|
+| `multipe_hccc_names` | blank | `Nama (Tropicana)-EKOSTAY` |
+| `remark_txt` | blank | `Electrical Works - namah villa electrical material approve by subhash sir` |
+| `receiver_details` | blank | `upi://pay?pa=paytmqr72irlg@ptys&pn=Paytm` |
+
+**The late copy carries the data in all three cases. The early copy is dead.**
+
+And the reasoning in the old `[TODO]` was wrong on one point, which is why it looked
+unresolvable: **report column order is not evidence of declaration order.** A report's
+columns are ordered by whoever built the report. The detail panel is in *form field
+order*, so it is the only one of the two that testifies to declaration order. Once the
+report is set aside there is no conflict — the populated copy is the later one.
+
+**This is the cause of §4's defect 2.** `receiver_details` renders empty on every
+report row because the report binds the **early, dead** copy at column 5. The report
+binds the *live* copy for `multipe_hccc_names` at column 8 and the dead one at 9. So
+the report mixes the two members of the pair, per field, with no pattern.
+
+### 4.3 The detail panel is not alphabetical — it is three blocks
+
+§13B says the panel "lists fields alphabetically, confirming no layout was ever
+applied". That is right about the bulk and wrong about the shape. It is **form field
+order**, and the form was built in three batches:
+
+| block | contents | order |
+|---|---|---|
+| **A** | `approve_status` → `verify_lvl_two` (+ unseen tail, incl. `webhook_resp`) | alphabetical |
+| **B** | `approval_txt`, `approve_by`, then `lvl_{one..four}_approve_msg`/`_time` | alphabetical |
+| **C** | `assets_path`, `business_name`, `Payment`, `time_stamp_date`, `multipe_hccc_names`, `remark_txt`, `receiver_details`, `Matched Payments`, `dup_checked`, `dup_key` | **not** alphabetical |
+
+Two alphabetical runs, then a hand-added tail. That is a more useful reading than "no
+layout": blocks A and B were generated (from the provider payload and from the
+approval-engine scaffold), block C was **added by hand afterwards** — it holds every
+Creator-native field (`Payment`, `Matched Payments`, `business_name`, `dup_checked`,
+`dup_key`) and all three live textarea copies. Which independently supports §4.2:
+the live copies are in the hand-added block.
+
+**136 field labels counted across the three blocks**, against §13B's DS count of 140.
+The four unaccounted-for sit in gaps the screenshots cannot prove contiguous — after
+`duplicate_date`, after `transactor_id`, and after `verify_lvl_two`, where §13B's
+`webhook_resp` must fall and was not captured. Not a discrepancy; a known blind spot.
+
+### 4.4 The approval bands are static config replicated onto every row
+
+§4 recorded `lvl_one_amt` 1000 / `lvl_two_amt` 3000 / `lvl_three_amt` 5000 /
+`lvl_four_amt` 0 from one record. **The same four values appear on this record**,
+whose `dr_amount` is ₹860 — a different amount, an earlier record, identical bands.
+
+So the `lvl_*_amt` fields are not per-record: they are the provider's threshold
+configuration **stamped onto each transaction at ingest**. §13B inferred "thresholds
+not amounts" from a ₹3500 band on a ₹200 row; that is now confirmed and sharpened —
+they are *constant*, so a rebuild reads them from configuration once and does not
+store them 140,000 times. `lvl_four_amt` 0 means level 4 is unbounded or disabled.
+
+### 4.5 NEW — money moved without the verification the record says was required
+
+On a transaction with `tr_status` = `paid` and `cron_event_paid` = 1:
+
+```
+is_verify_require        1        <- verification IS required
+verification_lvl         1
+verification_option      4
+verification_type        2
+verify_lvl_one..four     0 0 0 0  <- nothing verified
+verify_by_lvl_one..four  0 0 0 0  <- by nobody
+lvl_verification_status  0
+approve_status           0
+approve_by               (blank)
+lvl_*_approve_msg/time   (all blank)
+```
+
+**Every approval and verification field is empty on a settled, paid transaction.**
+This is the same shape as §5's Pending Approvals finding — every row `Approved` and
+`Paid` with the `Approved` checkbox unchecked. Two independent screens, two
+independent approval engines, the same conclusion: **the approval state is not what
+gates the money; it is written after, or not at all.**
+
+Stated as an observation about the live system, not a rebuild instruction. But it is
+the single most important thing in this section, because §13B.2's recommendation
+("read-only except `Payment`, `Matched_Payments`, `dup_checked`") assumes the approval
+fields are inert. They are — and that is a finding, not an assumption.
+
+### 4.6 NEW — the ingestion lag is measurable, 2 to 10 minutes
+
+`date` is the provider's timestamp and `Added Time` is Creator's platform stamp, so
+the gap between them is how long ingestion took. Four consecutive rows:
+
+| `date` | `Added Time` | lag |
+|---|---|---|
+| 2026-08-27 19:36:30 | 27-Aug-2026 19:45:59 | 9m 29s |
+| 2026-08-27 19:56:59 | 27-Aug-2026 19:59:30 | 2m 31s |
+| 2026-08-27 19:37:37 | 27-Aug-2026 19:39:30 | 1m 53s |
+| 2026-08-27 19:28:11 | 27-Aug-2026 19:36:06 | 7m 55s |
+
+**Rows do not arrive in `date` order** — 19:56:59 was ingested before 19:37:37. So a
+reconciliation window keyed on `date` must be at least ~15 minutes wide and must not
+assume monotonicity. This also confirms handoff §61's exception: **`date` really does
+render `2026-08-27 19:36:30`**, not `dd-MMM-yyyy`, while `Added Time` renders
+`27-Aug-2026 19:45:59` in Creator's own format. Two date formats, one row.
+
+`duplicate_date` renders `0001-01-01T00:00:00Z` — Go zero time, **confirmed on a third
+record**, and note it keeps its ISO `Z` while `date` does not. Three serialisations.
+
+### 4.7 NEW — `fk_m_hccc_id` is the live key; `fk_hccc_id` is always 0
+
+The report carries both. Across four rows `fk_m_hccc_id` is 6417 / 4849 / 1057 / 1022
+and `fk_hccc_id` is `0` on every one. **Join on `fk_m_hccc_id`.** `fk_order_id` and
+`fk_safe_id` are 0 too.
+
+Likewise `remark_icon_id` is a stable id per remark category — 2542 for Electrical
+Works on two different rows, 2104 Staff fuel, 1575 Water Tanker, 2589 stafffuel again.
+**`remark_icon_id` is the joinable key for the remark category, not `remark_cat_name`.**
+
+### 4.8 NEW — the `multipe_hccc_names` separator is itself inconsistent
+
+§4 established the format is `group-property` with an inconsistent group and that it
+needs a mapping table. Four new rows make it worse:
+
+```
+Nama (Tropicana)-EKOSTAY     property (qualifier) - group    <- group LAST
+General -Panchgani           note the SPACE before the hyphen
+EKOSTAY-Chestnut Villa       group FIRST
+Lonavala-BLANCO              location - property, uppercased
+```
+
+Three new failure modes on top of the recorded ones: the group appears on **either
+side** within the same four rows; a property can carry a **parenthesised qualifier**
+(`Nama (Tropicana)`); and the **separator is not stable** — `General -Panchgani` has a
+space before the hyphen. Splitting this string was already unsafe because villa names
+contain hyphens. It is now unsafe on the delimiter as well.
+
+And the same villa is spelled two ways **inside one record**: `Nama` in
+`multipe_hccc_names`, `namah villa` in `remark_txt`. **The mapping table is not
+optional and cannot be derived from this field alone.**
+
+### 4.9 NEW — smaller items, all first sightings
+
+- **`business_name` = `EKOSTAY HOSPITALITY LLP`** — entity attribution per
+  transaction, not called out in §13B. Matters because Settings COA carries entity
+  accounts and `EKOSTAY IDFC LLP` exists twice with different record ids
+- **`txn_option` = `virtual_ac`** — the payout rail, a value not previously seen
+- **`tai_cost` 2, `tai_gst` 2, `tai_tds` 0** on an ₹860 row. These are **not money** —
+  they are codes or flags. §4's "seven amount fields" list should not include them
+- **`tai_invoice_number`** is blank here but `415522`, `488` and `503139` on other
+  rows — wildly different widths, so not a formatted series. Optional free text
+- `transactor_id` 15181 with `transactor_avtar` (an S3 avatar URL), `receiver_pusid`
+  and `public_tr_id` — provider-side actor identity, three opaque ids.
+  **`transactor_avtar` is misspelled in the source; preserve it**
+- `bill_upload` is the string `"true"` and `assets_path` holds 2 S3 URLs, yet
+  `cron_event_bill_upload` and `cron_event_bill_verified` are both 0 and
+  `hard_copy_bill` is 0. Confirms the cron flags are not maintained
+- `bank_payout_details` is the literal `"na"` — confirmed on all four rows
+- `dr_amount` 860 with `balance` 7200; `tr_total_amount` **blank** again, and
+  `cb_amount` / `cr_amount` / `pr_amount` / `sr_amount` / `total_paid_amount` all 0.
+  Third record confirming: **totals use `dr_amount` gated on `transaction_type == "DR"`**
+- `time_stamp_date` is blank in the detail panel *and* in all four report rows.
+  Likely always blank
+- Roughly a third of the 136 fields carry any value at all. `reject_reason`,
+  `paid_by`, `payment_mode`, `payout_via`, `payout_resp`, `payout_change_via`,
+  `pg_order_id`, `pg_payment_id`, `rzp_payout_id`, `rbl_trn_id`, `bbps_txn_ref_id`,
+  `dyn_qr_ref_id`, `circle_code`, `code_title`, `tag_name`, `check_in_date`,
+  `check_out_date`, `invoice_bill_date`, `invoice_receipt_url` are all empty
+
+### 4.10 URGENT — the Haewaya counter is 207 behind live
+
+Not a Backend Expenses finding as such, but the screenshots are what exposed it.
+
+The `Payment` links on these rows read `EKS/Haewaya/33499`, `33501`, `33497`, `33493`,
+and their `date` is **today, 27-Aug-2026**. Our counter:
+
+```
+auto_numbers.haewaya_no = 33294        (reconciled earlier this session)
+live, from the screenshots            >= 33501
+```
+
+**Our counter is at least 207 behind, and live is still minting.** This is precisely
+the collision that minted `EKS/PY/21305` over a real ₹1,00,000 payment — the same
+mistake, a second series, caught before it fired this time only because nothing
+allocates from `haewaya_no` yet.
+
+Two things follow, and the first is a question that must be answered before any write:
+
+1. **Who owns the Haewaya series?** If the Haewaya backend mints the number and pushes
+   it in, our counter must **track, never allocate** — and `AutoNumber::allocate()`
+   must refuse it. If Creator mints it, then reconciliation has to run against live
+   immediately before every allocation, not once at import.
+2. Reconciling it once is not enough. `EKS/PY` went 21307 → 21309 during this session
+   from our own test allocations, and Haewaya moves ~200 a day from a system we do not
+   control. **A counter reconciled at import time is stale by definition.**
 
 ---
 
@@ -206,65 +391,1770 @@ Level / Approved, with `+ Add New`.
 
 ---
 
-## 6. Payment Requests — three views
+## 6. Payment Requests — three views, verified 27-Aug-2026
 
-The clearest evidence yet for the §3.3 permission matrix:
+Still the clearest evidence for the §3.3 permission matrix:
 
 1. **`Payment Request`** — add-only form, no list. A requester can create but not
    browse. Commits `Submit` / **`Reset`**
-2. **`All Payment Requests`** — admin read across everyone, 66 records, not
-   editable inline
-3. **`User Payment Requests`** — the requester's own 24, **inline-editable**
+2. **`All Payment Requests`** — admin read across everyone, **72 records**
+   (was 66 on 13-Aug; +6 since), not editable inline
+3. **`User Payment Requests`** — the requester's own **24**, **inline-editable**
    (`*` + Save/Remove Changes) with a per-row **`Re-Send for Approval`** button
 
 So the requester can amend and resubmit; the reviewing admin cannot edit inline.
 
-Form fields: Requested By · Vendor Name · **Add New Vendor** (checkbox) ·
-Location · Villa Name · Item Category · Payment Amount (₹ suffix, placeholder
-`##,##,###.##`) · Particulars · Bills · Supporting Documents. On the **edit** form
-Villa Name and Item Category render greyed — `[TODO]` confirm they are read-only
-once the request exists. Files read `Select File` empty, **`File uploaded` in
-pink** when populated. Edit commits `Update` / `Cancel`.
+**Thirteen screenshots of 27-Aug-2026** — the create form, the edit form in both
+branches, both reports scrolled to their last column, and two detail panels — turn
+this section from inferred to verified. Two recorded claims are corrected, one
+`[TODO]` is closed, and one entry on the live-defect register is probably wrong.
 
-Detail adds `Bill Amount`, `Status`, `Add New Vendor`, a **second `Vendor Name`**
-(free text, for the new-vendor path), `Bank Details`, `Payment No`. Panel bar is
-`Edit / Duplicate / More` — **`Duplicate` occupies the slot every other module
-gives to `Delete`**.
+### 6.1 `[TODO]` CLOSED — Villa Name and Item Category are NOT read-only
 
-**Findings**
+The `[TODO]` read: "on the **edit** form Villa Name and Item Category render greyed
+— confirm they are read-only once the request exists."
 
-- **`Payment No` is blank on every `Submit for Approval` row and populated on
-  `Approved` ones — approval is what mints the Payment.** This is the missing link
-  between Payment Requests, Pending Approvals and Payments, and it is where
-  `Auto_Numbers.Payment_No` is consumed
-- `Requested By` empty on 6 of 10 rows while `Added User` is populated on all 10
-- `Vendor Name` is `amazon` on some rows and `Amazon` on others — two vendor
-  records for one vendor
-- Two rows are **`Approved` with a blank `Vendor Name`** — approved with no payee
-- One User row has a **blank `Status`**, in no state the workflow recognises, with
-  `Re-Send for Approval` enabled
+**They are not read-only. They are multi-select chip fields, and that is what the
+grey was.** On the create form they show a grey `-Select-` and, unlike `Vendor Name`
+and `Location`, **no `▾` caret**. On the edit form the same controls hold
+`× Saltwater Villa- Nerul` and `× PRINTING` — chips **with a remove `×` on each**,
+which a read-only field does not have.
+
+So the distinction the screenshots actually encode is not enabled-vs-disabled, it is
+**single-select (caret) vs multi-select (chips)**:
+
+| field | control |
+|---|---|
+| `Requested By` | single-select lookup, `×` + `▾`, **prefilled with the logged-in user** |
+| `Vendor Name` | single-select lookup, `▾` |
+| `Location` | single-select lookup, `▾` |
+| `Villa Name` | **multi-select chips**, no caret |
+| `Item Category` | **multi-select chips**, no caret |
+
+Had the `[TODO]` been guessed the wrong way, both fields would have been built
+disabled on the edit form, and a request could never be re-scoped.
+
+### 6.2 The multi-value hazard is live on this report, not theoretical
+
+`EKS/PY/20559` carries **six villas in one cell**, stacked on separate lines:
+
+```
+Location   Ooty And Coonoor
+Villa Name Under The Pines / Dusk Villa / Dawn Villa / Orchid Villa /
+           Whispering Pines / The Velvet Slope
+Category   AMAZON PURCHASE          Amount  ₹ 10,610.70
+```
+
+Creator renders all six. **Analytics would flatten this to one**, silently — §12,
+measured by the other team on an expense tagged to two billing cycles that exported
+tagged to one. This is the first time that hazard has been *seen* on an Accounts
+screen rather than reasoned about, and it is on the field a payment request is
+allocated by. **Never import Payment Requests from a one-row-per-request view.**
+
+### 6.3 The two `Vendor Name` fields — the mechanic is now proven, not inferred
+
+§6 recorded that the detail panel holds a **second `Vendor Name`** (free text, for
+the new-vendor path) alongside `Bank Details`. What it is *for* is now demonstrated.
+`Add New Vendor` is the discriminator and the two branches are mutually exclusive:
+
+| | `Add New Vendor` | `Vendor Name` (lookup) | `Vendor Name` (text) |
+|---|---|---|---|
+| `EKS/PY/21570` | **true** | *(blank)* | `Shree balaji hardware` |
+| `…8860030` | **false** | `hussain sir` | *(blank)* |
+
+Checked all 30 master values these screenshots name against our seeded masters —
+4 locations, 16 villas, 6 item categories, 4 vendors, 4 employees. **29 of 30
+resolve.** The single miss:
+
+```
+Shree balaji hardware        -- MISSING from Vendor_Master --
+```
+
+Which is **exactly** the `Add New Vendor = true` row. The free-text field exists to
+hold a payee that has no master record yet, and the one unresolvable name in the
+batch is the one that went down that path. The design is working as intended, so —
+same phrasing as the vendor-merge pointer in §18 — **a null lookup beside a non-null
+text is a fact, not a gap.**
+
+(`amazon` resolves to **three** case-insensitive rows in our master, not the two
+§6 recorded. One vendor, three records.)
+
+### 6.4 A DEFECT ON THE REGISTER IS PROBABLY A REPORTING ARTEFACT
+
+§6 recorded, and `CLAUDE.md` carries on the live-defect list: **"Two rows are
+`Approved` with a blank `Vendor Name` — approved with no payee."**
+
+`All Payment Requests` binds the **lookup** copy of `Vendor Name` in its column 4.
+So **every request created through `Add New Vendor` shows a blank vendor to the
+admin**, while its actual payee sits in the second field, one panel away. On this
+report `Vendor Name` is blank on **8 of 10 visible rows**, and the one row whose
+detail panel we have — `EKS/PY/21570`, blank in the column — has
+`Shree balaji hardware` in the text field.
+
+**So "approved with no payee" is most likely a column bound to the dead half of a
+pair, not missing data.** Same defect class as Backend Expenses' `receiver_details`
+(§4.2), where a report column is bound to the empty member of a duplicate pair.
+
+Stated as *probably*, not *certainly*: the mechanic is confirmed on one row, and the
+two `Approved` rows in question have not had their panels opened. **Before that entry
+stays on the register, someone should open those two records and look at the second
+`Vendor Name`.** It is a ten-second check and it decides whether a real payee is
+missing or merely hidden.
+
+### 6.5 CORRECTED — the `Payment No` rule has a counterexample
+
+§6 recorded: "**`Payment No` is blank on every `Submit for Approval` row and
+populated on `Approved` ones — approval is what mints the Payment.**"
+
+The first half is falsified. `EKS/PY/21570` is `Submit for Approval` **and carries a
+number.** But the underlying claim survives, and is now much better evidenced.
+Checked all ten visible request numbers against our 16,490 imported `EKS/PY`
+payments:
+
+```
+EKS/PY/21570   Submit for Approval   NOT in payments
+EKS/PY/21111   Approved              in payments, status Paid
+EKS/PY/21107   Approved              in payments, status Paid
+EKS/PY/21094   Approved              in payments, status Paid
+EKS/PY/20998   Approved              in payments, status Paid
+EKS/PY/20619   Approved              in payments, status Paid
+EKS/PY/20618   Approved              in payments, status Paid
+EKS/PY/20617   Approved              in payments, status Paid
+EKS/PY/20559   Sent for Approval     in payments, status Paid
+EKS/PY/16239   Approved              in payments, status Paid
+```
+
+**Nine of ten are real, settled payments.** So a request's `Payment No` is not a
+parallel series — it is *the payment the request became*, and the request keeps a
+pointer to it. That is the Payment Requests → Pending Approvals → Payments link,
+now traced through live numbers rather than asserted.
+
+The one absentee has an innocent explanation that has to be checked rather than
+assumed: **`EKS/PY/21570` was created today, and our payments came from an export
+two days old.** Our imported maximum is `EKS/PY/21308`. So 21570's payment may well
+exist live and simply not be in our snapshot — in which case the rule is "`Payment
+No` is populated iff a Payment record exists" and the request's own `Status` is
+merely stale, which is this application's most reliable habit (§4.5, §5).
+
+`[TODO]` **One live check settles it:** open `EKS/PY/21570` and see whether a Payment
+record exists. If it does, the rule is about the Payment's existence, not the
+request's status. If it does not, the number is reserved at submit and the mint point
+moves earlier than §6 says.
+
+Related, and unresolved: **`Submit for Approval` and `Sent for Approval` both occur**
+on these reports, on rows that otherwise look alike. Either two states or two
+spellings of one — the same trap as `Payment InProgress` (§10). Added to §8's
+label-divergence list.
+
+### 6.6 URGENT — the main payment counter is 261 behind, and my earlier fix was not enough
+
+```
+payments table (imported)   max EKS/PY = 21308   over 16,490 rows
+auto_numbers.payment_no                 = 21309
+live, from these screenshots            >= 21570
+```
+
+**At least 261 behind, on the series we actually allocate from.** Roughly 130
+payments a day.
+
+This is the same finding as §4.10's Haewaya counter, but it lands harder, because
+this counter is live in our code and I already caused one collision with it —
+minting `EKS/PY/21305` over a real ₹1,00,000 payment. That was diagnosed as an
+off-by-one (`allocate()` returning current-then-incrementing) and fixed to `max + 1`.
+
+**The fix was correct and insufficient.** `max + 1` of a *snapshot* is still a
+snapshot. Analytics lags Creator by design, and an export is a photograph — so a
+counter reconciled from one is stale the moment it is written, and staleness grows at
+~130/day. Reconciling more often does not fix it; it shortens the window.
+
+The only two safe designs:
+
+1. **Creator keeps the series while it is live**, and `AutoNumber::allocate()`
+   **refuses** `EKS/PY` entirely — our writes take numbers from nowhere until cutover
+2. **We take the series over at cutover**, seeded from a live read taken *at* cutover
+   with Creator writes stopped — not from an Analytics export at all
+
+Until one is chosen, **nothing may allocate from `payment_no`.** Recorded here rather
+than fixed, because which of the two applies is a cutover decision, not a code one.
+
+### 6.7 Form layout order and detail order are different — the second confirmation
+
+**Form (layout) order.** The conditional block sits high, right after the vendor
+lookup it modifies:
+
+```
+Requested By · Vendor Name · [x] Add New Vendor
+    -> when checked, reveals:  Vendor Name (text) · Bank Details
+Location · Villa Name · Item Category · Payment Amount · Particulars
+Bills · Supporting Documents            [Submit] [Reset]   /   [Update] [Cancel]
+```
+
+**Detail (declaration) order.** The same block sits low, and three fields appear
+that the create form never shows:
+
+```
+Requested By · Vendor Name · Location · Villa Name · Item Category ·
+**Bill Amount** · Payment Amount · Particulars · **Status** ·
+Add New Vendor · Vendor Name (text) · Bank Details · **Payment No** ·
+Bills · Supporting Documents
+```
+
+The conditional block is **declared late and laid out early.** That is §4.3's lesson
+on a second, unrelated form: **the detail panel is declaration order, the form is
+layout order, and neither can be derived from the other.** Record both, always.
+`Status` and `Payment No` are system-set. `Bill Amount` is blank on both records
+seen — `[TODO]` who fills it, and when.
+
+`Particulars` is **mandatory** — it is the only field carrying Creator's red required
+border, on both the create and the edit form.
+
+### 6.8 Column sets, both reports
+
+**All Payment Requests** (10) — `Payment No` · `Requested By` · `Status` ·
+`Vendor Name` · `Location` · `Villa Name` · `Item Category` · `Payment Amount` ·
+`ID` · `Added User`. Footer **`Showing 72 of 72`**.
+
+**User Payment Requests** (15) — **`Re-Send for Approval`** · `Payment No` ·
+`Requested By` · `Status` · **`Remarks`** · `Vendor Name` · `Location` ·
+`Villa Name` · `Item Category` · `Payment Amount` · `ID` · **`Link`** · `Bills` ·
+`Supporting Documents` · `Particulars`. Footer **`Showing 24 of 24`**.
+
+So the requester's view adds the action button, `Remarks`, `Link`, and the three
+content columns the admin view omits — attachments and particulars included.
+**Neither footer is capped**, so both are direct tests of the corrected
+`showing()` helper against a real total rather than `###`.
+
+**The panel action bar differs per report, not per form:**
+
+| report | panel bar |
+|---|---|
+| All Payment Requests | `Edit` · **`Delete`** · `More ▾` |
+| User Payment Requests | `Edit` · **`Duplicate`** · `More ▾` |
+
+§6 recorded only the second and generalised it. `Duplicate` is on the **requester's**
+view — and two of those 24 rows are identical ₹2,500.00 requests
+(`…8860030` / `…8860016`) sharing one attachment,
+`WhatsApp_Image_2026-05-26_at_1.43.09_PM__1.jpeg`. Given §5's nine identical payments
+from a repeated approval, a `Duplicate` button on a payment request is a duplicate-
+payment vector worth raising. Both of these are Husain's own test rows, so no real
+money is involved in *this* pair.
+
+### 6.9 Smaller corrections and first sightings
+
+- **NOT REPRODUCED:** §6's "`Requested By` empty on 6 of 10 rows while `Added User`
+  is populated on all 10". `Requested By` is populated on **all 10** rows of All
+  Payment Requests and all 24 of User. The column that *is* empty on 8 of 10 is
+  `Vendor Name` — see §6.4. The earlier note may have conflated the two columns;
+  recorded as unreproduced rather than as a corrected fact, since the earlier report
+  state cannot be re-examined
+- **`Added User` is a login handle, not a name** — `sanjayprojapati1983`,
+  `amit7331411`, `shaikh.nehu091`, against `Requested By` values `Sanjay Projapati`,
+  `Amit`, `Neha`. So `TracksCreatorAudit`'s user half must store Creator's **login**,
+  and `Requested By` is a separate Employee lookup that a requester can override.
+  They agree on every row seen, but the form lets them diverge
+- **`Requested By` defaults to the logged-in user** (`Husain Super Admin` prefilled
+  while Husain is logged in), and is clearable. So this is the first screen whose
+  *correct* behaviour needs authentication — `CurrentUser::login()` returns null
+  today. Auth moves from "blocker before exposure" to "blocker for this screen's
+  fidelity"
+- **A second empty record.** Row 3 of All Payment Requests carries only
+  `Requested By`, `ID` (`292482000010752954`) and `Added User` — no status, location,
+  villa, category, amount or payment number. An empty payment request, 1 of 72, and
+  the second blank-`Status` row after the one §6 found in the User view. §11's
+  "blank-as-real-state is systemic" now has a fourth screen
+- **All 24 User rows are Husain's own test data** — `hussain sir` as vendor on every
+  row, `Particulars` reading `test` / `test for payment`, one at `₹10.00`. The view
+  proves the filter (own requests only) and carries no business data; the
+  `₹42,000.00` and `₹36,000.00` rows should not be read as real spend
+- Files render `Select File` when empty and **`File uploaded` in pink** when
+  populated — confirmed on both edit forms. The detail panel shows the real filename
+  with a type icon (`IMG-20260827-WA0473.jpg`, `REPC500-_Repeat_Guest_EKOSTAY.pdf`)
+- `Remarks` reads `na` on the one `Approved` User row and is blank elsewhere —
+  the same literal `"na"` placeholder as Backend Expenses' `bank_payout_details`
+- **The FK layer is ready for this screen.** 29 of 30 master values resolve, the
+  30th by design. Payment Requests can be built against our seeded masters today
+  without a mapping table — unlike Backend Expenses (§4.8)
+
+### 6.10 Auto Numbers captured 27-Aug-2026 — §6.6 ANSWERED, and enforced
+
+Husain, plainly: **"EKS/PY series comes from Auto Numbers."** So §6.6's open question
+— who owns the series — has an answer. Creator's `Auto_Numbers` singleton is the one
+allocator, and the screenshot gives its live contents:
+
+```
+Payment Series        EKS/PY        Payment No           21621
+Books Payment Series  EKS/BPY       Books Payment No         1
+Haewaya Series        EKS/Haewaya   Haewaya No           33507
+ID                    292482000000132217
+```
+
+**Our `creator_id` matches that ID exactly** — same record, and the counters do not
+agree:
+
+| | ours | live | drift |
+|---|---|---|---|
+| `payment_no` | 21309 | **21621** | **312 behind** |
+| `haewaya_no` | 33294 | **33507** | **213 behind** |
+| `books_payment_no` | 1 | 1 | in step |
+
+`books_payment_no` at 1 means **the `EKS/BPY` series has never issued a number** — the
+Zoho Books push has never run. §17's instruction not to implement it is confirmed as
+describing something dormant rather than something in use.
+
+### 6.11 The stored value is the NEXT number, not the last issued
+
+A ±1 that lands on real money, so it was read rather than assumed.
+`Accounts.ds:20502`:
+
+```deluge
+nextSeries = ifnull(autoRec.External_Payment_No,1);
+Series = nextSeries.toString();
+...
+BkngNo = prefix + "/" + Series;
+```
+
+The variable is named `nextSeries` and is used **directly** to build the number. So
+live holding `21621` means 21621 is still to come, and a counter standing *at* 21621
+is already a collision rather than a near miss. Pinned by
+`PaymentNumberGuardTest::the_boundary_is_inclusive_because_the_stored_value_is_the_NEXT_number`.
+
+This also confirms the `max + 1` reconciliation was arithmetically right. It was the
+*freshness* that was wrong.
+
+### 6.12 CREATOR HAS A CLASH GUARD AND WE DID NOT — `Accounts.ds:20517`
+
+```deluge
+BkngNo = prefix + "/" + Series;
+clash = null;
+for each px in Payment[Payment_No == BkngNo] { clash = px; break; }
+if (clash != null)
+{
+    nextSeries = nextSeries + 1;
+    ...
+    warnings.add("Payment_No was already taken - advanced to " + BkngNo);
+}
+```
+
+Creator checks whether the number is taken and steps past it. **`PaymentNumber` had
+no such check** — it had the row lock Creator lacks, which is a different protection
+entirely: the lock stops two of *our* writers racing, and does nothing about a number
+Creator already issued.
+
+Now reproduced, with one improvement: **Creator steps exactly once**, so two
+consecutive taken numbers still collide. Ours walks until the number is free, bounded
+by `MAX_CLASH_SKIP = 25`. **Deviation D9** — it can only skip *further* than Creator
+would, never issue a number Creator would have issued, so it cannot widen the range.
+
+The bound matters. A counter far behind live produces hundreds of consecutive hits,
+and walking silently through them would hide exactly the drift §6.6 is about. Past 25
+it refuses and says "that is a stale counter rather than a collision".
+
+Also confirmed again here: the zero-padding branches (`< 10`, `< 100`, `< 1000`) are
+**dead code**, since the counter is at 21621. Third sighting, §7.6's D3 stands.
+
+### 6.13 The drift is now a hard block, because a comment was not enough
+
+`auto_numbers` gains `live_payment_no_observed`, `live_haewaya_no_observed` and
+`live_observed_at` — **a watermark, not a counter** — and
+`PaymentNumber::allocate()` refuses while `payment_no` is at or below it:
+
+```
+Refusing to allocate EKS/PY/21309: the live Auto_Numbers counter was read as 21621
+on 2026-08-27 and ours stands at 21309, so this number is 313 behind and belongs to
+a payment Creator has already issued.
+```
+
+**Why a schema change rather than a note.** `EKS/PY/21305` was minted over a live
+₹1,00,000 payment once. That was fixed to `max + 1` and written up, and the write-up
+is what failed — two days later the same staleness was back, unchanged, because
+nothing enforced it. Documenting "nothing may allocate from `payment_no`" did not
+stop it. This does.
+
+**The counters are deliberately NOT advanced to 21621/33507.** Advancing them would
+make allocation look safe while Creator carries on issuing from the same range — two
+allocators, one series. Which of the two owns `EKS/PY` until cutover is still a
+decision for Husain, and §6.6's two safe designs stand:
+
+1. Creator keeps the series until cutover; our allocator refuses (**this is now what
+   happens**, as a consequence rather than a promise)
+2. We take it over at cutover, seeded from a live read with Creator's writes stopped
+
+A null watermark leaves the guard inert, so a fresh install is not punished for a
+reading nobody has taken.
+
+**AND THE GUARD HAD A HOLE, CAUGHT BY ITS OWN TEST.** The migration wrote the
+watermark as data; `AutoNumberSeeder` then reran on the next `migrate:fresh --seed`
+and left it **null**, silently disarming the guard. The seeder now carries the reading
+as three constants with a comment saying to update them when a fresh Auto Numbers
+screenshot arrives. `PaymentNumberGuardTest::the_live_reading_of_27_aug_2026_is_recorded_on_the_seeded_row`
+exists for exactly this and failed first time round. Ten tests total.
+
+### 6.14 A FOURTH SERIES THAT NO SCREEN SHOWS
+
+The `Auto_Numbers` **form** declares four pairs (`Accounts.ds:234-292`):
+
+```
+Payment_Series          / Payment_No
+Haewaya_Series          / Haewaya_No
+Books_Payment_Series    / Books_Payment_No
+External_Payment_Series / External_Payment_No      <- NOT a report column
+```
+
+The All Auto Numbers report shows the first three. **The fourth is invisible on
+screen and actively allocated from** — `Accounts.ds:20502` reads
+`prefix = ifnull(autoRec.External_Payment_Series,"EXT")` and mints against
+`External_Payment_No`, complete with the same padding and clash guard.
+
+§2's rule biting a third time: **a report, like an export, mirrors its own columns and
+not the form.** Modelled now (`external_payment_series`, `external_payment_no`) so the
+allocator is at least visible in our schema, but **its live values are unknown** — no
+screenshot shows them, and the 12-Aug master export predates the field.
+
+`[TODO]` a reading of `External Payment No` is needed before anything touches it, on
+exactly the same reasoning as `payment_no`. And it is unguarded: the watermark covers
+`payment_no` and `haewaya_no` only, because those are the two we have numbers for.
+
+This is also §4.4's "five origins of a payment number" resolving into something
+countable: `EKS/PY` (Auto Numbers), `EKS/Haewaya` (Auto Numbers), `EKS/BPY` (Auto
+Numbers, never used), `EXT`/`External` (Auto Numbers, unobserved), and
+`REFUND-{product}-{bookingId}` (§7.1, **derived, not allocated**). Four allocators in
+one singleton row plus one derivation.
+
+### 6.15 One row, and a `+` button beside it
+
+The report shows a single record and offers **`+`**. A second `Auto_Numbers` row would
+make Creator's own read — `Auto_Numbers[ID != null]`, no ordering — arbitrary, and
+`Accounts.ds:20489` takes the first row of an unordered loop and `break`s.
+
+Our schema already prevents it: a unique index on `singleton`, documented on the
+model. Worth recording that the live app does not, and that the `+` is one click.
 
 ---
 
-## 7. Backend Payments — form only
+## 7. Backbend Payments — verified 27-Aug-2026, and it is the REFUNDS channel
 
-The payments counterpart to Backend Expenses: where Haewaya writes, including
-`REFUND-stay-*`. Two columns plus a `Commercials` section, ~40 fields, Update /
-Cancel. `[TODO]` list and detail not captured.
+`[TODO]` **CLOSED — list and detail are now captured.** Twelve screenshots of
+27-Aug-2026: the blank create form, the report scrolled to its last column, the
+detail panel end to end, and the edit form populated. **42 fields**, two columns
+plus a `Commercials` section, `Submit`/`Reset` on create and `Update`/`Cancel` on
+edit. Footer **`Showing 1000 of ###`**, so over a thousand records.
 
-**Three fields on a live PAID record hold unresolved foreign keys:**
-`Villa Name` = `292482000000368045`, `Location` = `292482000000170003`,
-`Bank Name` = `8`. Plain text fields; the integration writes IDs and nothing
-resolves them. A settled ₹4,000 refund therefore has no readable property or
-location, and `8` is a third ID space again — not an 18-digit Creator id, not a
-Books id, but the small integer that looks like `Ekostay_ID` on the COA master.
+### 7.1 What this screen is for — every visible row is a refund
 
-`Payment Reference Number` holds a **Firebase Storage URL**. The same field on
-Payments is labelled `Haewaya UTR Number` and packs two comma-separated UTRs. One
-field, three content types.
+§7 called it "the payments counterpart to Backend Expenses: where Haewaya writes,
+including `REFUND-stay-*`". Sharper: **on the fifteen visible rows, every single one
+is a refund.** `COA` is `Expense` on all fifteen, `Item Category` is
+`EXPERIENCES REFUND`, and `Payment No.` follows a scheme that is not `EKS/PY` at all:
 
-`Bill No` appears **twice**, one blank. `GST Type` is not in §7's field list.
-`Haewaya ID`, `Creator ID` and `Books ID` are all empty on a paid record.
+```
+REFUND-experiences-327718        Booking No.  EKO10327718
+REFUND-stay-315735
+REFUND-food-314533-1             <- note the -1
+```
+
+**`Payment No.` = `REFUND-{product}-{bookingId}`**, and the booking id is the tail of
+`Booking No.` (`EKO10` + `327718`). Three products so far — `experiences`, `stay`,
+`food`. The `-1` suffix on `REFUND-food-314533-1` is a **second refund against one
+booking**, which makes the number a derived de-duplication key rather than a counter.
+
+Two things follow. **This series is not `Auto_Numbers`** — nothing is allocated, so
+§6.6's counter problem does not apply here. And **the `-1` scheme has no visible
+ceiling**: what a third refund on one booking is numbered is unknown, and a collision
+there would silently overwrite a settled refund. `[TODO]` confirm against a booking
+with three refunds.
+
+`Payment No.` and the `Payment` lookup hold the **same string** on every row — the
+fourth duplicate-representation pair in this app (§4.2, §6.3).
+
+### 7.2 CORRECTED — the "unresolved foreign keys" are a DISPLAY defect, not a data one
+
+§7 recorded, and `CLAUDE.md` carries on the live-defect register:
+
+> **Three fields on a live PAID record hold unresolved foreign keys:** `Villa Name` =
+> `292482000000368045`, `Location` = `292482000000170003`, `Bank Name` = `8`. Plain
+> text fields; the integration writes IDs and nothing resolves them. A settled ₹4,000
+> refund therefore has no readable property or location.
+
+**Every one of those keys resolves.** Checked all four ids across both records
+against our seeded masters:
+
+```
+villa    292482000000368205  ->  Casa Zul            (this record)
+villa    292482000000368045  ->  Lakefront Villa     (the record §7 described)
+location 292482000000170003  ->  Alibaug
+Bank Name 84                 ->  COA EKOSTAY HOSPITALITY LLP   via coa.ekostay_id
+Bank Name  8                 ->  COA EKOSTAY LLP 1             via coa.ekostay_id
+```
+
+So the data is sound and **only the rendering is broken** — the form shows a raw key
+where a human expects a name. "A settled refund has no readable property or location"
+is true of the *screen*, not of the *record*. Our rebuild resolves these for free,
+and no repair migration is needed.
+
+§7's guess about `Bank Name` was right and is now confirmed: it stores
+**`COA.Ekostay_ID`**, the small-integer id space, not an 18-digit Creator id.
+Pleasingly, `ekostay_id` 84 is `EKOSTAY HOSPITALITY LLP` — the exact string Backend
+Expenses stores in `business_name` (§4.9). **The two backend forms agree on the
+entity; one stores its name, the other its id.**
+
+**The real risk is narrower and worth stating:** only **51 of 144** COA rows carry an
+`ekostay_id`. This join is exactly as good as that column's coverage, so a
+`Bank Name` outside those 51 would not resolve. That is the thing to guard, not the
+ids we can already read.
+
+This is the **second** register entry this week that turns out to be a rendering
+problem rather than missing data, after §6.4's "approved requests with no payee". Both
+were reported from a screen rather than from the record behind it. Worth remembering
+as a habit: **check the record before believing the column.**
+
+### 7.3 NEW — `Vendor Name` holds guests, and it will not join to Vendor_Master
+
+The payees on a refund are not vendors. Fifteen rows: `AKHIL`, `Tushar Swami`,
+`Shruti`, `Rushabh`, `Milan Kanakiya`, `Jashan`, `Sneha`, `Ritika Sachdev`,
+`Amit Vaidya`, `Sunanda Tibrewala`, `Mohammed Faisal`, `Vikas Kumar`, `Sonal` — plus
+one company, `TRAVELFAST TOURISM`, presumably a travel agent. **These are the guests
+being refunded.**
+
+Checked five against the 8,064-row master:
+
+```
+AKHIL               exact 0    as '...(Customer)'  1
+Sonal               exact 0    as '...(Customer)'  3
+TRAVELFAST TOURISM  exact 0                        0
+Tushar Swami        exact 0                        0
+Ritika Sachdev      exact 0                        0
+```
+
+**Not one joins.** This closes a loop opened in §18. That section found Vendor_Master
+holds two populations in one table — 1,097 of 1,099 `…(Customer)` rows have a blank
+`Main Primary` against 9 of 6,964 others — and asked where customer payees come from.
+**Refunds are where they come from.** But the two representations do not agree: the
+master carries a `…(Customer)` suffix and Backbend Payments stores the **bare name**,
+so exact matching fails on every row, and `Sonal` matches **three** customer rows so
+fuzzy matching is ambiguous too.
+
+So `Vendor Name` here is free text naming a person, not a foreign key. **Do not try
+to resolve it.** Unlike §7.2's ids, this one genuinely cannot be joined, and a
+mapping table would need the booking to disambiguate rather than the name.
+
+### 7.4 NEW — a `Payment Reference Number` that is a Google Drive link
+
+§7 recorded this field holding a **Firebase Storage URL**, and on Payments the same
+concept is `Haewaya UTR Number` packing two comma-separated UTRs. Now a third:
+
+```
+Payment Reference Number   https://drive.google.com/file/d/14AqBxwsoN...view?usp=sharing
+Accounts Remarks           https://drive.google.com/file/d/1IuUYTlpWN...view?usp=drive_link
+```
+
+**One field, four content types** (Firebase URL, Drive URL, comma-packed UTRs, and
+presumably an actual reference number somewhere). And `Accounts Remarks` — a free-text
+remarks field — is being used as a **second attachment slot**.
+
+Two consequences worth raising:
+
+- **The actual payment reference is not recorded anywhere on this record.** A settled
+  refund has a Drive link where its UTR should be, so it cannot be reconciled against
+  a bank statement without opening the link by hand
+- **The evidence lives outside the app.** Drive links sit outside Creator's permission
+  model, outside its backups, and outside any migration we perform. On cutover these
+  strings must be **carried across verbatim and not resolved** — we cannot fetch them,
+  and a link that dies takes the only proof of the refund with it
+
+### 7.5 The two orders differ again — and this time by the whole form
+
+Third independent confirmation of §4.3 / §6.7. **`Payment` is the very first field on
+the form and the very last in declaration order.**
+
+**Form (layout) order** — two columns, read as rows:
+
+```
+Payment*         | Vendor Name        COA           | Bill No
+Payment No.      | Bill No            Requested Date* | Billing Cycles
+Payment Date     | Timestamp Date     Due Date      | Villa Name
+Item Category    | Location           Master Category | Head Office
+Bank Name        | Booking No.        Expense By    | Payment Source
+Payment By       | Accounts Remarks   Management Remarks | Original Amount
+Particulars      | -
+--- Commercials ---
+Gross Amount     | GST Type           TDS %         | GST
+TDS Amount       | GST Amount         PT            | PF
+ESI              | Invoice Amount     Payable Amount | Payment Reference Number
+Payment Status   |  F & B Payments  |  Haewaya ID  |  Creator ID  |  Books ID
+```
+
+**Detail (declaration) order** — neither row-major nor column-major over the above:
+
+```
+COA · Vendor Name · Payment No. · Bill No · Requested Date · Bill No · Payment Date ·
+Billing Cycles · Due Date · Timestamp Date · Item Category · Villa Name ·
+Master Category · Bank Name · Expense By · Payment By · Management Remarks ·
+Location · Head Office · Booking No. · Payment Source · Accounts Remarks ·
+Particulars · Original Amount · Gross Amount · GST Type · TDS % · GST · TDS Amount ·
+GST Amount · PT · PF · ESI · Invoice Amount · Payable Amount ·
+Payment Reference Number · Payment Status · F & B Payments · Haewaya ID ·
+Creator ID · Books ID · **Payment**
+```
+
+The layout was rearranged after the fields were declared, and `Payment` was promoted
+to the top. **Record both orders per screen; neither can be derived from the other.**
+
+`Bill No` appears **twice and adjacently** in both the form and the detail panel —
+and, unlike §4.1's duplicate, **both copies are blank**, so which is canonical cannot
+be decided from this record. It also appears **twice on the report** (columns 6 and
+8), both blank. `[TODO]` find a record with a bill number.
+
+### 7.6 Report columns and the mandatory markers
+
+**All Backbend Payments** (10 confirmed) — `Added Time` · `Payment` · `COA` ·
+`Vendor Name` · `Payment No.` · `Bill No` · `Requested Date` · `Bill No` ·
+`Payment Date` · `ID`. Footer **`Showing 1000 of ###`**.
+
+Note the report leads with **`Added Time`**, as Pending Approvals does (§5) and
+Backend Expenses does (§4.1). Three of the four backend/queue reports put the
+platform stamp first.
+
+**The red mandatory border is inconsistent between the two form states**, and is
+recorded rather than resolved:
+
+| | red-bordered |
+|---|---|
+| create (blank) | `Payment`, `Requested Date` |
+| edit (populated) | `Payment`, `COA` |
+
+If red marks *mandatory*, the two states disagree. If it marks *mandatory-and-empty*,
+then create is consistent (`Requested Date` blank) but edit is not — `COA` holds
+`Expense`, which **does** exist in our COA master (1 exact match of 144). So neither
+reading fits both screenshots. `[TODO]` one more edit screenshot of a different record
+would settle it; until then treat `Payment` as the only reliably mandatory field.
+
+### 7.7 Smaller findings
+
+- **`Billing Cycles` = `August-2026`** — no spaces around the hyphen, a **fourth**
+  spelling after `July - 2026` (`payment_master`), `Jul 2026` (`expenses`) and
+  `August - 2026` (the All Expenses report). **Checked: already aliased.**
+  `ZohoImportBills::cycleMap()` registers five forms per cycle —
+  `August - 2026`, `August-2026`, `Aug 2026`, `Aug-2026`, `August 2026` — so this one
+  resolves. Recorded because the cycle-label mismatch cost 26,720 split legs once, and
+  a fifth spelling is now more likely than not
+- **`Particulars` disagrees with the amounts.** `Decoration selling Price- 11000/-`
+  against `Gross Amount` / `Invoice Amount` / `Payable Amount` all `7500`. Plausibly a
+  partial refund, but the number in prose and the number in the field differ and
+  nothing on the record reconciles them
+- **The whole `Commercials` block is empty on a settled refund** — `GST Type`,
+  `TDS %`, `GST`, `TDS Amount`, `GST Amount`, `PT`, `PF`, `ESI` and `Original Amount`
+  are all blank, with only Gross = Invoice = Payable = 7500. A refund carries no tax
+  treatment, so §7.2's TDS-sign defect cannot reach these rows
+- **`Payment Status` = `PAID`**, uppercase. Confirms §8's divergence row: `Paid`
+  (Pending Approvals) · `paid` (Payments) · `PAID` (here). Three casings, one concept
+- `Haewaya ID`, `Creator ID` and `Books ID` are **all empty on a paid refund** —
+  confirmed again. So nothing on this record links out to Haewaya, Creator or Books,
+  despite the fields existing for it. The integration writes the payload and not the
+  cross-references
+- `Timestamp Date` is `27-Aug-2026 19:36:54` — **dd-MMM-yyyy HH:mm:ss**, Creator's
+  format. Note Backend Expenses' `date` renders ISO (`2026-08-27 19:36:30`) on the
+  same day. **The two backend forms disagree on datetime format**, so neither can be
+  parsed with one rule
+- `Requested Date`, `Payment Date` and `Due Date` are all `27-Aug-2026` on this record
+  — same day, so the date semantics cannot be distinguished from this sample. Other
+  rows do differ (`Requested Date` 04-Aug-2026 against `Payment Date` 17-Aug-2026, a
+  13-day gap), so they are genuinely separate dates
+- `Master Category`, `Expense By`, `Payment By`, `Management Remarks`, `Head Office`,
+  `Payment Source`, `F & B Payments`, `Original Amount` and both `Bill No` are blank
+  on this record
+
+---
+
+## 7B. Bank — captured 27-Aug-2026, and the Zoho Books plane
+
+Eight screenshots of `All Bank Transactions` — report scrolled to its last column,
+detail panel end to end. **30 columns**, inline-editable (`*` + `Save Changes` /
+`Remove Changes`), footer `Showing 1000 of ###` plus a **`Show Summary`** control no
+other report has. A **`⌄` chevron beside the title** means multiple views.
+
+Husain: *"all the transactions for all the banks are fetched from … these
+transactions are fetched from zoho books."*
+
+### 7B.1 The detail panel cannot edit or delete — only Print
+
+Every other module's panel offers `Edit` + `Delete` (or `Duplicate`). **This one
+offers `Print` and nothing else.** Which fits a mirror of an external system — but
+the **grid is inline-editable**, so the record is writable from the list and not from
+the panel. Two different answers to "can I change this?" on one screen.
+
+Panel structure, and the first named section seen in any detail panel:
+
+```
+Overview
+  Reference No · Date · Transaction ID · Amount · Bank Charges · Gross Amount ·
+  Account Type · Transaction Type · Status · Source · Debit / Credit · Description ·
+  Matching Transactions · Account Name · Matched Payments · Withdrawal Matched ·
+  Deposit Matched
+
+Matching Transactions          <- a related list; "No records found"
+```
+
+`Matching Transactions` appears **twice** — once as a field in `Overview` and once as
+the related-list heading. Fifth duplicate-label instance in this app (§4.2, §6.3,
+§7.5, and the two `Personal Payment` columns below).
+
+### 7B.2 The colour is semantic, and the direction convention is worth pinning
+
+`Amount` and `Gross Amount` render **green** on some rows and **red** on others, and
+it tracks direction exactly:
+
+| `Debit / Credit` | populated column | colour | example description |
+|---|---|---|---|
+| `debit` | **Deposit** | green | `KOTAKPAYOUT-…`, `AIRPAY TRANSACTION DONE` |
+| `credit` | **Withdrawal** | red | `IB:SENT NEFT …`, `MB:SENT TO …` |
+
+So **`debit` means money IN and `credit` means money OUT** on this screen — the
+bank's own ledger perspective, and the opposite of what someone reading it as the
+company's books would assume. The descriptions confirm it independently: everything
+`SENT` is a credit/withdrawal, and the payment-gateway settlements (Airpay, Kotak
+payout) are debits/deposits.
+
+**Recorded because it is exactly the kind of thing a rebuild inverts.** Any
+sum, any reconciliation and any sign convention must read `Deposit`/`Withdrawal`,
+not `Debit / Credit`, unless it deliberately adopts the bank's sense.
+
+`Bank Charges` is `₹0.00` on every visible row and `Gross Amount` equals `Amount`
+throughout, so the charge leg is never populated.
+
+### 7B.3 `Status` is a five-value vocabulary in three casings
+
+Seen on screen: `uncategorized`, `duplicate`, `Withdrawal Matched`. The DS view
+filters add `matched` (`Accounts.ds:11871`, `14315`), and §7B.5's fetch functions
+imply `Deposit Matched` as the counterpart.
+
+**Two lowercase, one Title Case, in one column.** Added to §8. And `Transaction Type`
+reads `uncategorized` on every row too — a second column carrying the same word for a
+different concept, and unused.
+
+Note what is *good* here, against the pattern everywhere else in this app: the
+unset state is an **explicit `uncategorized`**, not a blank. §11's
+blank-as-real-state problem does not apply to this screen.
+
+### 7B.4 A duplicate that the detection actually caught
+
+```
+row 2   ₹5,00,000.00   KKBKH26213806425   duplicate           (no matched payment)
+row 3   ₹5,00,000.00   KKBKH26213806778   Withdrawal Matched  EKS/PY/21603
+```
+
+Same date, same amount, same description (`IB:SENT NEFT Ekost 10247406007
+IDFC/Internal Tranf`), different reference numbers. One matched, one flagged
+`duplicate`. **So duplicate detection works here** — which is worth saying next to
+§4.9, where Backend Expenses has `dup_checked` false and `cron_event_duplicate_bill`
+0 on every row and the same machinery has never run.
+
+### 7B.5 The Books contract, from the DS — what we have without asking
+
+Husain asked whether the Books context is needed. **The fetch contract is already in
+`Accounts.ds`.** A whole `Books.*` namespace:
+
+**READ**
+
+| function | endpoint / filter |
+|---|---|
+| `Books.GetBankTransactions(AccountID, PageNo)` | `/books/v3/banktransactions … filter_by=Status.Uncategorized` |
+| `Books.GetBankTransactions1` | `filter_by=Status.Categorized` |
+| `Books.GetBankTransactions2` | `filter_by=Status.Matched` |
+| `Books.GetBankTransactionsExcluded` | `filter_by=Status.Excluded` |
+| `Books.manualupdate(AccountID, PageNo, Date1, Date2)` | date-ranged re-pull |
+| `Books.COA()` | `/books/v3/chartofaccounts` |
+| `Books.GetTaxes()` | `/books/v3/settings/taxes` |
+| `Books.GetTDS()` | `/books/v3/settings/taxes?is_tds_request=true` |
+
+**WRITE** — `Books.CreateExpense`, `Books.CreateUpdateExpense`,
+`Books.CreateVendorPayment`, `Books.CreateManualJournal`, `Books.ManualJournal`,
+`Books.UpdateVendors`. Much of `CreateManualJournal` is **commented out**, which
+agrees with `books_payment_no` still standing at 1 (§6.10): the Books **push** is
+dormant, the Books **pull** is live.
+
+Four facts that matter more than the endpoint list:
+
+1. **`organization_id = 60040119506`** — and the Analytics org is **`60042406851`**.
+   **Two different Zoho orgs.** Anything that assumed one id for the whole estate is
+   wrong; the Books plane and the Analytics plane are separate tenants
+2. **`connection: "books"` — a named Creator Connection.** The OAuth token lives in
+   Creator's connection store, **not in the script.** So unlike the DoubleTick key at
+   `Accounts.ds:22851`, **no Books credential is exposed in these files.** Good news,
+   and it means the DS gave us the contract without giving us a secret
+3. **The fetch is per bank account and paginated** — `account_id` + `page`. Nothing in
+   the DS enumerates the account ids; they are passed in by whatever calls it
+4. **The pull is idempotent on `transaction_id`** — `Bank_Transactions[Transaction_ID
+   == rec.get("transaction_id")]` before inserting. That is the right key and we
+   should use the same one
+
+**And this explains three things in our own schema.** `coa_accounts.books_account_id`
+is populated by `Books.COA()`. Our `taxes` (8) and `tds_rates` (35) masters come from
+`/settings/taxes` — which is why the TDS master has 35 rows over 16 distinct
+name+percentage pairs. None of that was documented as a Books artefact before.
+
+### 7B.6 The reconciliation link, and a case-sensitivity worth checking
+
+From `Accounts.ds:15665-15680`, on a newly fetched transaction:
+
+```deluge
+if (rec.get("status") == "matched")
+    if (rec.get("transaction_type") == "vendor_payment")
+        fetPayment = Payment[Books_ID == rec.get("transaction_id")];
+        if (fetPayment.ID != null)  fetPayment.Bank_Reconcilation = true;
+```
+
+So **`Payment.Books_ID` holds the Books transaction id**, and `Bank_Reconcilation` is
+the flag the recon views filter on. That is the join between a payment and its bank
+line, and it is a Books id rather than anything of ours.
+
+**A possible live defect, flagged rather than asserted.** The recon view reads:
+
+```deluge
+"Pending Bank Recon from 1st March" :
+    Bank_Reconcilation == false && Status == "Paid"
+    && !Payment_No.contains("haewaya") && Payment_Date > '28-Feb-2026'
+```
+
+The series is **`EKS/Haewaya`** with a capital H, and the filter tests lowercase
+`"haewaya"`. If Deluge's `contains` is case-sensitive, that exclusion never fires and
+**every Haewaya payment sits in the bank-recon queue permanently.** This is the same
+shape as §13's provisioning case-mismatch and §10's two spellings of
+`Payment InProgress`, so it is a plausible rather than a novel failure — but Deluge's
+string semantics have not been verified, so it is a question, not a finding.
+`[TODO]` worth one look at the live queue: does it contain `EKS/Haewaya/*` rows?
+
+### 7B.7 `Create Payment` from a bank line is another origin — on the same counter
+
+Two of the 30 columns are action buttons that mint or classify:
+
+- **`Personal Payment`** (button) beside **`Personal Payment`** (field, reading `No`)
+- **`Create Payment`** (button)
+- **`Match & UnMatch`** (button — note the header spells it `UnMatch` and the button
+  itself reads `Match & Unmatch`; §8)
+
+Both `Personal Payment` and `Create Payment` render **solid on `uncategorized` rows
+and pale on `duplicate` and `*Matched` rows.** So the actions are gated on the row
+being unclassified. (Both enabled rows in this sample are also *deposits*, so status
+versus direction cannot be fully separated from these screenshots — status is the
+better-supported reading.)
+
+**`Create Payment` here allocates from `EKS/PY`.** The matched payments on screen are
+`EKS/PY/21577`–`21603`, inside the live range (§6.10 puts the counter at 21621). So
+this is another write path into the counter the staleness guard now protects, and it
+strengthens the case for that guard: the series is reachable from Payments, Payment
+Requests **and** Bank.
+
+Every one of those numbers is above our imported maximum of 21308 — the drift, visible
+a third way.
+
+### 7B.8 The audit fields finally carry operational signal
+
+This is the first screen where `Added`/`Modified` are not decoration:
+
+```
+Added Time     27-Aug-2026 16:39:11   (identical on every row)   Added User  husain_ekostay1
+Modified Time  17:49:51 · 17:45:02 · 17:44:58 · 17:07:39 ·
+               17:07:22 · 17:06:31 · 17:05:56                    Modified User  komaltakale28
+```
+
+**Husain imported them in a single batch at 16:39:11; Komal reconciled them through
+the afternoon.** Two conclusions:
+
+- An `Added Time` identical to the second across many rows means the Books pull is a
+  **batch import, not a per-transaction webhook** — so a reconciliation window has to
+  assume bulk arrival
+- It **validates `TracksCreatorAudit`'s design**: `added_*` records the import,
+  `modified_*` records the human work, and they are genuinely different users.
+  `husain_ekostay1` / `komaltakale28` are login handles, consistent with
+  `sanjayprojapati1983` on Payment Requests (§6.9)
+
+### 7B.9 `INTERNAL TRANSFER` confirms the `Disallow Manual Creation` reading
+
+§8 records `Disable` / `Disallow Manual Creation` with a **`[TODO]` confirm**, reading
+it as "stops the category being picked during manual entry while leaving it available
+to the sync and generators", true of `PETTY` and `INTERNAL TRANSFER`.
+
+**Confirmed here.** `Item Category` on the matched rows reads `INTERNAL TRANSFER` —
+one of the two disabled categories — arriving through the bank-matching path. A
+category blocked from manual entry is in active use by a generator. `[TODO]` closed.
+
+### 7B.10 Smaller findings
+
+- **`Reference No` has no single format**: `FOS26213197497756`, `KKBKH26213806425`,
+  `FCM-260801OBMT43`, `IMPS-621312076634`, `MB-998325770792`. Bank and rail prefixes
+  (Kotak, IMPS, mobile banking) with and without hyphens. **Do not parse it**
+- **`Billing Cycles` reads `August - 2026` / `July - 2026`** — the dashed-with-spaces
+  form, which is what `BillingCycle::label()` returns. Fourth screen, and the first to
+  agree with our canonical spelling exactly
+- **`Account Name` is `EKOSTAY HOSPITALITY LLP` on every row** — the same entity as
+  Backend Expenses' `business_name` (§4.9) and Backbend Payments' `Bank Name` = 84 →
+  `coa.ekostay_id` (§7.2). **Three screens, one entity, three representations:** a
+  name, a name, and an integer id
+- `Item Category`, `Location`, `Billing Cycles`, `Reason`, `Source` and
+  `Accounts Remarks` are **blank on unmatched rows and populated on matched ones** —
+  so categorisation comes from the matched payment, not from the bank feed. An
+  unmatched bank line carries no accounting meaning at all
+- **`filter_by=Status.Uncategorized`** on the primary fetch explains why every row
+  arrives `uncategorized`: the pull deliberately asks Books only for the
+  unclassified ones
+- `Withdrawal Matched` and `Deposit Matched` are **booleans** on the panel
+  (`false`/`false`) *and* `Withdrawal Matched` is a `Status` **value**. One name, two
+  types, one screen
+- `testGetBankTransactions` carries hardcoded dates `2026-05-18`..`2026-07-09` and a
+  `test` prefix — a manual helper left in the live file, alongside
+  `Books.manualupdate`. Not dangerous like `DeleteAllRecords()`, but the same habit
+
+### 7B.11 What is still needed from Husain — narrow, because the DS gave us the rest
+
+1. **The `account_id` list**, one per bank account. The fetch is per-account and
+   nothing in the DS enumerates them
+2. **Books OAuth for a separate, read-only client** — scoped
+   `ZohoBooks.banking.READ` and `ZohoBooks.settings.READ`. Same argument as §9 of the
+   Analytics guide: sharing a token means revoking it takes down a live sync. Note the
+   Books credential is **not** in the DS, so this genuinely has to come from him
+3. **Confirmation that org `60040119506` is current** — it differs from the Analytics
+   org `60042406851`, and a stale org id would fail in a way that looks like a
+   permission error
+4. **Whether Books is the only source of bank lines**, or whether any are keyed in by
+   hand. It changes whether `Transaction_ID` can be treated as always present
+
+**Not needed:** the endpoint, the API version, the filters, the pagination shape, the
+dedup key or the reconciliation logic. Those are all in `Accounts.ds` and are recorded
+above.
+
+---
+
+## 7C. Expense Observations — captured 27-Aug-2026
+
+Five screenshots: the report, the detail panel, and the form in both a full-page and a
+**modal** presentation. Report `All Expense Observations` (plural), form
+`Expense Observation` (singular). Footer `Showing 1000 of ###` plus **`Show Summary`**,
+as Bank has.
+
+**Report columns (6):** `Villa Name` · `Location` · `Head Office` · `Amount`
+(right-aligned) · `Observation Notes` (**button**) · `Date`.
+
+### 7C.1 The first GROUPED report in the app, with real subtotals
+
+Nothing else in Accounts does this. Rows are grouped by villa under a grey band
+carrying a checkbox, and each group closes with a **subtotal row in pink**:
+
+```
+☐ Brooklyn Villa
+    Brooklyn Villa   Igatpuri                  ₹    56,736.00
+                                               ₹    56,736.00     <- subtotal
+☐ Casa Bella
+    Casa Bella       Lonavala  Central Office  ₹ 2,12,700.10
+    Casa Bella       Lonavala  Central Office  ₹    11,700.10
+    Casa Bella       Lonavala  Central Office  ₹ 2,14,700.10
+                                               ₹ 4,39,100.30     <- subtotal
+```
+
+**The subtotal is a true sum, checked to the paisa:** 212700.10 + 11700.10 +
+214700.10 = 439100.30 exactly. So this is a grouped aggregate, not a repeated header.
+
+Two things follow for the rebuild. **A grouped report with subtotals is a UI
+capability nothing else here needs** — group bands, group checkboxes, a footer row per
+group and `Show Summary`. And **the amounts carry paisa**: all three Casa Bella rows
+end `.10`, which is worth noting beside §11.8's finding that the approval bands are
+whole-rupee while money is `decimal(16,4)`. Real amounts in this system are not round.
+
+### 7C.2 The form and the detail disagree on order — a fourth time, and by two swaps
+
+**Form (layout) order.** `Location` is **first** and mandatory (red border):
+
+```
+Location* · Villa Name · Head Office · Amount (₹) · Expense Type ·
+Month & Year · Observation Notes (textarea) · Attachment      [Update] [Cancel]
+```
+
+**Detail (declaration) order** — villa and location swapped, notes and attachment
+swapped:
+
+```
+Villa Name · Location · Head Office · Amount · Expense Type ·
+Month & Year · Attachment · Observation Notes
+```
+
+Fourth screen confirming §4.3 / §6.7 / §7.5: **record both orders; neither derives
+from the other.** Here it is two independent transpositions rather than one block
+being moved.
+
+`Location` first, `Villa Name` second, matches §11.5 — **villa derives FROM location
+on this form**, as on the Approval form, and Bills remains the outlier.
+
+**The form appears in two presentations**: full-page with the `Expense Observation`
+title bar, and as a **centred modal** over the dimmed report with a dark `×`. Same
+fields, same buttons. Creator opening one form two ways depending on the entry point.
+
+### 7C.3 THE `Exclude for Observation` FLAG IS NOT INERT — AND ITS SIBLINGS DISAGREE
+
+`CLAUDE.md`'s master-data table records: *"`Exclude for Observation` true on 1 →
+**exclusion is inert**"*. **That reading was wrong, and this screen is what the flag
+is for.**
+
+The one category it excludes is **`EXPERIENCES REFUND`** — which is exactly the
+`Item Category` on the Backbend Payments refunds channel (§7.1). So the flag does not
+exclude nothing; it excludes a whole channel. One of 135 by count, but not marginal.
+
+And the sibling comparison is the real finding:
+
+| category | `exclude_for_profit` | `exclude_for_observation` |
+|---|---|---|
+| `EXPERIENCES REFUND` | yes | **YES** |
+| `FOOD REFUND` | yes | **no** |
+| `STAY REFUND` | yes | **no** |
+
+**Three sibling refund categories. All three excluded from profit. Only one excluded
+from observation.** And `REFUND-stay-*` and `REFUND-food-*` both exist in Backbend
+Payments — I have both on screen — so **stay and food refunds appear in Expense
+Observations while experiences refunds do not.**
+
+That asymmetry has no visible justification and looks like an oversight rather than a
+policy. `[TODO]` for Husain: **should `FOOD REFUND` and `STAY REFUND` also carry
+`Exclude for Observation`?** If yes, the observation figures currently include refunds
+that were meant to be out.
+
+Recorded as a correction to our own note, not a new discovery of the data: the count
+(1 of 135) was right and the conclusion drawn from it ("inert") was wrong. Counting
+told us the size and not the meaning.
+
+**There is a THIRD exclusion column**, and it changes how §3.1's warning reads:
+
+```
+exclude_for_profit        12 of 135   the 3 refunds, GOVERNMENT TDS, the 4 *_PERSONAL
+                                      categories, PETTY, INTERNAL TRANSFER,
+                                      F&B STOREROOM PURCHASE, PAYMENT REVERSE
+exclude_for_observation    1 of 135   EXPERIENCES REFUND
+exclude_item_category      0 of 135   nothing
+```
+
+`exclude_for_profit`'s twelve are a coherent set — non-P&L movements — and they
+include `PETTY` and `INTERNAL TRANSFER`, the same two that carry
+`Disallow Manual Creation` (§8, §7B.9). Three exclusion mechanisms, one of them
+entirely unused. §3.1 says "do not implement all of them"; now we know how many
+"all" is.
+
+### 7C.4 `Head Office` is per-observation, not derived from the villa
+
+The report shows `Head Office` = `Central Office` for Casa Bella and Casa Elara and
+**blank** for Brooklyn Villa — all in the same two locations (Igatpuri, Lonavala), so
+it is not a function of location either.
+
+Checked against our masters: **179 of 254 villas carry a `head_office_id`, and all
+three of these villas carry none.** So the observation record holds a Head Office its
+villa does not. **Do not derive this field** — it is set on the record, and the form
+offers it as its own dropdown.
+
+*(A first pass at this check read a non-existent `head_office` attribute and printed
+"(blank)" for every villa, which would have supported a wrong conclusion by accident.
+The column is `head_office_id`. Worth a line because the failure mode was a probe that
+answered confidently without touching the data.)*
+
+### 7C.5 The three villas on screen are three of the eight leading-space names
+
+```
+"Brooklyn Villa"   exact match 0   trimmed match 1   stored as [ Brooklyn Villa]
+"Casa Bella"       exact match 0   trimmed match 1   stored as [ Casa Bella]
+"Casa Elara"       exact match 0   trimmed match 1   stored as [ Casa Elara]
+```
+
+**Every villa visible on this screen fails an exact-name join** and succeeds on a
+trimmed one. §3 records eight leading-space villa names arising from the comma-packed
+`Villa Name` string; this is the first screen where they are *all* the data there is.
+
+A live demonstration of the no-trim rule's consequence: storage must stay verbatim,
+**and every join to a villa name must trim on the comparison, never on the column.**
+Any importer for this screen that matches villas exactly will resolve zero of three.
+
+### 7C.6 `Expense Type` is `Direct` / `Indirect`, and unset on 103 of 135
+
+The form's `Expense Type` dropdown is blank on the sample. The vocabulary comes from
+the item-category master: **`Direct` and `Indirect`, with 103 of 135 categories
+carrying neither.** So a field that classifies an observation is unpopulated on 76% of
+the categories it would classify by.
+
+### 7C.7 Smaller findings
+
+- **`Month & Year` = `January - 2026`** — the dashed-with-spaces form, matching
+  `BillingCycle::label()` exactly. **Fifth screen** to use a cycle label and the second
+  to agree with our canonical spelling (Bank was the first). It is a **single-select
+  lookup**, so it points at `Billing_Cycles` — but the field is labelled
+  **`Month & Year`**, not `Billing Cycles` as it is on Bank, Backbend Payments and
+  Pending Approvals. A field-label divergence on top of §8's value-spelling one
+- **`Observation Notes` is a button on the report and a textarea on the form** — the
+  sixth duplicate-representation pair in this app (§4.2, §6.3, §7.5, §7B.1, §7B.7).
+  The textarea is blank on the sampled record, so what the button does when the note is
+  empty is unknown
+- **`Date` is a report column with no matching form field.** The detail panel lists
+  eight fields and `Date` is not among them, and the column is blank on every visible
+  row. Either an orphan column or a platform field surfaced under a different name.
+  `[TODO]` low priority, but do not invent a `date` column for it
+- Panel bar is the standard `Edit` · `Delete` · `More ⌄` — so unlike Bank (§7B.1),
+  observations are editable and deletable from the panel
+- All three villas and both locations resolve against our masters (on a trimmed
+  match), and `January - 2026` is seeded. **The FK layer is ready for this screen**
+
+---
+
+## 7D. App Preferences — Creator's Manage Integrations panel
+
+One screenshot, and Husain's own summary: *"nothing but the zoho integrations."*
+
+**There is no form to rebuild.** `App Preferences` is a nav item pointing at Creator's
+built-in **Manage Integrations** panel — a platform screen, not an application form,
+recognisable by the `ⓘ` help affordance and the card layout. Same class as Accounts,
+which is an external dashboard. What matters here is the **inventory**, not the UI.
+
+### 7D.1 Four connections, and two share a display name
+
+| card | status |
+|---|---|
+| **Zoho Books** — "Zoho Books Account" | Connected |
+| **Zoho OAuth** | Connected |
+| **Zoho OAuth** *(a second card, same name)* | Connected |
+| **Zoho WorkDrive** | Connected |
+
+The DS references exactly four connection names, which matches the four cards:
+
+```
+connection:"books"                        36 uses
+connection:"books1"                        1 use
+connection:"zoho_oauth_connection"         2 uses
+"zoho_workdrive_connection1"              13 uses
+```
+
+**Two cards are both labelled `Zoho OAuth`, so the mapping from card to internal name
+cannot be read off the UI.** That matters more here than the duplicate labels
+elsewhere in this app (§4.2, §6.3, §7.5, §7B.1, §7C.7): these are **credentials**.
+Revoking the wrong `Zoho OAuth` is a coin flip, and `books1` — used exactly **once**,
+at `Accounts.ds:45908` — is a near-orphan that looks disposable and may not be.
+
+`Books` at 36 uses confirms §7B.5 from the other direction: the Books pull is live
+right now, and its OAuth genuinely sits in Creator's connection store.
+
+**`Zoho WorkDrive` is a connection nothing in our docs had accounted for.**
+`Accounts.ds:22911` uses it:
+
+```deluge
+uploadResp = zoho.workdrive.uploadFile(pdfFile, parentId, filename, true,
+                                       "zoho_workdrive_connection1");
+```
+
+and `22960` calls `/workdrive/api/v1/links`. It sits **immediately beside the
+DoubleTick send** — so the flow is *generate a PDF → upload to WorkDrive → mint a
+public link → send the link over WhatsApp*. That ties three of the four cards into one
+pipeline and explains why WorkDrive is connected at all.
+
+### 7D.2 NOTABLY ABSENT: no DoubleTick card, and no Analytics card
+
+**Neither of the two integrations this project depends on is a managed connection.**
+
+- **DoubleTick** has no card, which is *why* its key is a literal in the source. The
+  four Zoho integrations use Creator's connection store; the one non-Zoho integration
+  hardcodes a key. This screen is the evidence for that asymmetry
+- **Zoho Analytics** has no card either. Our read plane (`analyticsapi.zoho.in`, org
+  `60042406851`, refresh token in `.env`) is a **separate OAuth client**, not a Creator
+  connection — and §7D.4 shows Creator does the same thing, from a config record
+
+### 7D.3 CORRECTION to §11.12 — line 22851 is the REVENUE SHARE path, not the approval path
+
+§11.12 said, after Husain described the approval WhatsApp: *"the hardcoded DoubleTick
+API key at `Accounts.ds:22851` is the notification path for every approval in the
+system."*
+
+**Wrong about that line.** `22851` sits inside
+`string Standalone.widgetSendWhatsApp(String crmAPIRequest)`, whose default template
+is `revenue_share_statement` and whose parameters are `propertyName`, `monthYear`,
+`pdfSuffix` — a **property owner receiving their monthly revenue-share statement**,
+not an approver.
+
+The substance survives and gets worse. The same key appears **three** times:
+
+```
+Accounts.ds:16768   inline in a headers map        <- the 16xxx APPROVAL region
+Accounts.ds:16780   headers.put("Authorization", …) <- the 16xxx APPROVAL region
+Accounts.ds:22851   apiKey = …                      <- revenue-share statement
+```
+
+`16113-16135` and `16508-16511` are where `DecideApproval` was transcribed from, so
+**16768/16780 are the approval notification** and they carry the same literal. So:
+approval notifications *do* break on rotation (as claimed), revenue-share statements
+break too (not previously known), and **the key must be changed in three places.**
+
+### 7D.4 `Eko_RS_App_Config` IS A CREDENTIAL STORE IMPLEMENTED AS A FORM
+
+Following the DoubleTick fields led to a singleton config form,
+`Eko_RS_App_Config[Config_Singleton == "main"]`, holding:
+
+```
+DoubleTick_API_Key          DoubleTick_From_Number     DoubleTick_From_Number1
+DoubleTick_Template_Name    DoubleTick_Template        PDF_Host_Url_Override
+Analytics_Refresh_Token
+```
+
+**And `DoubleTick_API_Key` is never read.** Only two fields are consulted
+(`Accounts.ds:22853-22854`):
+
+```deluge
+fromNumber   = ifnull(config.DoubleTick_From_Number,  "918169019090");
+templateName = ifnull(config.DoubleTick_Template_Name,"revenue_share_statement");
+```
+
+There is **no `config.DoubleTick_API_Key` anywhere in the file.** All three call sites
+use the literal instead.
+
+**That is the sharper version of the defect.** It is not merely "a key is hardcoded" —
+**the configuration field intended to hold it exists, is on a form, appears as a
+column on the `Eko_RS_App_Config Report` (`Accounts.ds:14172`), and is bypassed.**
+Anyone rotating the key through the UI would change a field nothing reads and conclude
+they had rotated it. From-number and template *are* configurable; the credential is
+not.
+
+Two further things in that form:
+
+**`Analytics_Refresh_Token` is stored in a Creator data record**, read by
+`Standalone.proxyAnalytics` (`Accounts.ds:22638`) — which then carries **hardcoded
+client credentials**:
+
+```deluge
+clientId     = "1000.9UCJULS38ST1M6MPFFL2O3WVSFR1DG"
+clientSecret = "8fac366d1cd3f6a87a91b2c727c713073d6a3a7684"
+orgId        = "60042406851"                    <- OUR Analytics org, exactly
+```
+
+So there is a **second hardcoded credential pair** in the DS, and the org id matches
+the one our `AnalyticsClient` uses. **The rotation recommendation now has a second
+reason:** the Analytics OAuth client is shared between the live Creator app and this
+rebuild, so revoking it takes down `proxyAnalytics` as well as us. A separate client
+for this app was already the advice; this makes it necessary rather than tidy.
+
+**Both functions are `Standalone.`** — and §16.4 already records that standalone
+Deluge functions are invocable as REST endpoints. `widgetSendWhatsApp` takes an
+arbitrary `to` number; `proxyAnalytics` takes an arbitrary `path`, `method`,
+`queryParams` and `body` and forwards them. Their real exposure depends on how each is
+published, which is worth checking — but the shape is a general-purpose proxy and a
+send-to-any-number, both holding credentials inline.
+
+**Also: a report displays an API key as a column.** `Eko_RS_App_Config Report`
+(`Accounts.ds:14154-14172`) lists `DoubleTick_API_Key`. With §3.3's permission matrix
+extracted but not wired to a gate, there is no field-level restriction on it.
+
+### 7D.5 The truncated nav item is almost certainly Revenue Share
+
+`Ekostay Revenue …` has been on the "need a screenshot" list purely because the rail
+truncates it. The evidence now points one way: an `Eko_RS_App_Config` form, an
+`Eko_RS_App_Config Report`, a `revenue_share_statement` WhatsApp template, and spec
+§2's open question *"Revenue Share split across the `ers` app and the `Eko_RS_*`
+forms"*.
+
+So it is the **Revenue Share** module, and it owns the config form above. Recorded as
+a strong inference, not a fact — the label is still cut off and no screenshot of the
+screen exists.
+
+### 7D.6 A SECOND FILTER OPERATOR, from the background of the screenshot
+
+The report behind the panel is Bank, carrying a live filter chip:
+
+```
+SEARCH   Amount is "1713…"   (x)          ->   Showing 1 of 1
+```
+
+**Creator spells equality `is`, not `equals`** — and applies it to a **number**
+column. `ReportFilter` documented that only `contains` had ever been seen and that
+`equals` was inferred. Now two operators are verified and one label was wrong.
+
+Changed: `is` / `is not` are the canonical labels in `TEXT_OPERATORS`,
+`NUMBER_OPERATORS` and `DATE_OPERATORS`, with `OPERATOR_ALIASES` accepting the old
+`equals` / `not equals` so no saved filter breaks. `FilterBar`'s on-screen note now
+says two operators are confirmed rather than one.
+
+Also worth having: `Showing 1 of 1` on a filtered report, which confirms the footer
+reports the **filtered** count and is a live counterexample to the `Showing 1000 of
+###` seen everywhere else.
+
+### 7D.7 What this means for the rebuild
+
+- **Nothing to build for App Preferences itself.** It is a platform screen; the nav
+  item should link out, exactly as Accounts does. `[TODO]` for Husain: embedded or
+  linked, same open question as Accounts
+- **The integration inventory is now complete and small**: Books (live, connection),
+  WorkDrive (live, connection), two unnamed `Zoho OAuth` connections, DoubleTick
+  (hardcoded, three sites), Analytics (hardcoded client + token in a config record)
+- **`Eko_RS_App_Config` must be modelled as configuration, not as a form** when
+  Revenue Share is built, and the credential fields must not be report columns
+
+---
+
+## 7E. Preferred Approver — what it is for, from the DS
+
+One screenshot, two fields, and Husain: *"I'm not sure what this is for."*
+
+```
+Payment No       -Select-              (dropdown)
+Approver Name    -Select-              (dropdown, RED border = mandatory)
+                 [Submit]
+```
+
+No list, no edit — an **add-only form**, like `Payment Request` (§6).
+
+### 7E.1 It re-submits a payment for approval, naming who should handle it
+
+`Accounts.ds:32108` and `32390` both declare `form = Preferred_Approver`, and the
+action they reach ends at `32326`:
+
+```deluge
+AddApproval = insert into Pending_Approvals
+[
+    Added_User                   = zoho.loginuser
+    Payment_No                   = fetPayment.ID
+    Approval_Level               = rec4.Level
+    Next_Level_Approval_Required = nextLevelReq
+    Status                       = "Sent for Approval"
+    Approvers                    = rec4.Approver          // from the Approval rule grid
+    Approval_Type                = rec4.Approval_Type
+    Preferred_Approver           = input.Approver_Name    // <- THIS FORM's second field
+];
+// then one Approved_By subform row per approver at that level
+```
+
+**So Preferred Approver creates a new `Pending_Approvals` record for the chosen
+payment and stamps the chosen person as its `Preferred Approver`.** It is the manual
+escape hatch: *this payment is stuck, or needs a specific person — put it back in the
+queue and address it to them.*
+
+That closes the loop on two earlier observations:
+
+- §5's Pending Approvals edit form carries a `Preferred Approver` field that was blank
+  on the sample and had no visible source. **This form is its source.**
+- It is the payment-side counterpart to **`Re-Send for Approval`** on User Payment
+  Requests (§6.8) — the same idea one step further down the chain
+
+Everything else on the inserted record comes from the matched Approval **rule** —
+`rec4.Level`, `rec4.Approver`, `rec4.Approval_Type` — which is the grid captured in
+§11.7. So this form supplies one field and the rule supplies the rest. **It cannot
+name an approver outside the rule's own approver list**, because `Approvers` is copied
+from `rec4.Approver` regardless of what `Approver_Name` says. Worth knowing: the
+"preferred" approver is advisory, not an override of who *may* approve.
+
+### 7E.2 It INSERTS rather than updates — a duplicate-approval vector to check
+
+The statement is `insert into Pending_Approvals`, not an update of an existing open
+approval. Whether a payment that already has one open can acquire a second depends on
+a guard upstream of line 32326 that has not been traced.
+
+**This matters because §5 already found nine identical approvals** —
+`EKS/PY/20954`–`20962`, same vendor, category, bank, cycle and `₹4,956.00`, created
+within ~90 seconds, differing only in Message ID — and concluded that "an approval
+that fires more than once creates more than one payment". A form whose only job is to
+insert a fresh approval on demand is a plausible source of exactly that shape.
+
+`[TODO]` before building this: **does submitting Preferred Approver twice for one
+payment produce two open approvals?** If so, our version must update the open one or
+refuse.
+
+---
+
+## 7F. Deleted Payments — an 18th nav item, and the mechanism behind the register's worst entry
+
+**The rail in this screenshot shows a screen that was not on the list of 27.** Below
+`Ekostay Revenue Share` sits **`Deleted Payments`**, and it is the last item. So the
+rail has **18** items, not 17.
+
+It is a real form (`Accounts.ds:3606`) with a report
+(`Deleted_Payments_Report`, `13623`). And it changes the shape of the single worst
+entry on the defect register.
+
+### 7F.1 Deletion DOES archive — including the split grid
+
+`Accounts.ds:31016-31078`, on deleting a payment whose `Status == "Paid"`:
+
+```deluge
+addPayment = insert into Deleted_Payments
+[
+    Deleted_By_User   = zoho.loginuserid
+    Deleted_Time_User = zoho.currenttime
+    COA … Vendor_Name … Payment_No … Amount … Invoice_Amount …
+    Status            = "Draft"
+    Payment_Status    = "Open"
+    Payable_Amount    = amount11          // Amount + GST_Amount - TDS_Amount
+];
+for each del in input.Split_Payments        // the allocation grid is copied too
+```
+
+So there is a trash bin with a deleted-by and deleted-at stamp, and it preserves the
+`Split_Payments` legs. That is better than "destroyed with no trace" implies.
+
+### 7F.2 BUT THE ARCHIVE IS GUARDED BY THE WRONG CONDITION — `Accounts.ds:31027`
+
+```deluge
+if (COA.Account_Name != "Accounts Payable")
+{
+    ... insert into Deleted_Payments ...
+}
+```
+
+**The archive is written only when the payment is NOT on `Accounts Payable`.**
+
+And §7.2 is explicit that **`Create_Payment` forces every payment onto
+`Accounts Payable`** — it is asserted in our own `PaymentWritePathTest` setup. So for
+every payment created through the normal path, the condition is false and **no archive
+row is written at all.** The payment is deleted and nothing records it.
+
+**That is the mechanism behind "`Delete Paid Payment` destroyed 17 real payments
+(₹93,884)".** The trash bin exists, is visible in the nav, and is bypassed for exactly
+the population that matters. Anyone looking at `Deleted Payments` to find those 17
+would find an empty screen and reasonably conclude nothing had been deleted.
+
+Stated as a reading of the code, not as a reconstruction of that incident — but the
+guard is inverted relative to its evident purpose, and the majority case is the one it
+skips.
+
+### 7F.3 THREE MORE THINGS THE ARCHIVE LOSES, EVEN WHEN IT FIRES
+
+- **`Status = "Draft"` and `Payment_Status = "Open"`.** A settled payment is archived
+  as a draft. The fact that it *was* `Paid` — the only reason its deletion matters — is
+  overwritten on the way into the bin
+- **`Expense_By = zoho.loginuser`** — the deleter's name replaces whoever incurred the
+  expense. An original field silently reassigned to the person destroying the record
+- **`Payable_Amount` is RECOMPUTED**, not copied: `Amount + GST_Amount - TDS_Amount`.
+  §6.3's open `[TODO]` is which of two same-named `Payable_Amount` formulas is
+  authoritative; **this is a third site using the additive one**, and the archived
+  figure may not match what the live payment showed
+
+### 7F.4 A ONE-TOKEN BUG: the re-delete path loses the deleting user
+
+`Accounts.ds:31019-31023`, when an archive row for that `Payment_No` already exists:
+
+```deluge
+if (fetdele.count() > 0)
+{
+    fetdele.Created = false;
+    Deleted_By_User = zoho.loginuserid;          // <- no `fetdele.` prefix
+    fetdele.Deleted_Time_User = zoho.currenttime;
+}
+```
+
+**The middle line is missing its `fetdele.` prefix.** The lines above and below it both
+have one. So it assigns to a throwaway local variable and **the deleting user is never
+recorded on a second deletion**, while the timestamp is. A record showing *when* it was
+deleted and by *nobody*.
+
+Same family as the three defects already logged from the DS — `&&` for `||`, `=` for
+`==`, two spellings of `Payment InProgress`. One token, silent, and it lands on an
+audit trail.
+
+### 7F.5 The permanent-delete function's authorisation is caller-supplied
+
+`Accounts.ds:16192`:
+
+```deluge
+string Accounts.DeletePermanentlyTrash(int RecID, string user)
+{
+    fetdelete = Deleted_Payments[ID == RecID];
+    fetdelete.Delete_Record = false;
+    if (user == "husain@ekostayhospitality.com") { fetdelete.Delete_Record = true; }
+    else                                          { fetdelete.Delete_Record = false; }
+    if (fetdelete.Delete_Record == true)
+        if (fetdelete.Created == false)
+            delete from Deleted_Payments[ID == RecID];
+```
+
+Two observations, both factual:
+
+1. **Authorisation is a hardcoded email literal** — not a role, not a permission, not
+   the §3.3 matrix. `husain@ekostayhospitality.com` in source
+2. **`user` is a function PARAMETER, not `zoho.loginuser`.** The identity being checked
+   is supplied by the caller rather than read from the session, so the check does not
+   establish who is calling. And this is a `Accounts.`-prefixed standalone function —
+   §16.4 already records that standalone Deluge functions are invocable as REST
+   endpoints
+
+So the last line of defence for permanently destroying an archived payment is a string
+comparison against a value the caller provides. **Worth raising with Husain directly**,
+alongside `DeleteAllRecords()` at `F_B.ds:4645` and the two credential-carrying
+standalone functions in §7D.4. The pattern across all four is the same: standalone
+functions doing privileged work with authorisation that is either absent or supplied
+by the caller.
+
+`fetdelete.Created == false` is a restore flag — a restored record refuses permanent
+deletion with *"This record cannot be deleted because it has already been restored."*
+So there is a restore path too, which is worth capturing when this screen is built.
+
+### 7F.6 What this means for our own D4
+
+Our `ReversePayment` / model-guard approach (deviation D4, "nothing hard-deletes a
+payment") stands unchanged and is **more** justified now, not less. The point is
+narrower than before, though, and worth stating precisely:
+
+Creator's design intent was **archive-then-purge**, not destroy — the bin, the
+deleted-by stamp, the restore flag and the `Created` guard all show that. What failed
+was three specific things: an inverted COA condition that skips the archive for the
+normal case, a missing field prefix that drops the deleter on re-delete, and a
+permanent-delete authorisation the caller can assert. **A trash bin is not a control
+if the path into it is conditional on the wrong thing.**
+
+`[TODO]` for Husain: **should the rebuild have a Deleted Payments screen at all?** D4
+replaces deletion with a reversing entry, which makes a trash bin redundant by
+construction — but the live app has 18 nav items and this is one of them, and there
+may be archived rows in it worth migrating.
+
+### 7F.7 Two more forms with no nav entry
+
+`Debit_Match_Payments` (32 references) and `Deleted_Payments` are both real forms;
+only the latter is in the rail. `Debit_Match_Payments` is most likely what Bank's
+**`Match & UnMatch`** button (§7B.7) writes to. Recorded so the form inventory is
+honest: **the rail is not a complete list of the forms.**
+
+---
+
+## 7G. `Ekostay Revenue Share` — the label is confirmed
+
+The rail in this screenshot renders it in full: **`Ekostay Revenue Share`**. §7D.5
+inferred exactly that from `Eko_RS_App_Config`, its report, the
+`revenue_share_statement` WhatsApp template and spec §2's open question. **Inference
+confirmed**, and the truncated-label item comes off the unknown list — though the
+screen itself is still unseen.
+
+So it owns `Eko_RS_App_Config`, which §7D.4 established is a credential store holding
+the Analytics refresh token and an unread DoubleTick key field. **When Revenue Share
+is built, that config must land as configuration and not as a form with a report.**
+
+---
+
+## 7H. Deleted Payments — captured 28-Aug-2026, and §7F.2 was wrong
+
+Nine screenshots. **~72 columns**, footer **`Showing 982 of 982`**, and a detail panel
+whose action bar reads **`Restore` · `Delete permanently` · `More ⌄`**.
+
+### 7H.1 CORRECTED — the trash bin is NOT empty. It holds 982 records
+
+§7F.2 read `Accounts.ds:31027`'s guard —
+
+```deluge
+if (COA.Account_Name != "Accounts Payable") { ... insert into Deleted_Payments ... }
+```
+
+— alongside §7.2's "`Create_Payment` forces every payment onto `Accounts Payable`", and
+concluded: *"the normal path writes NO archive row… that is how `Delete Paid Payment`
+destroyed 17 payments while a visible trash bin sat empty."*
+
+**The bin has 982 rows, and the `COA` column reads `Expense` and `Staff Loan`.** So the
+guard fires most of the time. Counted against our 52,639 imported payments:
+
+```
+Expense                      47,782      91%
+Accounts Payable              2,571     4.9%
+Payment Reverse               1,122
+Haewaya EKOSTAY Hospitality     187
+...
+```
+
+**Only 4.9% of payments sit on `Accounts Payable`.** So the guard **archives ~91% and
+skips ~5%** — the reverse of what §7F.2 claimed.
+
+**Where the reasoning went wrong:** §7.2's statement is about `Create_Payment`, the
+path that makes a payment FROM A BILL, and that is true — those 2,571 are the
+bill-derived ones. The error was treating `Create_Payment` as "the normal path". It is
+not: 91% of payments arrive by another route (direct entry, Salary Payouts, Haewaya,
+Bank's `Create Payment`), and those all archive correctly.
+
+**The defect is narrower than stated and arguably worse.** The exception is not the
+majority — it is precisely the **bill-derived trade payables**, the payments with a
+vendor invoice behind them and the ones most likely to matter in a dispute. A trash
+bin that covers salary reversals and petty cash but not settled supplier payments is
+worse than one that covers nothing, because it looks reliable.
+
+Recorded as a correction to our own inference, not to the data. The count was there to
+be checked and was not checked before the conclusion was written.
+
+### 7H.2 What the archive confirms, on 10 real rows
+
+§7F.3 predicted three losses from reading the insert. All three are visible:
+
+| | |
+|---|---|
+| `Status` | **`Draft`** on every row — a settled payment archived as a draft |
+| `Payment Status` | **`Open`** on every row |
+| `Paid` | **`false`** on every row |
+
+So the archived record actively denies it was ever paid. `Verified`, `Multiple Villa`,
+`Approved`, `Delete Record`, `Bank Reconciliation`, `Link Updated` are all `false` too.
+
+**`Delete Record` is false on all 982**, which is the flag
+`Accounts.DeletePermanentlyTrash` sets to true before purging (§7F.5). So nothing has
+been permanently deleted through that path, or the flag is reset after.
+
+### 7H.3 `Deleted By` is an email, and two of the five are personal Gmail accounts
+
+```
+suchitrasaroj5@gmail.com        <- gmail
+mansi.p@ekostay.com
+varun@ekostayhospitality.com
+komaltakale28@gmail.com         <- gmail
+```
+
+Two observations worth raising, both factual:
+
+- **Two personal Gmail addresses hold delete rights on payments.** Not a rebuild
+  concern — an access concern for the live app
+- **Two company domains are in use**: `ekostay.com` and `ekostayhospitality.com`. That
+  matters because `DeletePermanentlyTrash` compares against the literal
+  `"husain@ekostayhospitality.com"` (§7F.5), so the hardcoded check is domain-specific
+  and a user on the other domain fails it regardless of who they are
+
+And the identity spaces differ **on one row**: `Deleted By` is an email while
+`Expense By` is a login handle (`suchitrasaroj53`, `mansi.p`, `ekostay`,
+`komaltakale28`). Third identity representation in this app after display names and
+login handles (§6.9).
+
+### 7H.4 `Restore` is a per-row button; `Delete permanently` is panel-only
+
+`Restore` is column 1, solid on every row. `Delete permanently` appears **only on the
+detail panel**, beside `Restore`. So the destructive action is one click further away
+than the recoverable one — which is the right shape, and worth preserving.
+
+§7F.5's `Created == false` gate means a restored record refuses permanent deletion.
+So the intended lifecycle is **archive → restore, or archive → purge, never both**.
+
+### 7H.5 `Gross Amount` at three decimals on a SECOND report
+
+```
+Gross Amount    ₹ 18,000.000    ₹ 50,000.000    ₹ 46,153.000    ₹ 5,193.000
+Payable Amount  ₹ 18,000.00     ₹ 50,000.00     ₹ 46,153.00
+```
+
+§5 recorded three decimals as a Pending Approvals oddity and
+`PendingApprovalsModule` said "every other money column in this app is two". **Both
+were too narrow.** Three decimals follows `Gross Amount` wherever it appears; the
+module docblock is corrected.
+
+### 7H.6 `Particulars` names the generators
+
+- `Created From Salary Payouts - Billing Cycle:July - 2026 - Amount:17686.00`
+- `5193 SOCIAL MEDIA TEAM REIMBURSEMENT APPROVED BY VARUN SIR FROM LLP1`
+- `LOAN DEDUCTION FROM AUG AND SEPT`
+- `Test entry`
+
+**`Created From Salary Payouts`** — so Salary Payouts stamps its cycle and amount into
+the particulars, which is a usable provenance marker. Note `Amount:17686.00` against
+`Gross Amount ₹18,000.000` on the same row: plausibly gross versus net after PF/PT/ESIC
+rather than a disagreement, unlike Backbend Payments' 11000-vs-7500 (§7.7).
+
+`Test entry` at `₹5,000.000` is test data that reached live and was deleted.
+
+### 7H.7 `_staffLoanProcessed` — the underscore is in the LABEL, not the field
+
+`Accounts.ds:12156` and `13635`:
+
+```deluge
+staffLoanProcessed as "_staffLoanProcessed"
+```
+
+So the field is `staffLoanProcessed` and someone prefixed its **display name** with an
+underscore — probably to mark it internal or sort it out of the way. It reached a
+report anyway. **Preserve the label verbatim**, underscore and camelCase both; it is
+the only field in this app named that way.
+
+### 7H.8 Three more duplicate column labels, and three columns for one concept
+
+The report carries **`Item Category` twice** and **`Bill No` twice** — the fifth and
+sixth duplicate-label pairs (§4.2, §6.3, §7.5, §7B.1). Both copies of `Item Category`
+are populated and identical (`STAFF SALARY` / `STAFF SALARY`), unlike §4.2's pairs
+where one was dead.
+
+And **`Billing Year`, `Billing Months` and `Billing Cycles`** are three separate
+columns for one concept, with only `Billing Cycles` populated (`July - 2026`,
+`August - 2026` — the dashed form, sixth screen to agree with `label()`).
+
+Also new and unexplained: `OCR`, `Verification Call`, `Vendor Order Booking No.`,
+`Payment_folder` (underscore again), `Haewaya TimeStamp` beside `Timestamp Date`.
+
+---
+
+## 7I. THE SCREEN INVENTORY WAS WRONG — 46 forms and 50 reports, not 28 screens
+
+The rail in these screenshots shows **three items never seen before**, below
+`Deleted Payments`:
+
+- **Husain Office Modules** — `form Husain_Office_Module` (`:6190`),
+  `All Husain Office Modules` report (`:13716`), keyed on a payment
+  (`Husain_Office_Module[Payment == input.ID]`)
+- **Match Transaction** — `form Match_Transaction` (`:7177`)
+- **Flagged** — `form Flagged_Payments` (`:6028`), `Flagged Payments Report` (`:14050`)
+
+So I have been reporting progress against a denominator that was never verified.
+Counted from the DS: **46 forms and 50 reports in `Accounts.ds` alone**, which is
+consistent with `CLAUDE.md`'s standing goal of 77 forms / 61 reports across Accounts +
+Admin + F&B. The "28 screens" figure was the **nav rail**, and the rail is longer than
+recorded.
+
+**This also corrects §7F.7**, which said `Debit_Match_Payments` "has 32 DS references
+and no rail entry" and guessed it was what Bank's `Match & UnMatch` writes to. There
+are **two** match forms and **two** match reports — `Match_Transaction` /
+`All Match Payments` and `Debit_Match_Payments` / `Debit Match Payments Report` — and
+`Match Transaction` does have a rail entry. Which one the Bank button writes to is
+still unestablished.
+
+### 7I.1 The full report inventory, from the DS
+
+**And it resolves the last truncated label:** the nav item reading
+`Zoho app pointers - Payment Ap…` is **`Zoho app pointers - Payment Apr-Jun (1)
+Report`** — a quarter-scoped pointer table.
+
+```
+Bank (5 views, which is the ⌄ chevron)
+  All Bank Transactions · Admin Bank Transactions · LLP Bank Transactions
+  LLP Bank Transactions - old · View Bank Transactions
+
+Payments (6)
+  All Payments · Payments · View Payments · LLP Payments
+  All Payments - Hussain          <- note TWO s's
+  Deleted Payments Report
+
+Bills (3)          All Bills (x2, same name) · LLP Bills
+Expenses (3)       All Expenses · LLP Expenses · All Expense Observations
+Approvals (2)      All Approvals · All Pending Approvals
+Requests (2)       All Payment Requests · User Payment Requests
+Backend (2)        All Backend Expenses · All Backbend Payments
+Matching (2)       All Match Payments · Debit Match Payments Report
+Scheduling (4)     All Schedule Payments · All Scheduled Payments   <- note the "d"
+                   Payments Scheduled Report · Salary Payout Schedule Report
+Salary (1)         Salary Payouts Report
+Settings (6)       All Billing Cycles · All Item Categories · All Master Categories
+                   All Taxes · COA Report · TDS Report
+Masters (2)        Vendor Master · All Vendor Masters
+Config (3)         Auto Numbers · Block Payment Date · Sync Locks Report
+Flagged (1)        Flagged Payments Report
+Husain (1)         All Husain Office Modules
+Pointers (1)       Zoho app pointers - Payment Apr-Jun (1) Report
+Revenue Share (6)  Eko_RS_App_Config · Eko_RS_Flags · Eko_RS_Pdf_Staging
+                   Eko_RS_Send_Log · Eko_RS_Settings · Eko_RS_Statements
+```
+
+### 7I.2 Four things in that list worth acting on
+
+1. **`Ekostay Revenue Share` is a six-report subsystem**, not one screen — statements,
+   PDF staging, a send log, flags, and two config tables. §7D.4 established
+   `Eko_RS_App_Config` is a credential store; `Eko_RS_Send_Log` presumably logs the
+   DoubleTick sends. Scope it as a subsystem when it comes up
+2. **`All Schedule Payments` and `All Scheduled Payments` both exist** — two reports
+   differing by one letter, on the screen still blocked on payroll bands. Added to §8
+3. **`All Bills` appears TWICE with the same display name.** Spec §6.1 asks "which
+   All Bills report is live"; the answer is that there are literally two and the name
+   cannot distinguish them
+4. **`Sync Locks Report` is new and relevant.** A lock table is how this app would
+   coordinate its Books/Analytics syncs — and the export concurrency limit is shared
+   account-wide with Tushar's live tracker (§9). If Creator already has a lock table,
+   our scheduler should read it rather than invent a second mechanism.
+   `[TODO]` worth one screenshot
+
+### 7I.3 How progress will be reported from here
+
+The remaining-screens list has been counted against the rail, which was never the real
+inventory. From now on it is counted against **the 50 reports above**, with the rail
+noted separately where it differs. That makes the number larger and honest rather than
+smaller and wrong.
 
 ---
 
@@ -277,17 +2167,28 @@ field, three content types.
 | TDS rate | `TDS` (Payments) · `TDS Percentage` (Settings) · `TDS %` (Backend Payments) |
 | Employee state insurance | `ESIC` (Item Category, §7) · `ESI` (Backend Payments) |
 | Food & beverage | `F&B` · `F & B Payments` |
-| Paid status | `Paid` (Pending Approvals) · `paid` (Payments) · `PAID` (Backend Payments) |
+| Paid status | `Paid` (Pending Approvals) · `paid` (Payments) · `PAID` (Backbend Payments, **confirmed on a settled refund 27-Aug-2026**) |
 | Approval level pair | `Level 1 & 2 Approval` — **not** `Level 1 2 Approval` |
 | Disable flag | field `Disable`, label **`Disallow Manual Creation`** |
 | COA visibility flag | field `Hide`(?), label **`COA`** |
 | Module name | `Backend Payments` (form) · `Backbend Payments` (rail) |
+| Bank match action | header **`Match & UnMatch`** · button **`Match & Unmatch`** (Bank, 27-Aug-2026) — one screen, two casings |
+| Bank transaction status | `uncategorized` · `duplicate` · `matched` (DS views) · **`Withdrawal Matched`** — three casings in one column, and `Withdrawal Matched` is also a BOOLEAN field on the same record (§7B.3) |
+| Schedule Payments report | **`All Schedule Payments`** · **`All Scheduled Payments`** — two separate reports, one letter apart (DS, 28-Aug-2026, §7I.1) |
+| Husain / Hussain | **`Husain Office Modules`** (one s) · **`All Payments - Hussain`** (two) — both are screen names |
+| Internal flag label | field `staffLoanProcessed`, label **`_staffLoanProcessed`** — the underscore is in the DISPLAY NAME only (§7H.7), and it reached a report |
+| Billing cycle FIELD label | **`Billing Cycles`** (Bank, Backbend Payments, Pending Approvals) · **`Month & Year`** (Expense Observations, 27-Aug-2026) — one lookup, two field names, on top of the four value spellings below |
+| **Billing cycle label** | **`July - 2026`** (`payment_master`) · **`Jul 2026`** (`expenses`) · **`August - 2026`** (All Expenses report) · **`August-2026`** (Backbend Payments, 27-Aug-2026) — four spellings of one cycle. All four ARE aliased in `ZohoImportBills::cycleMap()`, which registers five forms per cycle; a mismatch here cost 26,720 split legs once |
+| **Approval-pending status** | **`Sent for Approval` · `Submit for Approval`** — both live on Payment Requests, on rows that otherwise look alike (27-Aug-2026, §6.5). Two states or two spellings is **unresolved**, and it decides whether a status comparison misses half the queue — exactly the `Payment InProgress` trap in §10 |
 
 `Disallow Manual Creation` finally says what `Disable` does: it stops the category
 being picked during manual bill/payment entry while leaving it available to the
 sync and generators. True for `PETTY` and `INTERNAL TRANSFER`, which matches
 §6.2's Bills picker filter. It is a visibility filter on manual paths, not a soft
-delete. `[TODO]` confirm.
+delete. ~~`[TODO]` confirm.~~ **CONFIRMED 27-Aug-2026** — `INTERNAL TRANSFER`, one of
+the two disabled categories, arrives on Bank's matched rows through the
+bank-matching path (§7B.9). A category blocked from manual entry is in active use by
+a generator, which is exactly what the label claims.
 
 ---
 
@@ -539,6 +2440,209 @@ discarding the amount bands, the named approver and the approval type entirely.
 This is addendum §2's rule biting: an export mirrors the report's columns exactly.
 **For any form with a grid, the screenshot is the primary source and the export is
 a summary.**
+
+### 11.7 The Approvers grid, captured 27-Aug-2026 — routing is UNBLOCKED
+
+Thirteen screenshots of All Approvals — report, detail panel and the edit form
+scrolled to the grid. **This is the export that was never available**, and
+`ApprovalRouter` was written to refuse rather than guess without it. It can now route.
+
+**16 records**, footer `Showing 16 of 16`. Report columns: `Module` ·
+`Level 1 & 2 Approval` · `Level 2 & 3 Approval` · `Approvers` · `Location` ·
+`Villa Name` · `Item Category`. Detail adds **`Exclude Category`** and **`Type`**.
+
+**The grid, on two live rules:**
+
+| | Level | Minimum | Maximum | Approver | Approval Type |
+|---|---|---|---|---|---|
+| rule A | Level 1 | `0` | `50,00,00,000` | `Varun Arora - varun@ekostay.com` | `-Select-` |
+| rule B | Level 1 | `0` | `5,000` | `Rohan - rohan.ops@ekostay.com` | `-Select-` |
+| rule B | Level 2 | `5,001` | `50,00,00,000` | `Sohail Mirchandani - sohail.m@ekostay.com` | `Any` |
+
+Grid columns: `Level` · `Minimum Amount` · `Maximum Amount` · `Approver` ·
+`Approval Type`, with `+ Add New`. `Approver` is a **multi-select** chip box, which is
+what makes `Approval Type` meaningful — a level can hold more than one person.
+
+**All three approvers resolve against our 475 employees, by email, exactly:**
+
+```
+Varun Arora         varun@ekostay.com       OK   phone present
+Rohan               rohan.ops@ekostay.com   OK   phone present
+Sohail Mirchandani  sohail.m@ekostay.com    OK   phone present
+```
+
+So the `Name - email` display format is directly parseable and the join is by email,
+not by name — which matters, because §18's lesson is that names do not join.
+
+### 11.8 `Maximum_Amount` confirmed as inert, and why that is nearly harmless
+
+§11 recorded that Creator never consults `Maximum_Amount`. The grid confirms the
+bands are **contiguous and inclusive** — `0-5,000` then `5,001-50,00,00,000`, with
+₹50 crore as the sentinel ceiling. On data shaped like that, greatest-minimum and
+"the band containing the amount" give the same answer, which is exactly why ignoring
+the maximum has never surfaced as a bug.
+
+`ApprovalRouter::bandWarnings()` now reports the three shapes where they part company
+— gaps, overlaps, inverted bands — **without changing the routing**, because Creator
+routes by minimum and reproducing that is the rule. Nine tests in
+`tests/Unit/ApprovalBandTest.php`.
+
+**And a fourth shape, which is not a misconfiguration and is the interesting one.**
+
+```
+Level 1   0     - 5,000              a 5,000.50 payment falls in NEITHER band
+Level 2   5,001 - 50,00,00,000       and greatest-minimum sends it to LEVEL 1
+```
+
+**The bands are whole-rupee; payment amounts are not.** §6.3 splits at paisa scale
+and Pending Approvals renders `Gross Amount` at three decimals (₹58,614.140), so
+amounts in the open interval `(5000, 5001)` are real — and every one of them is
+approved by the **lower** authority, not the higher. The band above ₹5,000 never sees
+them.
+
+This was found by writing the assertion the wrong way round: the test asserted
+₹5,000.01 routes to Level 2, because that is what a reader assumes, and it failed.
+The test now asserts `Level 1` with a comment saying it is surprising rather than
+right. **The exposure is one rupee per boundary**, so it is small in money and
+unbounded in principle — a rule with a boundary at ₹5,00,000 has the same one-rupee
+window, and nothing stops a payment being written into it deliberately.
+
+`[TODO]` for Husain: should a sub-rupee amount at a band boundary route **up**? It is
+a one-line change here and a policy question there.
+
+### 11.9 The header fields are a BROWSER-SIDE MIRROR of the grid — `Accounts.ds:38118`
+
+This is the finding that changes how §11 should be read. `Level_1_2_Approval` and
+`Level_2_3_Approval` — the two fields routing actually branches on — are **not
+independently maintained**:
+
+```deluge
+on user input of Approvers.Approval_Type
+    if (row.Level == "Level 2")
+        input.Level_1_2_Approval = row.Approval_Type;
+    else if (row.Level == "Level 3")
+        input.Level_2_3_Approval = row.Approval_Type;
+```
+
+**The grid is the source; the header is a copy.** And like §10's Block Payment Date,
+that handler is `on user input` — **browser-side only**. It fires when a human edits
+the field in the form and never for a record written by API, by script, or before the
+handler existed.
+
+**All 16 live rules show both headers BLANK while the grid holds `Any` on Level 2.**
+So in practice `lvl12` is never `"ALL"`, and every Level 2 payment routes to
+`[Level 2]` alone — **Level 1 never participates in a two-level approval.** On rule B
+that happens to match the intent (`Any` on Level 2 means Level 2 alone), so the stale
+mirror is currently harmless. It stops being harmless the moment someone sets Level 2
+to `All` through a path that does not fire the handler: the header stays blank,
+routing walks `[Level 2]`, and **an approver the configuration asked for is skipped.**
+
+`ApprovalRouter::mirrorWarnings()` reports the disagreement and **still routes on the
+header, as Creator does.** Reading the grid instead would be truer to intent and
+would change who approves money — a policy decision, not a refactor. Surfaced rather
+than silently corrected, the same choice `SplitValidator` makes with its sub-rupee gap.
+
+### 11.10 A null `Approval Type` on Level 1 is DELIBERATE — and nearly cost us
+
+The same handler ends:
+
+```deluge
+else if (row.Level == "Level 1")
+    alert "Approval Type is Not Applicable for Level 1 ";
+    row.Approval_Type = null;
+    disable row.Approval_Type;
+```
+
+Creator **nulls and disables** it. The grid agrees: Level 1 reads `-Select-` on both
+rules while Level 2 reads `Any`.
+
+Worth recording as a near miss. Reading the screenshots alone, Level 1's blank
+`Approval Type` looked like §11's fourth blank-as-real-state, and the conservative
+repair looked obvious — treat a null type as `All`, on the reasoning that requiring
+more approvals fails safe. `PendingApproval::currentLevelSatisfied()` was about to be
+changed that way. **It would have stalled every Level 1 approval in the system**,
+because Level 1's type is *supposed* to be null and "any one of the listed approvers
+ticks" is the only sensible reading of it.
+
+The DS grep took a minute and the guess would have been wrong. The existing
+`!== 'All'` default is correct and now has a comment saying why it must stay.
+
+### 11.11 `Type` is an Include/Exclude radio with NEITHER option selected
+
+The detail panel's last field is `Type`, blank. The edit form shows why:
+
+```
+Type     ( ) Include     ( ) Exclude
+```
+
+**A two-option radio with neither chosen**, on the field that decides whether
+`Item Category` is an allow-list or a deny-list. And the rule carries **both**
+`Item Category` and a separate `Exclude Category` list, so there are two exclusion
+mechanisms and an unset switch between them.
+
+The two rules are near-complements, which is how the 16 records partition the space:
+
+| | `Item Category` | `Exclude Category` |
+|---|---|---|
+| rule A | `PHOTOSHOOT` | ~all ~135 categories, alphabetical |
+| rule B | ~all categories | `OWNER RENT`, `PHOTOSHOOT` |
+
+`ApprovalRouter::matchRule()` already declines to implement `scope_type` and
+`exclude_categories`, saying so in its docblock and noting §3.1's warning against
+implementing all the category-scoping mechanisms at once. **That decision stands and
+is now better justified**: the switch governing them is unset in live data, so there
+is no observed behaviour to reproduce. `[TODO]` unchanged.
+
+### 11.12 The notification path — DoubleTick, and what that means for the key
+
+Husain, 27-Aug-2026: *"if I select an approver and I have contact numbers in the admin
+table… in payments module, the payable amount falls under that approver, they receive
+a whatsapp message for which we have doubletick integrated."*
+
+That closes two open threads:
+
+- **The `Messageid` / `Messageid_Level_2` / `Messageid_Level_3` fields** on the
+  Payment form, and the `Message ID` column on Pending Approvals (§5), are
+  **DoubleTick WhatsApp message ids** — one per level. Recorded as "outbound WhatsApp
+  message ids, not interpreted"; now confirmed as to provider
+- **The approver's phone comes from Employee_Master, not from the rule.** The rule
+  stores the person; the number is looked up. Our `employees` table has the column
+
+**And it changes the shape of a defect on the register.** The hardcoded DoubleTick API
+key at `Accounts.ds:22851` is not an incidental credential in a utility function — it
+is **the notification path for every approval in the system**. Two consequences:
+
+1. **Rotating it will stop approval notifications** unless the new key is deployed in
+   the same change. The register entry said "needs rotating" as though it were
+   isolated; it is not, and rotating it blind would silently stop approvers being
+   told they have work. Still rotate it — a live key in a git-ignored file is not a
+   control — but rotate it *with* the deployment, not before it
+2. **Only 81 of 475 employees have a phone number.** All three current approvers do.
+   But an approver selected from the other 394 would be saved successfully, routed to
+   correctly, and **never notified** — the approval would sit in the queue with
+   nobody aware of it. That is a plausible contributor to §5's finding that the
+   Pending Approvals queue is over 1,000 rows and never clears. Worth checking
+   against the live queue: **are the stuck approvals assigned to approvers with no
+   phone number?**
+
+### 11.13 Smaller findings
+
+- `Module` is `Payment` on both visible rules, confirming §11's "exactly one value"
+- **`Villa Name` order differs between the report and the form.** The report lists
+  ~45 Alibaug villas in insertion order (`Pinewood Villa`, `EKOSTAY- Bali Villa`,
+  `Casa Royale`, …); the edit form sorts them alphabetically (`7 Palms`,
+  `Alibaug Central`, `Alpine Villa`, …). Since `All_Approvals.Villa Name` is a
+  **comma-packed string** and record 8 contains `,Nature,Nature,Nature,`,
+  multiplicity and order live in the raw string — **read the report, not the form,
+  when either matters**. Confirms the note in `CLAUDE.md`
+- The `Approvers` report column reads `Level 1` — the **flattened** subform, showing
+  the first row's `Level` and nothing else. Creator's own UI doing the §12
+  flattening, as on Pending Approvals' `Approved By` (§5)
+- **New preserve-spellings candidates** from the villa list: `Sea Shore Villa 8 BHK`
+  (space) beside `Sea Shore Villa 12BHK` (no space), and `Kihim 6BHK` (no space)
+  beside `Jungle Beach 8 BHK` (space). Inconsistent BHK spacing within one rule
+- This report leads with `Module`, not `Added Time` — the other three backend/queue
+  reports (§4.1, §5, §7.6) all lead with the platform stamp
 
 ---
 
@@ -1550,3 +3654,255 @@ else. The CSV itself should not be committed carelessly, for the same reason.
 - The `Account_Details` grid, `Secondary` (list), `Books ID`, `Vendor Ledger`,
   `Documents`, `Remarks`, `UPI ID`, and the PF/PT/ESIC flags: **all in spec §13A, and
   none of them in this report export.** The vendor table is seeded, not complete.
+
+---
+
+## 19. The live sync, run 28-Aug-2026 — 300,079 rows across 19 views
+
+Husain: *"I need the EKS/PY series and I need you to fetch live data from creator now on
+the basis of the table in analytics… I want this implemented for all the modules."*
+
+Fetched. **Nothing was written to the database** — an import is a separate decision
+(§3: fix dirty data with a migration and a mapping table, never silently on read), and
+only the approvals importer is written so far.
+
+| view | rows | against what we held |
+|---|---|---|
+| `auto_numbers` | 1 | the counter |
+| `approval` | **16** | 0 |
+| `approval_approvers` | **24** | 0 — the grid the router refuses without |
+| `preferred_approver` | **0** | nobody has ever used that form |
+| `pending_approvals` | **14,815** | 0 |
+| `pending_approvals_approved_by` | **24,035** | 0 |
+| `payment_split_payments` | **73,361** | 2 |
+| `payment_bill_payments` | **11,804** | 0 |
+| `payment_bills` | **89,433** | 0 |
+| `bank_transactions` | **48,245** | 0 |
+| `bank_transactions_matching` | 0 | 0 |
+| `banks` | 112 | — |
+| `backend_expenses` | **34,602** | 0 |
+| `backend_payments` | **1,542** | 0 |
+| `expense_observation` | **1,570** | 0 |
+| `payment_request` | **73** | 0 |
+| `coa` | 144 | **144 — exact match** |
+| `location` | **44** | **30** |
+| `villa` | **258** | **254** |
+
+### 19.1 EKS/PAY IS A THIRD SERIES, AND WE HAVE NO COUNTER FOR IT
+
+Husain: *"EKS/PAY is COA Accounts payable and EKS/PY is Expense."*
+
+**Checked, and the rule holds absolutely in the direction that matters:**
+
+```
+EKS/PAY on Accounts Payable   1,344        EKS/PAY on Expense   0
+EKS/PY  on Accounts Payable   1,187        EKS/PY  on Expense   13,824
+```
+
+Every one of the 1,344 `EKS/PAY` payments is on Accounts Payable and **none** is on
+Expense. The converse is not total — 1,187 Accounts Payable payments carry `EKS/PY` —
+which reads as `EKS/PAY` being the **newer** AP series with older AP payments predating
+it. Max `EKS/PAY` number: **1,781**.
+
+The prefix census across all 52,639 payments:
+
+```
+EKS/Haewaya   33,408
+EKS/PY        16,490
+EKS/PAY        1,344
+REFUND-*       (derived from the booking, not allocated — §7.1)
+```
+
+**THE GAP.** `auto_numbers` holds `payment_no` (EKS/PY), `haewaya_no` and
+`books_payment_no`. There is **no counter for `EKS/PAY`**, and the Analytics
+`Auto Numbers` view does not carry one either — its 11 columns are Payment / Haewaya /
+Books series and numbers plus the platform stamps. But the Auto_Numbers **FORM**
+declares a fourth pair, `External_Payment_Series` / `External_Payment_No`
+(`Accounts.ds:234-292`, §6.14), which no report and no view shows.
+
+**So `EKS/PAY` is almost certainly the `External_Payment` series** — it is the one
+series in the data with no counter, and `External_Payment` is the one counter with no
+series. `Accounts.ds:20502` mints from it with the same padding and clash guard as
+`EKS/PY`, and for a counter near 1,781 those pad branches are dead code exactly as
+§7.6's D3 records for the main series.
+
+`[TODO]` **This now blocks cutover for Accounts Payable payments.** One screenshot of
+the Auto Numbers **form** (not the report) gives `External Payment Series` and
+`External Payment No`, and without them this app cannot mint an AP payment number.
+Recorded as a strong inference, not a fact: nothing seen so far names `EKS/PAY` as the
+external series.
+
+### 19.2 The split legs answer the blank-column question
+
+`payment_split_payments` carries, per leg:
+
+```
+ID · PARENT_ID · Villa Name · Item Category · Billing Cycle · Percent
+Gross Amount · GST Amount · Payable Amount · TDS Amount
+backend Amount · Backend TDS Amount · Backend GST Amount
+PF Amount · ESIC Amount · PT Amount
+```
+
+**`Villa Name`, `Item Category` and `Billing Cycle` are 18-digit Creator record ids**,
+not names — which is better than names, because they resolve against our `creator_id`
+columns without the trim-and-hope that §7C.5's leading-space villas require.
+
+73,361 legs against 52,639 payments, 1 to 11 legs per payment in the sampled range. So
+**this is why `Villa Name` and `Billing Cycles` render blank on Pending Approvals**
+(§ the module's own note): the attribution was never on the parent, and we imported the
+parent only. §12's rule — import the child rows — with the cost of ignoring it now
+measured at 73,361 rows.
+
+**A spelling for the preserve list:** `backend Amount` has a **lowercase b** while
+`Backend TDS Amount` and `Backend GST Amount` are capitalised. Same triplet, three
+columns, two casings.
+
+### 19.3 Three counts that disagree with what we hold
+
+- **`location` 44 against our 30.** `CLAUDE.md` reasons that the villa export is a
+  villa-scoped view of the Location master and therefore under-reports it. Now
+  measured: **it under-reports by 14.** Every villa and location on every screen has
+  resolved so far, so nothing is broken — but 14 locations exist that no villa names
+- **`villa` 258 against our 254.** Four more, and the villa view may also be
+  form-level rather than the 18-of-40-field report ours came from
+- **`coa` 144 against our 144 — exact.** The one master that needs no attention
+- **`pending_approvals` 14,815.** §5 called the queue "over 1000 rows" from a footer
+  reading `Showing 1000 of ###`. The `###` was **14,815**, so the queue that "should be
+  short" is fourteen times worse than recorded
+- **`preferred_approver` 0 rows.** The form §7E traced through the DS has never been
+  used, which is consistent with the field being blank on every sampled record
+
+### 19.4 THE SLOT GUARD FIRED, ON A MINUTE IT COULD NOT SEE THIS MORNING
+
+Mid-sync, the guard refused:
+
+```
+Minute :48 Asia/Kolkata belongs to the expense tracker (its minutes: :00, :12, :24,
+:42, :48). … it caused a two-day stall once.
+Stopped before pending_approvals. 0 of 2 views were exported; re-run for the rest.
+```
+
+**IST :48 is UTC :18, one of the three slots the guard left unprotected until it was
+fixed an hour earlier.** So the timezone fix earned itself back inside the same session.
+
+And then the same class of error recurred, in the operator rather than the code. A shell
+`TZ=Asia/Kolkata date` was used to decide the window and reported `:18` while PHP
+reported `:48`:
+
+```
+shell, no TZ        17:49      <- correct; the machine's local time IS IST
+shell TZ=Kolkata    12:19      <- WRONG. Git Bash returns UTC here
+php UTC             12:19
+php Asia/Kolkata    17:49      <- correct
+```
+
+**Git Bash on Windows does not honour `TZ=` the way a Linux shell does**, so a reading
+taken that way is UTC wearing an IST label — which is precisely the bug that had just
+been fixed in the guard, reproduced by hand thirty minutes later.
+
+**Use PHP for every clock reading in this project.** The machine's bare `date` is IST
+and correct; `TZ=` is not. Both times, the guard was what caught it.
+
+---
+
+## 20. `EKS/PAY` is a RETIRED series — corrected 28-Aug-2026
+
+Husain: *"in bills, when a bill is created and then in payments when that bill number is
+added, the COA becomes Accounts Payable, hence EKS/PAY series is created for the
+payment. Check for this logic in the codes."*
+
+Checked. **The semantics are exactly right and the series has changed.** §19.1 called the
+missing `EKS/PAY` counter a cutover blocker; it is not one, and that claim is withdrawn.
+
+### 20.1 The COA half is in the code, verbatim
+
+`Accounts.ds:19018`, `Creator.CreatePaymentfromBill(int recID)`:
+
+```deluge
+fetBill = Bills[ID == recID];
+fetCOA  = COA[Account_Name == "Accounts Payable"];     // <- forced, exactly as described
+fetAuto = Auto_Numbers[ID != null];
+Series  = ifnull(fetAuto.Payment_No, 1);
+BkngNo  = fetAuto.Payment_Series + "/" + Series;        // <- but EKS/PY, not EKS/PAY
+fetAuto.Payment_No = ifnull(fetAuto.Payment_No, 1) + 1;
+```
+
+So a bill-derived payment IS forced onto Accounts Payable — and it takes
+`Payment_Series`, which is `EKS/PY`. `EKS/PAY` appears nowhere in `Accounts.ds` as a
+literal, and only four series fields exist: `Payment_`, `Haewaya_`, `Books_Payment_` and
+`External_Payment_`.
+
+### 20.2 THE SERIES WAS SWAPPED IN Q2 2026, and the data shows the exact quarter
+
+```
+payment_date range      EKS/PAY      2025-09-01 .. 2026-05-05   (stopped)
+                        EKS/PY       2023-08-01 .. 2026-09-03   (ongoing)
+                        EKS/Haewaya  2025-09-01 .. 2026-08-25   (ongoing)
+```
+
+Accounts Payable payments by series, by quarter:
+
+| quarter | `EKS/PAY` | `EKS/PY` |
+|---|---|---|
+| 2025 Q3 | 105 | 28 |
+| 2025 Q4 | **532** | 4 |
+| 2026 Q1 | **626** | 6 |
+| 2026 Q2 | 81 | **709** |
+| 2026 Q3 | — | **434** |
+
+**`EKS/PAY` was the Accounts Payable series from Sep 2025 through Q1 2026 and was
+replaced by `EKS/PY` in Q2 2026.** Its last payment is 05-May-2026, nearly four months
+before this was written, and its maximum number — **1,781** — is final.
+
+That reconciles everything: the rule Husain describes was the live behaviour, the code
+now implements the same *semantics* under a different series, and the 1,187 Accounts
+Payable payments carrying `EKS/PY` (§19.1) are simply the ones issued after the swap.
+
+### 20.3 What this changes
+
+- **`EKS/PAY` needs NO counter and is not a cutover blocker.** §19.1 said one screenshot
+  of the Auto Numbers form "unblocks cutover for Accounts Payable payments". Wrong: AP
+  payments have taken `EKS/PY` since Q2 2026, and `EKS/PY` is the counter already guarded
+  and already decided. Nothing was built on the wrong assumption, but the ask was wrong
+  and is withdrawn
+- **An importer must still ACCEPT `EKS/PAY` on read.** 1,344 historical payments carry it
+  and all of them are on Accounts Payable — a prefix whitelist that only knows the two
+  live series would silently drop them
+- **`External_Payment_Series` is a DIFFERENT thing**, and still unobserved. Its only
+  reader is `Accounts.ds:20501` inside the `External.*` family
+  (`External.UpdatePaymentFromExternal`, `External.DeletePaymentFromExternal`) — an
+  external-system payment API, not the bill path. Worth a reading before anything writes
+  through that API; it does not block cutover
+
+### 20.4 And `External Payment Series` IS a report column, just off-screen
+
+§6.14 said the fourth series is one "no screen displays". Not quite —
+`Accounts.ds:11738-11747` lists the Auto Numbers report columns in order:
+
+```
+Payment_Series · Payment_No · Books_Payment_Series · Books_Payment_No
+Haewaya_Series · Haewaya_No · ID · External_Payment_Series · External_Payment_No
+```
+
+**They come AFTER `ID`.** So they are on the report and simply off the right edge of the
+screenshot — which is `CLAUDE.md`'s own warning that `ID` is not always last, biting on
+the one report where it mattered. Scrolling that report right is enough; no form export
+is needed.
+
+The Analytics `Auto Numbers` view is the thing that genuinely lacks them: its 11 columns
+stop at the three live series. §11's per-view instability, on a view built before those
+fields existed.
+
+### 20.5 Two notes so the next reader does not repeat the detour
+
+**`Payment_Bills` (89,433 rows) is NOT the settles-which-bills grid.** Its 33,684 parents
+are 99% `EKS/Haewaya`, which reads as Analytics exploding the `Bill_No1` multi-select
+rather than a subform. Testing the bill-to-series correlation against it produced a
+confidently wrong answer before the shape was checked.
+
+**`Payment_Bill Payments` (11,804 rows) is the real grid.** Its keys are `Bill No`,
+`Bill No_1`, `Villa Name`, `Check In Date`, `Check Out Date`, `Booking No.`,
+`UnPaid Amount`, `Payable Amount`, `Pay Full` — and `Payable Amount` there is the clamped
+allocation of §6.3. It also carries **`Bill No` AND `Bill No_1`**, confirming from a
+second direction the duplicate `Bill No` pair first seen on Backbend Payments (§7.5),
+where both copies were blank and canonicality could not be decided.

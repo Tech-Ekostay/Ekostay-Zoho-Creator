@@ -176,6 +176,172 @@ final class ZohoViews
                 .'workspace has no view for at all.',
         ],
 
+        /*
+         * ---- THE CREATOR FORM TABLES, discovered 28-Aug-2026 -----------------
+         *
+         * `zoho:views` enumerated the workspace through the METADATA api (no export
+         * slot) and found 413 Tables where this registry knew 16. Every Accounts form
+         * this rebuild has been documenting has a table, and two of them correct
+         * standing claims in our own code and docs:
+         *
+         *   `Approval_Approvers`      `ApprovalRouter` refuses to route because "the
+         *                             amount bands and approver identities are in no
+         *                             export we hold". They are in this view.
+         *   `Payment_Split Payments`  the CHILD rows. §12 says never import from a
+         *                             one-row-per-parent view, and the reason
+         *                             `payments.villa_id` is null on 52,637 of 52,639
+         *                             rows is that we imported the parent only.
+         *
+         * SIZE IS UNMEASURED FOR ALL OF THESE. Every accounts-side view measured so
+         * far has been larger than expected — `payment_master` OOM'd at 512MB — so the
+         * subform tables are flagged `large` on the same precautionary basis, and the
+         * genuinely small config tables are not.
+         */
+
+        // The counter. One row, and the reason it is here: `auto_numbers.payment_no`
+        // must be reconciled from a LIVE read at cutover, not from a stale export
+        // (addendum §6.13). This view IS that live read.
+        'auto_numbers' => [
+            'id' => '443703000001623488',
+            'workspace' => 'accounts',
+            'label' => 'Auto Numbers',
+            'note' => 'ONE ROW: the four payment series. Cheapest useful export in the '
+                .'account and the input to the cutover takeover.',
+        ],
+
+        // ---- approvals ---------------------------------------------------
+        'approval' => [
+            'id' => '443703000001623056',
+            'workspace' => 'accounts',
+            'label' => 'Approval (rule headers)',
+            'note' => '16 rules. Module / Level 1 & 2 Approval / Level 2 & 3 Approval and '
+                .'the comma-packed scope columns.',
+        ],
+        'approval_approvers' => [
+            'id' => '443703000001623470',
+            'workspace' => 'accounts',
+            'label' => 'Approval_Approvers (the grid)',
+            'note' => 'THE GRID ApprovalRouter WAS BUILT TO REFUSE WITHOUT. Level, Minimum '
+                .'Amount, Maximum Amount, Approver, Approval Type. Registering it does not '
+                .'change the router: the header fields it routes on are a browser-side '
+                .'mirror of this grid (§11.9), so importing this makes the divergence '
+                .'measurable rather than inferred.',
+        ],
+        'pending_approvals' => [
+            'id' => '443703000001623434',
+            'workspace' => 'accounts',
+            'label' => 'Pending Approvals',
+            'large' => true,
+            'note' => 'The live queue is over 1,000 rows and never clears (§5), so this is '
+                .'large despite being a work queue.',
+        ],
+        'pending_approvals_approved_by' => [
+            'id' => '443703000001623182',
+            'workspace' => 'accounts',
+            'label' => 'Pending Approvals_Approved By (subform)',
+            'large' => true,
+            'note' => 'One row per approver per level. The report flattens it to one name '
+                .'(§5); this is what it flattens from.',
+        ],
+        'preferred_approver' => [
+            'id' => '443703000001623038',
+            'workspace' => 'accounts',
+            'label' => 'Preferred Approver',
+        ],
+
+        // ---- the payment child grids, which is where the detail lives ----
+        'payment_split_payments' => [
+            'id' => '443703000001623074',
+            'workspace' => 'accounts',
+            'label' => 'Payment_Split Payments (the legs)',
+            'large' => true,
+            'note' => 'THE CHILD ROWS §12 SAYS TO IMPORT. villa x item category x billing '
+                .'cycle per payment. Expect >100k rows against 52,639 payments, and expect '
+                .'it to answer why villa and billing cycle are blank on every parent.',
+        ],
+        'payment_bill_payments' => [
+            'id' => '443703000001623254',
+            'workspace' => 'accounts',
+            'label' => 'Payment_Bill Payments (which bills a payment settles)',
+            'large' => true,
+            'note' => 'The grid whose Payable_Amount is CLAMPED to the outstanding balance '
+                .'rather than computed (§6.3, resolved 28-Aug-2026). Distinct from '
+                .'Split Payments.',
+        ],
+        'payment_bills' => [
+            'id' => '443703000001623092',
+            'workspace' => 'accounts',
+            'label' => 'Payment_Bills',
+            'large' => true,
+        ],
+
+        // ---- the modules documented in §7A-7I but never sourced -----------
+        'backend_expenses' => [
+            'id' => '443703000001623326',
+            'workspace' => 'accounts',
+            'label' => 'Backend Expenses',
+            'large' => true,
+            'note' => '140 fields, 136 of them text (§13B). Go zero-time dates and packed '
+                .'multipe_hccc_names both need handling at ingest, not after.',
+        ],
+        'backend_payments' => [
+            'id' => '443703000001623200',
+            'workspace' => 'accounts',
+            'label' => 'Backend Payments (the refunds channel)',
+            'large' => true,
+            'note' => 'REFUND-{product}-{bookingId}, over 1,000 rows (§7.1).',
+        ],
+        'payment_request' => [
+            'id' => '443703000001623308',
+            'workspace' => 'accounts',
+            'label' => 'Payment Request',
+            'note' => '72 rows on the live report (§6). Small.',
+        ],
+        'expense_observation' => [
+            'id' => '443703000001623506',
+            'workspace' => 'accounts',
+            'label' => 'Expense Observation',
+            'large' => true,
+            'note' => 'Over 1,000 rows; the report is grouped by villa with subtotals (§7C).',
+        ],
+        'payments_scheduled' => [
+            'id' => '443703000001623398',
+            'workspace' => 'accounts',
+            'label' => 'Payments Scheduled',
+            'large' => true,
+            'note' => 'Schedule Payments is still gated on §11 payroll configuration. This '
+                .'is the data, not the permission to build the screen.',
+        ],
+        'bank_transactions_matching' => [
+            'id' => '443703000001623362',
+            'workspace' => 'accounts',
+            'label' => 'Bank Transactions_Matching Transactions (subform)',
+            'large' => true,
+            'note' => 'The related list that read "No records found" on the sampled bank '
+                .'transaction (§7B.1).',
+        ],
+
+        /*
+         * NOT REGISTERED, deliberately, though `zoho:views` found them:
+         *
+         *   `payment_testing`, `payment_extractions`, `paymentlinks`,
+         *   `payment_response_for_website`, `pending_balances_cih`, `count_requests`
+         *       another application's operational tables, not Creator forms.
+         *
+         *   `payment_process_locks`
+         *       LOOKS RELEVANT and is left alone until understood. §7I.2 flagged a
+         *       `Sync Locks Report`; if this is the same mechanism then our scheduler
+         *       should READ it rather than invent a second one, and reading it wrongly
+         *       is worse than not reading it.
+         *
+         *   every `(Zoho Books)` view
+         *       the Books plane is org 60040119506 and a different tenant (§7B.5).
+         *
+         *   the Pivots, QueryTables, AnalysisViews and Dashboards
+         *       derived, and `all_payments` is the standing lesson about exporting a
+         *       heavy-join QueryTable.
+         */
+
         // ---- live workspace: another app's domain, registered for completeness
         'bookings' => [
             'id' => '443703000005403993',
@@ -286,17 +452,56 @@ final class ZohoViews
      * only. It cannot see their actual job table, and §7.1 asks for the schedule to
      * be agreed with Tushar directly. Do that as well.
      */
-    public static function assertScheduleIsClear(int $minute): void
+    public static function assertScheduleIsClear(?\Illuminate\Support\Carbon $at = null): void
+    {
+        $at ??= \Illuminate\Support\Carbon::now();
+
+        $zone = (string) config('services.zoho.foreign_cron_timezone', 'Asia/Kolkata');
+
+        self::assertMinuteIsClear((int) $at->copy()->setTimezone($zone)->format('i'));
+    }
+
+    /**
+     * The primitive: is this minute-of-hour, **already expressed in the foreign cron's
+     * timezone**, one of theirs?
+     *
+     * ---------------------------------------------------------------------------
+     * THE TIMEZONE IS THE WHOLE POINT, AND THIS GUARD GOT IT WRONG UNTIL 28-Aug-2026.
+     *
+     * `app.timezone` is **UTC** and the expense tracker's cron runs on **IST**, which is
+     * UTC+5:30 — an offset with a THIRTY MINUTE component. So a minute-of-hour is not
+     * the same number in both zones, and the guard, which compared `Carbon::now()`'s UTC
+     * minute against IST cron minutes, protected the wrong slots:
+     *
+     *     his cron (IST)   :00  :12  :24  :42  :48
+     *     the same in UTC   :30  :42  :54  :12  :18
+     *     guard blocked    :00  :12  :24  :42  :48   <- UTC
+     *
+     * It therefore blocked :00, :24 and :48 for no reason, and **left :18, :30 and :54
+     * unprotected — three of his five slots.** Only :12 and :42 were covered, and only
+     * by the coincidence that they differ by exactly 30.
+     *
+     * Found by noticing that `zoho:sync` printed `(:05)` while the shell clock said
+     * `:35`. The exports that ran did so at IST :35 and :37, clear in either reading, so
+     * nothing collided — but the guard had not been protecting what it claimed to.
+     *
+     * The lesson is narrow and worth keeping: **a cron minute is a wall-clock minute in
+     * somebody's timezone.** Comparing it against another zone's minute is only safe
+     * where the offset is a whole number of hours, and India's is not.
+     */
+    public static function assertMinuteIsClear(int $minute): void
     {
         $taken = (array) config('services.zoho.foreign_cron_minutes', []);
+        $zone = (string) config('services.zoho.foreign_cron_timezone', 'Asia/Kolkata');
 
         if (in_array($minute, $taken, true)) {
             throw new RuntimeException(sprintf(
-                'Minute :%02d belongs to the expense tracker (its minutes: %s). The Analytics '
-                .'export concurrency limit is ACCOUNT-WIDE, not per application, so scheduling '
-                .'here would compete for the same slots and can break both apps — it caused a '
-                .'two-day stall once. Pick another minute AND agree it with Tushar.',
+                'Minute :%02d %s belongs to the expense tracker (its minutes: %s). The Analytics '
+                .'export concurrency limit is ACCOUNT-WIDE, not per application, so running here '
+                .'would compete for the same slots and can break both apps — it caused a '
+                .'two-day stall once. Wait for another minute AND agree any schedule with Tushar.',
                 $minute,
+                $zone,
                 implode(', ', array_map(fn ($m) => sprintf(':%02d', $m), $taken)),
             ));
         }

@@ -126,6 +126,14 @@ return [
          */
         'foreign_cron_minutes' => [0, 12, 24, 42, 48],
 
+        /*
+         * THE TIMEZONE THOSE MINUTES ARE IN. Not decoration: `app.timezone` is UTC and
+         * IST is UTC+5:30, so a minute-of-hour differs by 30 between the two. Comparing
+         * a UTC minute against these left three of the five slots unprotected until
+         * 28-Aug-2026 — see ZohoViews::assertMinuteIsClear().
+         */
+        'foreign_cron_timezone' => env('ZOHO_FOREIGN_CRON_TIMEZONE', 'Asia/Kolkata'),
+
         // `csv` for anything large — §7.4: loading a 114k-row view as JSON OOM'd
         // the other app's server. `json` stays the default for small views.
         'large_view_format' => env('ZOHO_LARGE_VIEW_FORMAT', 'csv'),

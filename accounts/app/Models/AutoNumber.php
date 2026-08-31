@@ -25,6 +25,11 @@ class AutoNumber extends Model
             'payment_no' => 'integer',
             'books_payment_no' => 'integer',
             'haewaya_no' => 'integer',
+            'external_payment_no' => 'integer',
+            // A dated reading of a system we do not control, not a counter.
+            'live_payment_no_observed' => 'integer',
+            'live_haewaya_no_observed' => 'integer',
+            'live_observed_at' => 'datetime',
         ];
     }
 }

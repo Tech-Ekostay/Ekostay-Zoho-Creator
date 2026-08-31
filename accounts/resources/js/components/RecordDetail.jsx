@@ -44,6 +44,14 @@ export default function RecordDetail({
   loading = false,
   /** Anything the reader needs to know about this record, e.g. merge state. */
   children,
+  /**
+   * Rendered AFTER the field table. `children` renders before it, which is right for
+   * a lead-in and wrong for a subform: Creator shows `Approved By` as a field in the
+   * list and the grid it flattens belongs below, not above.
+   */
+  footer,
+  /** True where a screenshot of THIS report's detail panel settled the field order. */
+  orderVerified = false,
 }) {
   const editable = typeof onEdit === 'function';
 
@@ -103,10 +111,24 @@ export default function RecordDetail({
               </tbody>
             </table>
 
+            {footer}
+
+            {/*
+              CORRECTED 28-Aug-2026. This used to read "No Creator screenshot of a record
+              detail view exists for any report", which was true when written and is not
+              now — Expenses, Pending Approvals, Backbend Payments, Bank and Expense
+              Observations all arrived with detail screenshots, and several of them showed
+              the detail order DIFFERS from the form's. So the claim is per-report, and a
+              report that knows its order is verified says so.
+            */}
             <p className="zc-field-hint" style={{ marginTop: 16 }}>
-              Field order follows the report's own column order. No Creator screenshot of a
-              record detail view exists for any report, so which fields a detail view shows —
-              and in what order — is <strong>inferred</strong>. The values are real.
+              {orderVerified
+                ? <>Field order is <strong>verified</strong> from a screenshot of the live
+                    record detail — which is not the same as the report&rsquo;s column order,
+                    and is not derived from it.</>
+                : <>Field order follows the report&rsquo;s own column order. No screenshot of
+                    this report&rsquo;s record detail exists, so which fields it shows — and in
+                    what order — is <strong>inferred</strong>. The values are real.</>}
             </p>
           </>
         )}

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Domain\Payments\PaymentStatus;
+use App\Models\Concerns\TracksCreatorAudit;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,12 +26,21 @@ use RuntimeException;
 class Payment extends Model
 {
     use SoftDeletes;
+    /*
+     * Creator's four platform fields — Added/Modified Time and User. Not app
+     * fields: Creator maintains them on every record of every form, and every
+     * report can show them. See the trait for why the user half is null until
+     * authorisation exists, and why imported stamps are never overwritten.
+     */
+    use TracksCreatorAudit;
 
     protected $guarded = [];
 
     protected function casts(): array
     {
         return [
+            'added_time' => 'datetime',
+            'modified_time' => 'datetime',
             'requested_date' => 'date',
             'payment_date' => 'date',
             'due_date' => 'date',
@@ -107,6 +117,19 @@ class Payment extends Model
         return $this->belongsTo(Villa::class);
     }
 
+    /**
+     * `Bank Name` on the reports — a COA row, not a separate bank table.
+     *
+     * §17.5 settled that COA doubles as the bank master: 44 rows carry `Bank = true`
+     * and 9 of those are not typed `bank`, so the flag is the authority and the type
+     * is not. Added 27-Aug-2026 because Pending Approvals shows `Bank Name` and
+     * nothing had ever needed to resolve `bank_coa_account_id` before.
+     */
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(CoaAccount::class, 'bank_coa_account_id');
+    }
+
     public function billPayments(): HasMany
     {
         return $this->hasMany(PaymentBillPayment::class)->orderBy('position');
@@ -147,6 +170,27 @@ class Payment extends Model
     }
 
     /** Forward payments only — excludes reversing entries. */
+    /** The approval records for this payment — §8.2's Pending_Approval. */
+    public function pendingApprovals(): HasMany
+    {
+        return $this->hasMany(PendingApproval::class);
+    }
+
+    /**
+     * Compare a status without being defeated by casing.
+     *
+     * NOT a bare `===`. Addendum §10 records Creator disagreeing with itself —
+     * `Payment InProgress` is spelled two ways in the same codebase, `Paid` and
+     * `paid` both occur (36,586 and 4 rows), and three spellings of
+     * Submit/Send/Sent for Approval are all in the picklist. An equality test silently
+     * misses part of the data, which is the defect this method exists to avoid. Bill
+     * carries the same method for the same reason.
+     */
+    public function statusIs(string $candidate): bool
+    {
+        return strcasecmp(trim((string) $this->status), trim($candidate)) === 0;
+    }
+
     public function scopeForward(Builder $query): Builder
     {
         return $query->whereNull('reverses_payment_id');

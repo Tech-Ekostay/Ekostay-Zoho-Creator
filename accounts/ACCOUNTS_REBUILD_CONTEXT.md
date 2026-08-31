@@ -422,9 +422,30 @@ Invoice_Amount = Amount + GST_Amount
 Payable_Amount = Invoice_Amount − (Amount × TDS.TDS_Precentage / 100)
 ```
 
-`[TODO]` **Which is authoritative for Bills?** The Bills version subtracts `Paid_Amount`
-(Payable = outstanding balance); the Payment version does not (Payable = invoice net of TDS).
-Different quantities, same field name.
+~~`[TODO]` **Which is authoritative for Bills?**~~ **ANSWERED 28-Aug-2026, and the question
+was malformed.** There are not two competing formulas for one field — there are two
+DIFFERENT FIELDS that share a name because they live on different objects:
+
+| where | how it is set | what it means |
+|---|---|---|
+| `Bill.Payable_Amount` | `InvoiceAmount - ifnull(TDSTotal,0)` (`Accounts.ds:22490`, with `Paid_Amount = 0` set on the next line) | invoice net of TDS |
+| `Payment.Payable_Amount` | `Invoice_Amount - (Amount × TDS%/100)` (the form handler above) | invoice net of TDS — **the same quantity** |
+| `Bill_Payments[].Payable_Amount` | **clamped**, not computed: `Accounts.ds:28243-28259` caps it at `row.Bill_Amount` and at `balAmount`, alerting *"Payable Amount Can't be more than Bill Amount"* and *"Payable Amount is more than the Balance Amount"* | how much of THIS bill THIS payment pays |
+
+So the header formula is consistent across Bill and Payment, and it is confirmed a third
+time by the delete archive, which recomputes `Amount + GST_Amount - TDS_Amount`
+(addendum §7F.3) — algebraically identical.
+
+The "subtracts `Paid_Amount`" behaviour is not a formula at all: it is a **ceiling on a
+user-entered allocation** in the `Bill_Payments` subform. Nothing computes
+`invoice - paid`; the user types an amount and Creator refuses to let it exceed the
+outstanding balance.
+
+**What this means for the rebuild.** The header field is a derived total and should be
+computed, never stored from input. The subform field is an input with a validated
+ceiling. Note `Bill_Payments` is a different grid from `Split_Payments` — the first is
+which bills a payment settles, the second is the villa × category × cycle allocation that
+`SplitAllocator` owns — so this clamp does not touch the split arithmetic.
 
 **`Split_Equally == true`** distributes with the **remainder on the last row**:
 ```
@@ -669,7 +690,16 @@ absence, so a glance at those three tabs would close it properly.
 | All Backend Expenses | `Backend_Expenses` | **140** |
 | All Expense Observations | `Expense_Observation` | 10 |
 
-`[TODO]` Does anyone open Backend Expenses, or is it a sync landing table?
+~~`[TODO]` Does anyone open Backend Expenses, or is it a sync landing table?~~
+**ANSWERED 27-Aug-2026 — it is a landing table whose human-facing purpose has never
+been exercised.** It is reachable (second in the nav rail), it carries a per-row
+`Update` button, and Husain opened it to screenshot it. But the three fields a human
+would set are untouched on every row seen: `Matched Payments` empty, `dup_checked`
+false, `dup_key` empty, `cron_event_duplicate_bill` 0. `Payment` is populated, and
+populated at ingest rather than by hand — rows created today already carry their
+`EKS/Haewaya` number. So: **a sync landing table with a matching UI nobody uses.**
+That supports §13B.2's recommendation to surface it inside Bank Reconciliation rather
+than as its own page. Addendum §4.
 
 ### 9.2 One form serving both types, and no edit page
 
@@ -1094,8 +1124,10 @@ Details share the display label "UPI ID".
 
 `[DS]` **140 top-level fields, 136 of them declared `type = text`** — every amount, date and
 boolean included. This is a landing table for a third-party payment provider's transaction
-feed, not a designed form. `[UI]` The detail panel lists fields **alphabetically**, confirming
-no layout was ever applied.
+feed, not a designed form. `[UI]` The detail panel is in **form field order**, which turned out to be
+**two alphabetical runs then a hand-added tail** — not one alphabetical list. The
+hand-added tail holds every Creator-native field and all three live textarea copies;
+see addendum §4.3, which corrects this and closes the duplicate-pair `[TODO]`.
 
 **Provider identity, from field names** `[DS]`: `rzp_payout_id` (Razorpay), `rbl_trn_id` (RBL
 Bank), `bbps_txn_ref_id` (Bharat BillPay), `pg_order_id`, `pg_payment_id`, `dyn_qr_ref_id`,
@@ -1111,10 +1143,14 @@ into the provider's schema.
 bill_upload, bill_verified, admin_verified, duplicate_bill, api_charges.
 
 **Links out**: `Payment` → one payment, `Matched_Payments` → a **list** of payments.
+The `Payment` links are the **`EKS/Haewaya` series**, and the live series is ≥ 33501 while
+`auto_numbers.haewaya_no` holds 33294 — addendum §4.10, which must be settled before any
+write path touches that counter.
 `[TODO]` Does one backend expense ever match several payments, or is the list vestigial?
 
-**Report columns** `[UI]`, in order: Update (button) · date · Payment · Added Time ·
-receiver_details · dr_amount · fk_m_hccc_id · multipe_hccc_names · remark_cat_name ·
+**Report columns** `[UI]`, in order — **32 columns, order confirmed end to end
+27-Aug-2026** (addendum §4.1): Update (button) · date · Payment · Added Time ·
+receiver_details · dr_amount · fk_m_hccc_id · multipe_hccc_names · **multipe_hccc_names** (a second, blank copy — verified 27-Aug-2026, addendum §4.1) · remark_cat_name ·
 receiver_name · tai_vendor_name · receiver_upi_id · fk_hccc_id · time_stamp_date · tr_utr ·
 bbps_txn_ref_id · approve_status · balance · assets_path · circle_code · remark_icon ·
 remark_icon_id · bank_payout_details · bill_upload · cb_amount · ID · tr_status ·
@@ -1310,7 +1346,7 @@ Worth repeating because they are the class of bug that survives code review:
 **Later**
 - §2 Purpose of Villa Operations Management, Villa Operation, Dood System Development
 - §2 Revenue Share split across the `ers` app and the `Eko_RS_*` forms
-- §9.1 Whether Backend Expenses is human-facing
+- ~~§9.1 Whether Backend Expenses is human-facing~~ — answered 27-Aug-2026, §9.1
 - §12.3 `AcountsExpense` vs `AccountsExpenseNew`
 - §6.1 Which "All Bills" report is live
 

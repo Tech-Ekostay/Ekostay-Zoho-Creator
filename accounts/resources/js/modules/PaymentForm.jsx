@@ -85,11 +85,100 @@ export default function PaymentForm({ options, onClose, onSaved }) {
   });
 
   const [legs, setLegs] = useState([]);
+
+  /*
+   * CREATOR'S `on user input` HANDLERS, which this form did not have.
+   *
+   * Picking a TDS rate in Creator does not just store a rate: `OnInputTDSCE`
+   * (Accounts.ds:23348) recomputes TDS Amount, Invoice Amount and Payable Amount,
+   * and then rewrites EVERY split leg's TDS, GST and Total. Same from
+   * OnInputGrossAmountCE and OnInputGSTCE. Without it the form stored what you typed
+   * and derived nothing.
+   *
+   * THE ARITHMETIC IS A SERVER ROUND TRIP, deliberately. `PaymentFormCalculator`
+   * shares `Money::percentageOf()` with the bill split, so a rate applied here and
+   * the same rate applied on a saved bill cannot drift. A JS copy would be a second
+   * implementation, and §6.3 already warns that per-row TDS does not sum to header
+   * TDS — with two implementations, a discrepancy that is CORRECT becomes
+   * indistinguishable from one that is a bug.
+   */
+  const [derived, setDerived] = useState(null);
+  const [calcWarnings, setCalcWarnings] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
 
   const set = (key, value) => setForm((c) => ({ ...c, [key]: value }));
+
+  /*
+   * Debounced because `amount` fires per keystroke. 250ms is short enough that the
+   * derived fields feel immediate and long enough not to send a request per digit.
+   */
+  const recalcKey = JSON.stringify([
+    form.amount, form.gst_amount, form.tds_rate_id, form.tax_id,
+    form.item_category_id, form.pf_amount, form.pt_amount, form.esic_amount,
+    legs.map((l) => l.amount),
+  ]);
+
+  useEffect(() => {
+    // Nothing to derive from an empty gross.
+    if (form.amount === '' && form.tds_rate_id === '' && form.tax_id === '') {
+      setDerived(null);
+      setCalcWarnings([]);
+
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      fetch('/api/payments/recalculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          amount: form.amount === '' ? null : form.amount,
+          gst_amount: form.gst_amount === '' ? null : form.gst_amount,
+          pf: form.pf_amount === '' ? null : form.pf_amount,
+          pt: form.pt_amount === '' ? null : form.pt_amount,
+          esic: form.esic_amount === '' ? null : form.esic_amount,
+          tds_rate_id: form.tds_rate_id === '' ? null : Number(form.tds_rate_id),
+          tax_id: form.tax_id === '' ? null : Number(form.tax_id),
+          item_category_id: form.item_category_id === '' ? null : Number(form.item_category_id),
+          legs: legs.map((l) => ({ amount: l.amount === '' ? 0 : Number(l.amount) })),
+        }),
+      })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+        .then((body) => {
+          setDerived(body);
+          setCalcWarnings(body.warnings ?? []);
+
+          /*
+           * The derived fields are WRITTEN INTO the form, not merely displayed —
+           * that is what Creator does, and they are what gets saved. The user can
+           * still overtype any of them afterwards, which is also Creator's
+           * behaviour: the handler fires on input, it does not lock the field.
+           */
+          setForm((c) => ({
+            ...c,
+            tds_amount: body.tds_amount,
+            gst_amount: body.gst_amount,
+            total_amount: body.total_amount,
+            payable_amount: body.payable_amount,
+          }));
+
+          // And the legs, which is the half that was missing entirely.
+          if (body.legs?.length) {
+            setLegs((current) => current.map((leg, i) => ({
+              ...leg,
+              tds_amount: body.legs[i]?.tds_amount ?? '',
+              gst_amount: body.legs[i]?.gst_amount ?? '',
+              total_amount: body.legs[i]?.total_amount ?? '',
+            })));
+          }
+        })
+        .catch(() => { /* leave the typed values alone on a failed recalc */ });
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [recalcKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   /** The running leg total, shown beside the gross so the §6.4 tie is visible. */
   const legTotal = useMemo(
@@ -218,6 +307,14 @@ export default function PaymentForm({ options, onClose, onSaved }) {
       <div className="zc-overlay-head">Payment</div>
 
       <div className="zc-overlay-body">
+        {calcWarnings.length > 0 && (
+          <div style={{ border: '1px solid var(--line2)', background: 'var(--pinkl)', padding: 10, marginTop: 0, marginBottom: 14 }}>
+            {calcWarnings.map((w, i) => (
+              <p key={i} style={{ margin: i ? '6px 0 0' : 0, fontSize: 12 }}>{w}</p>
+            ))}
+          </div>
+        )}
+
         {error && (
           <p style={{ color: 'var(--bad)', border: '1px solid var(--bad)', padding: 10, marginTop: 0 }}>
             {error}
@@ -309,7 +406,8 @@ export default function PaymentForm({ options, onClose, onSaved }) {
         <table className="zc-grid">
           <thead>
             <tr>
-              {['Villa Name', 'Item Category', 'Billing Cycle', 'Amount', ''].map((h) => <th key={h}>{h}</th>)}
+              {['Villa Name', 'Item Category', 'Billing Cycle', 'Amount',
+                'TDS Amount', 'GST Amount', 'Total Amount', ''].map((h) => <th key={h}>{h}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -340,6 +438,15 @@ export default function PaymentForm({ options, onClose, onSaved }) {
                   <input className="zc-input" inputMode="decimal" value={leg.amount}
                     onChange={(e) => setLeg(i, 'amount', e.target.value)} />
                 </td>
+                {/*
+                  Derived, not editable. The DS handler computes each leg from the
+                  leg's own amount — `rec.TDS_Amount = rec.Amount x tdsPct / 100` —
+                  so typing over them would be overwritten on the next keystroke.
+                  Per-leg TDS need not sum to header TDS (§6.3); that is correct.
+                */}
+                <td className="zc-money">{leg.tds_amount ? inr(leg.tds_amount) : '—'}</td>
+                <td className="zc-money">{leg.gst_amount ? inr(leg.gst_amount) : '—'}</td>
+                <td className="zc-money">{leg.total_amount ? inr(leg.total_amount) : '—'}</td>
                 <td>
                   <button type="button" className="zc-btn"
                     onClick={() => setLegs((c) => c.filter((_, j) => j !== i))}>

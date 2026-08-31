@@ -12,7 +12,12 @@
  * captured. Their full text was never seen — flagged, not guessed.
  */
 export const NAV = [
-  { key: 'accounts', label: 'Accounts', built: false },
+  /*
+   * NOT A REPORT — a DASHBOARD built outside Creator (Husain, 27-Aug-2026). It is
+   * first in the rail and was on the "needs a screenshot" list until then; it does
+   * not belong there, because there is no Creator layout behind it to replicate.
+   */
+  { key: 'accounts', label: 'Accounts', built: false, external: 'dashboard' },
   /*
    * UNGATED 22-Aug-2026. §17 step 7 said stop here until the four §16
    * "blocking write paths" questions were answered. They are: the §3.3 matrix
@@ -55,7 +60,7 @@ export const NAV = [
     ],
   },
   { key: 'backend_expenses', label: 'Backend Expenses', built: false },
-  { key: 'pending_approvals', label: 'Pending Approvals', built: false },
+  { key: 'pending_approvals', label: 'Pending Approvals', built: true },
   { key: 'app_preferences', label: 'App Preferences', built: false },
   {
     key: 'payment_requests',

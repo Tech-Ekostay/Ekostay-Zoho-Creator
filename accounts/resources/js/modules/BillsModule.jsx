@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import ReportBar from '../components/ReportBar';
 import ReportGrid from '../components/ReportGrid';
+import FilterBar from '../components/FilterBar';
 import RecordDetail from '../components/RecordDetail';
 import BillForm from './BillForm';
 import { ddMmmYyyy, inr } from '../lib/format';
+import usePagedReport from '../lib/usePagedReport';
 
 /**
  * All Bills — §6, and the module everything else flows from. A payment is created
@@ -23,9 +25,24 @@ const MONEY = new Set([
 ]);
 
 export default function BillsModule({ onCreatePayment }) {
-  const [data, setData] = useState(null);
   const [options, setOptions] = useState(null);
-  const [error, setError] = useState(null);
+
+  /* Creator-style filters: column + operator + value, applied server-side. */
+  const [filters, setFilters] = useState([]);
+
+  /*
+   * DEPEND ON THE SERIALISED FILTERS, NOT THE ARRAY.
+   *
+   * `filters` is a new array object on every change, so using it as a hook
+   * dependency compares by IDENTITY. That produced an infinite fetch loop: an effect
+   * that both depended on `filters` and called `setFilters([])` re-armed itself
+   * forever, and the browser hammered the API — caught by watching the network log,
+   * not by reading the code.
+   *
+   * A JSON string is stable when the contents are unchanged, which is the comparison
+   * actually wanted here.
+   */
+  const filterKey = JSON.stringify(filters);
   const [term, setTerm] = useState('');
   /*
    * SELECTING AND EDITING ARE SEPARATE, deliberately.
@@ -42,16 +59,16 @@ export default function BillsModule({ onCreatePayment }) {
   const [viewing, setViewing] = useState(null);
   const [notice, setNotice] = useState(null);
 
-  const load = useCallback(() => {
-    setError(null);
-    fetch('/api/bills')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then(setData)
-      .catch((e) => setError(String(e.message ?? e)));
-  }, []);
+  /*
+   * 1,000 rows a page, appended as the reader scrolls — 17,161 bills, so the old
+   * `limit(1000)` left 16,161 of them unreachable.
+   */
+  const {
+    data, rows: pagedRows, error, setError, filterError, setFilterError,
+    loadingMore, hasMore, loadMore, reload: load,
+  } = usePagedReport('/api/bills', filters);
 
   useEffect(() => {
-    load();
     fetch('/api/bills/options')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then(setOptions)
@@ -69,15 +86,23 @@ export default function BillsModule({ onCreatePayment }) {
       .catch((e) => setError(String(e.message ?? e)));
   }, [editing]);
 
+  /*
+   * `term` IS STILL A CLIENT-SIDE FILTER, and that is a known limitation rather than a
+   * choice. It matches only the rows currently loaded, so with paging it now searches
+   * however many pages the reader has scrolled through instead of a fixed 1,000 — less
+   * wrong than before and still wrong. `filters` (the chips) are server-side and cover
+   * every row; this box does not. Converting it belongs with the Bills filter work, not
+   * with paging.
+   */
   const rows = useMemo(() => {
-    const all = data?.rows ?? [];
+    const all = pagedRows;
     const needle = term.trim().toLowerCase();
     if (needle === '') return all;
 
     return all.filter((row) =>
       (data?.columns ?? []).some((label) => String(row[label] ?? '').toLowerCase().includes(needle))
     );
-  }, [data, term]);
+  }, [pagedRows, term]);
 
   const columns = (data?.columns ?? []).map((label) => ({
     key: label,
@@ -137,10 +162,22 @@ export default function BillsModule({ onCreatePayment }) {
         </div>
       )}
 
+      <FilterBar
+        schema={data?.filter_schema ?? []}
+        filters={filters}
+        onChange={(next) => { setFilters(next); setFilterError(null); }}
+        matched={data?.matched}
+        total={data?.total}
+      />
+
+      {filterError && (
+        <div style={{ padding: '6px 14px', fontSize: 12, color: 'var(--bad)' }}>{filterError}</div>
+      )}
+
       {error && <div style={{ padding: 14, color: 'var(--bad)' }}>Failed to load: {error}</div>}
       {!data && !error && <div style={{ padding: 14, color: 'var(--ink3)' }}>Loading…</div>}
 
-      {data && data.rows.length === 0 && (
+      {data && rows.length === 0 && (
         <div style={{ padding: 20, color: 'var(--ink3)' }}>
           <p style={{ marginTop: 0 }}>No bills yet.</p>
           <p style={{ fontSize: 12 }}>
@@ -151,11 +188,11 @@ export default function BillsModule({ onCreatePayment }) {
         </div>
       )}
 
-      {data && data.rows.length > 0 && (
+      {data && rows.length > 0 && (
         <ReportGrid
           columns={columns}
           rows={rows}
-          total={term ? rows.length : data.total}
+          total={filters.length > 0 ? data.matched : data.total}
           selectedId={selectedId}
           /*
            * A row click opens the DETAIL view (Husain, 25-Aug-2026 — one flow for
@@ -164,6 +201,9 @@ export default function BillsModule({ onCreatePayment }) {
            * not something reached through a detail view.
            */
           onSelect={(row) => { setSelectedId(row.id); setViewing(row.id); }}
+          onLoadMore={loadMore}
+          loadingMore={loadingMore}
+          hasMore={hasMore}
         />
       )}
 
