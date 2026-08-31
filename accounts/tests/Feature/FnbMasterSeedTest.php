@@ -84,6 +84,23 @@ class FnbMasterSeedTest extends TestCase
     }
 
     #[Test]
+    public function seeding_twice_does_not_duplicate_anything(): void
+    {
+        // fnb_uoms has NO unique index on `name` — deliberately, because `Pieces`
+        // and `Pieces ` are two distinct live keys. So nothing at the database
+        // level stops a second run, and a second run DID silently double the table
+        // to 18 rows, making every UOM lookup ambiguous. Found by re-running the
+        // seeder by accident. The guard is in the seeder; this pins it.
+        $this->seed(\Database\Seeders\FnbMasterSeeder::class);
+        $this->seed(\Database\Seeders\FnbInventorySeeder::class);
+
+        $this->assertSame(9, DB::table('fnb_uoms')->count());
+        $this->assertSame(370, DB::table('fnb_item_masters')->count());
+        $this->assertSame(8, DB::table('fnb_warehouses')->count());
+        $this->assertSame(855, DB::table('fnb_inventories')->count());
+    }
+
+    #[Test]
     public function money_and_percentages_are_not_floats(): void
     {
         $cols = DB::select(

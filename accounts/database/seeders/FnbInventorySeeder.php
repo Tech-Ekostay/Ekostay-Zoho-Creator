@@ -56,6 +56,14 @@ class FnbInventorySeeder extends Seeder
             return;
         }
 
+        // Re-run guard: fnb_warehouses has no unique index on the name either, so
+        // a second run would double it and orphan the inventory join.
+        if (DB::table('fnb_warehouses')->count() > 0) {
+            $this->command?->warn('fnb_warehouses / fnb_inventories: already populated, skipping.');
+
+            return;
+        }
+
         $warehouses = $this->seedWarehouses($rows);
         $this->seedInventories($rows, $warehouses);
     }

@@ -38,6 +38,18 @@ class FnbMasterSeeder extends Seeder
 
     private function seedUoms(): void
     {
+        // Re-run guard. fnb_uoms has NO unique index on `name` — deliberately,
+        // because `Pieces` and `Pieces ` are two distinct live keys — so a second
+        // run silently DOUBLED the table to 18 rows and every later lookup became
+        // ambiguous. Found by running the seeder twice by accident, which is a good
+        // argument for guarding rather than relying on a constraint that cannot
+        // exist here. FnbBillingCycleSeeder already does this.
+        if (DB::table('fnb_uoms')->count() > 0) {
+            $this->command?->warn('fnb_uoms: already populated, skipping.');
+
+            return;
+        }
+
         $rows = $this->masterDataCsv('UOM Report.csv');
         if ($rows === null) {
             $this->command?->warn('fnb_uoms: SKIPPED — master-data/UOM Report.csv not found.');
@@ -67,6 +79,14 @@ class FnbMasterSeeder extends Seeder
 
     private function seedItemMasters(): void
     {
+        // Guarded for the same reason, though here the creator_id unique index
+        // would also catch it — with an exception rather than a clear message.
+        if (DB::table('fnb_item_masters')->count() > 0) {
+            $this->command?->warn('fnb_item_masters: already populated, skipping.');
+
+            return;
+        }
+
         $rows = $this->masterDataCsv('All Item Masters.csv');
         if ($rows === null) {
             $this->command?->warn('fnb_item_masters: SKIPPED — master-data/All Item Masters.csv not found.');

@@ -60,9 +60,6 @@ master-data/Vendor_Master.csv*
 # otherwise, which is the right way round for a folder holding production data.
 **/master-data/*.csv
 **/master-data/*.json
-!**/master-data/All Item Masters.csv
-!**/master-data/UOM Report.csv
-!**/master-data/_index.json
 **/master-data/All Employee Masters*.csv
 
 # ------------------------------------------------- exported production data
@@ -107,9 +104,30 @@ Thumbs.db
 .auth/
 **/.auth/
 
-# Screenshots of the running app and of live Creator. accounts/.gitignore already
-# excludes accounts/docs/screenshots/*, but fnb/ has its own now, and a rendered
-# screen carries whatever data was on it — live-app.png shows real vendors and
-# villas. Working material, not source.
-**/docs/screenshots/*.png
-**/docs/screenshots/*.jpg
+# Screenshots of OUR running app. Deliberately NOT a blanket rule: Amaan's
+# accounts/.gitignore line 31 un-ignores docs/screenshots/*.png on purpose, and
+# nested rules win, so Creator reference screenshots stay trackable for them.
+# These two are ours and show real seeded vendors and villas, so they stay out
+# by name rather than by widening a rule someone else set deliberately.
+accounts/docs/screenshots/live-app.png
+accounts/docs/screenshots/creator-check.png
+accounts/docs/screenshots/post-merge.png
+fnb/docs/screenshots/*.png
+
+# ---------------------------------------------------------------- local only
+# _preserved/ is the prior React session's documentation, its SQL schema and the
+# payroll engine. Kept on disk because DB_FINDINGS.md is the only record of the
+# live MySQL server, but it is history rather than source and the owner asked on
+# 31-Aug-2026 for it to stay out of the shared repo.
+_preserved/
+
+# No NEW data files in git, per the owner's instruction of 31-Aug-2026.
+# master-data/ holds Creator exports — vendors with PANs, employees, guest names,
+# stay dates. Even the harmless-looking ones (item names, units) stay out:
+# deciding per file is what produced four near-misses, so the rule is "none".
+#
+# TWELVE FILES REMAIN TRACKED and are deliberately NOT removed here: Amaan
+# committed them in 2973d88 and the master-layer seeders read them
+# (All_Villas.csv, COA_Report.json, All_Item_Categories.json, _index.json and the
+# rest). Deleting another developer's committed fixtures would break
+# migrate:fresh --seed for everyone. Worth a conversation, not a unilateral rm.
