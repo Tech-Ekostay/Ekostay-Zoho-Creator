@@ -268,6 +268,7 @@ so both are modellable today. **TODO-FNB-2 closed** — no question for Husain.
 | ~~TODO-FNB-2~~ | **CLOSED** — `Vendor_Category` really does hold `Item_Category.ID` (§4.5) | answered from `Accounts.ds` |
 | ~~TODO-FNB-3~~ | **CLOSED** — the two functions differ by arity, not purpose (§3) | answered from `Accounts.ds` |
 | ~~TODO-FNB-4~~ | **MOSTLY CLOSED** — the detail view shows all 34 fields, so the 13 are hidden on *Add* only, not conditionally absent (§8.8) | detail screenshot |
+| **TODO-FNB-7** | Which is authoritative for a string key — Creator's report export (`Pieces `, 7 chars) or the Analytics view (`Pieces`, 6)? Analytics TRIMS (§15.3) | Husain / Tushar |
 | **TODO-FNB-6** | Should a recipe be able to name a FRUITS or BAKERY item? Creator's four hardcoded grids reach 335 of 370 items (§13.2) | Husain |
 | ~~TODO-FNB-5~~ | **CLOSED** — the stored field really is empty; the export resolves villa through the booking (§9.5) | second detail view + Edit form |
 
@@ -600,6 +601,10 @@ The 81 exceptions are rows where receipt was recorded after the amount, or never
 adjusted. Real data, worth a flag rather than a fix.
 
 ### 9.2 The parent rolls up from the legs, and 287 orders do not
+
+> **CORRECTED at full volume — see §16.2.** Only **1** order has legs exceeding
+> the parent across 10,768 rows. The 287 figure came from the CSV subset and
+> conflated "disagrees" with "exceeds".
 
 `parent.Amount == SUM(line.Amount)` holds on **10,455 orders** and fails on **287**.
 
@@ -1038,3 +1043,218 @@ question §5.2 asks about `Expenses_Bills`.
 | **No UI** | 19 tables, zero screens. Creator's reports are the spec; four screenshots exist. |
 | **TODO-FNB-6** | Should a recipe be able to name a FRUITS or BAKERY item? |
 | **Block_Booking_Date enforcement** | Accounts found the equivalent is enforced nowhere server-side. Expected to be the same here; not assumed. |
+
+---
+
+## 15 · The Analytics importer, and Analytics TRIMS
+
+`fnb:import` pulls from the 21 `(Zoho Creator-F&B)` source views. Findings while
+building it, 31-Aug-2026.
+
+### 15.1 The views were discoverable, not something to ask for
+
+665 views in the `accounts` workspace, and every F&B source table carries the
+suffix **`(Zoho Creator-F&B)`**. Listing the workspace found all 21 without a
+single ID being supplied.
+
+They are viewType **`Table`** — a plain projection of the Creator form — not
+`QueryTable`. That matters: §6 records that a heavy-join QueryTable is what times
+out on bulk export (`all_payments` is flagged `avoid` for exactly that), and the
+`(F&B)` QueryTables sitting beside these are reporting joins. **Prefer the Tables.**
+
+Near-identical names to be careful of:
+
+| take | not | difference |
+|---|---|---|
+| `Inventory_Stock` (…683) | `Inventory Stock` (…647) | an underscore |
+| `Vendor Order Booking_Items Ordered` (…917) | `Vendor Order Booking Item` (…935) | the grid vs the standalone form |
+
+Also: the `fnb` view already registered by the other developer
+(`443703000002007229`) is **"All Expenses (F&B)"** — an expense-shaped join, not a
+form table. Both are kept; they answer different questions.
+
+### 15.2 Analytics returns IDs, not names — and that is better
+
+```json
+{ "Item Name": "292482000000390893", "Warehouse Name": "292482000000883307",
+  "Price": "₹ 200.00", "Transaction Type": "Out" }
+```
+
+Lookups arrive as **18-digit record IDs**. The CSV exports gave names, which forced
+string matching and is how `Pieces ` nearly orphaned 70 rows. Resolution is now by
+`creator_id` throughout.
+
+Money still arrives **pre-formatted as text** (`₹ 200.00`), so it is parsed to a
+decimal string and never cast.
+
+Two views break the pattern and return **names**: `Warehouse` gives
+`Location: "Lonavala"` and `State: ""`. Handled with separate by-name maps rather
+than assumed uniform.
+
+### 15.3 ⚠️ ANALYTICS STRIPS THE TRAILING SPACE
+
+The single most important finding here.
+
+| source | value | length |
+|---|---|---|
+| `UOM Report.csv` (Creator report export) | `Pieces ` | **7** |
+| `All Item Masters.csv` (Creator report export) | `Pieces ` | **7** |
+| **Analytics `UOM (Zoho Creator-F&B)` view** | **`Pieces`** | **6** |
+
+Verified with `zoho:inspect`, so it is Analytics doing it and not the importer:
+the raw JSON reads `"UOM": "Pieces"`.
+
+**Consequences:**
+
+1. **Analytics is not a faithful mirror of Creator for string keys.** §12 already
+   established that it flattens multi-value fields; this adds that it trims
+   whitespace. The read plane is lossy in a second, quieter way.
+2. **The import still joins correctly**, because it resolves by `creator_id` rather
+   than by the string. That is the whole argument for ID-based resolution — the
+   trailing space stopped being load-bearing the moment the join stopped using it.
+3. **But the stored key CHANGED** — `fnb_uoms.name` went from `Pieces ` to
+   `Pieces`. Anything that displays it, or matches a future CSV against it, now
+   disagrees with Creator.
+
+**Not resolved unilaterally.** Which spelling is authoritative is a question about
+the source of truth, not a preference:
+
+- If Creator's own report export is authoritative, seed masters from CSV and use
+  Analytics only for transactional rows.
+- If Analytics is authoritative, the CSV-era assertion that `Pieces ` has 7
+  characters is wrong and four tests need re-measuring.
+
+Recorded as **TODO-FNB-7**. Until it is answered, **seed the masters from CSV and
+import transactions from Analytics** — which is what the dependency order does
+anyway, since masters barely change.
+
+### 15.4 A bug in my own importer, and how it hid
+
+`--only=items` reported success and produced **371 rows with no UOM**. Then
+`--only=inventories` produced **855 rows with no item, no warehouse and no UOM**.
+1,226 orphaned rows across three tables, and the command printed green.
+
+The cause: maps were built only inside `put()`, as each table imported. A full run
+is fine — the parent populates the map before the child needs it. `--only` skips
+the parents entirely, so every lookup missed and every miss was faithfully counted
+as "unresolved" rather than recognised as a broken run.
+
+Fixed by preloading every F&B map from the database at startup. A miss is now a
+genuine missing parent rather than an artefact of the flag.
+
+Worth noting the counter *did* report `371 unresolved` — the instrumentation
+worked. What was missing was reading it: a lookup failing on **every single row**
+is not a data problem, it is a wiring problem, and the importer should say so.
+
+### 15.5 The warehouse Location pivot filled — the CSV had none
+
+`fnb_warehouse_locations` now has **8 rows**. The CSV export flattened
+`Warehouse.Location` to nothing; the Analytics view populates it. So §12's
+flattening is not uniform — it cost us Villa Name (still blank on every row) but
+not Location.
+
+The pivot exists because Creator declares both as multi-value `list` fields. Had
+they been modelled as columns, this data would have had nowhere to go.
+
+---
+
+## 16 · Live data — 367,951 rows, 31-Aug-2026
+
+`php artisan fnb:import` pulls all 18 populated tables from the Analytics source
+views. `fnb:backfill-ids` sets `creator_id` on masters that were CSV-seeded.
+
+| Table | Rows |
+|---|---|
+| `fnb_raw_material_requests` | **161,402** |
+| `fnb_vendor_order_booking_items` | **110,811** |
+| `fnb_transaction_items` | **68,413** |
+| `fnb_vendor_order_bookings` | 10,768 |
+| `fnb_inventory_stocks` | 6,710 |
+| `fnb_request_stock_for_foods` | 4,334 |
+| `fnb_vendor_price_lists` | 2,291 |
+| `fnb_food_order_details` | 1,229 |
+| `fnb_inventories` · `fnb_item_masters` | 857 · 371 |
+| `fnb_recipe_masters` · `fnb_chef_masters` | 245 · 138 |
+| `billing_cycles` · `fnb_monthly_checks` | **82** · 76 |
+| `fnb_transfer_items` · `fnb_uoms` · `fnb_warehouses` | 15 · 9 · 8 |
+
+All 18 render in the browser at `/` → **F&B**, paged server-side.
+
+### 16.1 Findings confirmed at full volume
+
+**`amount` follows RECEIVED quantity** — on the 5,672 rows where ordered and
+received differ, **5,672 follow received against 1 for ordered**. §9.1 held.
+
+**The stock ledger's shape:** Out 48,808 · In 10,361 · **Reverse 7,218** ·
+Misplaced 1,936 · Damaged 90. Every value is one the CHECK already allowed. The
+7,218 reversals confirm stock corrections are made as **new rows, never edits** —
+which is why `Reverse` is in the constraint.
+
+**`billing_cycles` has 82 rows, not 14.** `CLAUDE.md` lists it under "no export
+exists"; the master is `Billing Cycles` (443703000001623110) and goes back to 2023.
+`FnbBillingCycleSeeder` recovered only the 14 names that appeared on orders. Both
+February spellings survive.
+
+### 16.2 CORRECTED: the 287 stale parents were a CSV-era artefact
+
+§9.2 reported 287 orders whose line items exceed the stored parent. **At full
+volume that is 1.**
+
+The real picture over 10,768 orders:
+
+| | |
+|---|---|
+| legs **exceed** the parent | **1** |
+| legs **below** the parent | 7 |
+| legs sum to NULL (all line amounts null) | 297 |
+
+So the earlier figure conflated "disagrees" with "exceeds", and most of the
+disagreement is orders whose lines carry no amount at all. `recomputeTotals()` is
+still the authority and `totalsAreCurrent()` still detects the difference — but the
+scale of the problem was overstated, and the honest number is **one order**.
+
+### 16.3 Three bugs in my own importer, all silent
+
+**Maps built only inside `put()`.** `--only=items` produced 371 rows with no UOM;
+`--only=inventories` produced 855 with no item, warehouse or UOM. **1,226 orphaned
+rows and the command printed green.** The counter did report "371 unresolved" — the
+instrumentation worked; reading it did not. A lookup failing on *every* row is a
+wiring problem, not a data problem. Fixed by preloading every map from the database.
+
+**`TRUNCATE` cascades.** Re-importing warehouses emptied `fnb_inventories`, and
+through it `fnb_inventory_stocks`, and re-importing those emptied the stock ledger.
+**299,070 rows became 4,304 across two runs, reported as success both times** —
+because an import counts what it writes and never what it destroyed on the way in.
+Replaced with `DELETE`, which raises a foreign-key violation instead: the database
+saying the order is wrong rather than silently discarding children.
+
+**A hardcoded table list went stale within a day.** The billing-cycle dedupe checked
+`bills.billing_cycle_id`, which does not exist — bills reference a cycle through the
+`bill_billing_cycle` pivot. The query threw, the whole removal block aborted, and 14
+duplicate cycles survived silently. Replaced with an `information_schema` query.
+
+### 16.4 What Analytics gives that the CSVs did not, and vice versa
+
+**Analytics adds:** `Fulfilled Quantity` on order items (§9.3 recorded it as absent
+from the export) · `Warehouse.Location`, filling a pivot the CSV flattened to
+nothing · 82 billing cycles against 14 · lookups as **record IDs** rather than
+names, so no string matching.
+
+**Analytics loses:** the **trailing space** (§15.3) · `No Decimal Values` on items ·
+`Order recived` on orders · **`Guest Name`** on requests — the CSV has real guest
+names and the view does not expose it.
+
+So neither source is complete. **Masters are seeded from CSV** (they keep the string
+keys) and **transactions imported from Analytics** (it has the volume and the IDs).
+That split is not a compromise; it is what each source is actually good for.
+
+### 16.5 The mislabel reached the read plane
+
+`Raw_Material_Request.Item_Name` is labelled `"request n"` in Creator, and
+**Analytics has taken that label as the column name** — the view's field is
+literally `requestn`.
+
+So D-FNB-1 is worse than a cosmetic problem in three reports and a print template:
+anyone importing that table would reasonably map `requestn` to a request number and
+fill the wrong column with item IDs. The importer maps it explicitly, with the
+reason attached.

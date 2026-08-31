@@ -101,7 +101,9 @@ export default function FnbModule() {
               </span>
             )}
             <div style={S.spring} />
-            {['fnb_item_masters', 'fnb_inventories'].includes(active) && (
+            {['fnb_item_masters', 'fnb_inventories', 'fnb_vendor_order_bookings',
+              'fnb_vendor_order_booking_items', 'fnb_transaction_items',
+              'fnb_raw_material_requests', 'fnb_request_stock_for_foods'].includes(active) && (
               <input
                 style={S.search}
                 placeholder="Search item name…"
