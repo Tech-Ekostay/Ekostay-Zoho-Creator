@@ -53,6 +53,11 @@ class DatabaseSeeder extends Seeder
             // against fnb_item_masters and UOMs against fnb_uoms, and creates
             // neither if a name is unknown.
             FnbInventorySeeder::class,
+
+            // F&B's own four counters, separate from Accounts' auto_numbers. The
+            // values are the REAL live maximums; starting at 1 would re-mint
+            // numbers that already belong to orders.
+            FnbAutoNumberSeeder::class,
         ]);
     }
 }

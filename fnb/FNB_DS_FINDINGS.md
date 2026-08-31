@@ -268,6 +268,7 @@ so both are modellable today. **TODO-FNB-2 closed** — no question for Husain.
 | ~~TODO-FNB-2~~ | **CLOSED** — `Vendor_Category` really does hold `Item_Category.ID` (§4.5) | answered from `Accounts.ds` |
 | ~~TODO-FNB-3~~ | **CLOSED** — the two functions differ by arity, not purpose (§3) | answered from `Accounts.ds` |
 | ~~TODO-FNB-4~~ | **MOSTLY CLOSED** — the detail view shows all 34 fields, so the 13 are hidden on *Add* only, not conditionally absent (§8.8) | detail screenshot |
+| **TODO-FNB-6** | Should a recipe be able to name a FRUITS or BAKERY item? Creator's four hardcoded grids reach 335 of 370 items (§13.2) | Husain |
 | ~~TODO-FNB-5~~ | **CLOSED** — the stored field really is empty; the export resolves villa through the booking (§9.5) | second detail view + Edit form |
 
 **All three are closed, and all three were answerable from the source rather than by
@@ -896,3 +897,144 @@ the tables plus the arithmetic are proven first. When the importer lands it must
   reconcile them
 - **read positionally** — three of five exports repeat a header
 - **never create** a billing cycle, a category or a UOM to satisfy a reference (§6.4)
+
+---
+
+## 13 · Auto_Numbers, and a recipe form that cannot see 35 items
+
+### 13.1 F&B's counters are separate from Accounts', and both defects recur
+
+`fb.Auto_Numbers` (F_B.ds:15) is its own singleton with **four** series — both
+READMEs list three and miss `Transfer_Series`:
+
+| series | counter | used by |
+|---|---|---|
+| `Booking_Series` | `Booking_No` | `fb.Booking` |
+| `Request_Series` | `Request_No` | `fb.Request_Stock_for_Food` |
+| `Vendor_Booking_Series` | `Vendor_Booking_No` | `fb.Vendor_Order_Booking` |
+| `Transfer_Series` | `Transfer_No` | `fb.Transfer_Items` |
+
+**Both of the defects Accounts logged are here too.**
+
+**Non-atomic increment** — `F_B.ds:6710` reads the singleton, formats a number, then
+writes `No + 1` with no lock between. Two concurrent orders take the same number.
+Accounts logged this as D3; `FnbNumber::allocate()` uses `lockForUpdate()`.
+
+**The padding is dead code AND miswritten.** F_B.ds:6713-6725 pads with
+`if (<10) … else if (<100) …` then a **bare** `if (<1000)` rather than an
+`else if`. So a two-digit number is padded twice — `"00"` then `"0"` again, three
+zeros for two digits. It has never fired: the census over 11,205 live orders is
+9,276 four-digit and 1,466 five-digit numbers, nothing shorter. Same shape as
+Accounts §7.6. **Not reproduced** — a branch that cannot fire is not behaviour, and
+copying it would corrupt any future low-numbered series.
+
+**The counters carry their real live values**, measured from the exports:
+
+```
+EKO/F&BOrder   max 11,435  ->  next 11,436
+EKO/Stock      max  4,527  ->  next  4,528
+```
+
+Booking and Transfer get **no counter at all** — no export names one, and
+`allocate()` refuses on a null rather than minting from 1. Accounts' seeder makes
+the same point about the payment counter needing the real 20938.
+
+And the same guard: `allocate()` **refuses** while our counter sits at or below the
+last number observed live, because Creator keeps minting while this is built.
+
+### 13.2 `Requirements_of_Recipe` hardcodes four categories and misses five
+
+The form (F_B.ds:2547) has four grids, each filtered by a **literal category name**:
+
+```
+KIRANA_REQUIREMENTS      Item_Master[Item_Category.Item_Category == "KIRANA"]
+DAIRY_REQUIREMENTS       Item_Master[Item_Category.Item_Category == "DAIRY"]
+VEGETABLE_REQUIREMENTS   Item_Master[Item_Category.Item_Category == "VEGETABLES"]
+MEAT_REQUIREMENTS        Item_Master[Item_Category.Item_Category == "MEAT"]
+```
+
+All four resolve and all four are F&B-flagged. But the item census says those grids
+reach **335 of 370 items**, leaving **35 unreachable from this form**:
+
+| category | items | in a grid? |
+|---|---|---|
+| KIRANA | 209 | yes |
+| VEGETABLES | 70 | yes |
+| DAIRY | 39 | yes |
+| MEAT | 17 | yes |
+| **F&B GENERAL PURCHASE** | **20** | **no** |
+| **FRUITS** | **8** | **no** |
+| **F&B TRANSPORT** | **3** | **no** |
+| **F&B GAS** | **3** | **no** |
+| **BAKERY** | **1** | **no** |
+
+FRUITS and BAKERY are ordinary kitchen inputs, so a recipe cannot list a fruit or
+anything from the bakery. This is what a hardcoded list does as data grows — and it
+is the same class of defect as Creator's category-scoping mechanisms that §3.1 says
+"do not implement all of them".
+
+**Not a copy-as-built case**, but not ours to decide either: whether a recipe should
+be able to name a fruit is a business question. Recorded as **TODO-FNB-6** and the
+table is built category-agnostic — one child table keyed by item, not four grids —
+so either answer is a query change rather than a migration.
+
+---
+
+## 14 · F&B schema complete — 19 of 21 forms, 31-Aug-2026
+
+**22 tables, 14 CHECK constraints, 40 F&B tests. Suite: 223 passed, 1,679
+assertions.**
+
+| Built | | Deliberately not built | |
+|---|---|---|---|
+| Auto_Numbers | 4 series + guard | **Booking** | 46 fields — another app's master |
+| Block_Booking_Date | | **Expenses** | 38 fields — Accounts owns `expenses` |
+| Chef_Master | PII | | |
+| Food_Order_Details | | | |
+| Inventory · Inventory_Stock | 855 seeded | | |
+| Item_Master · UOM | 370 · 9 seeded | | |
+| Monthly_Check + items | | | |
+| Raw_Material_Request | | | |
+| Recipe_Master + requirements | | | |
+| Request_Stock_for_Food | | | |
+| Transaction_Items | the stock ledger | | |
+| Transfer_Items | | | |
+| Vendor_Order_Booking + items | | | |
+| Vendor_Price_List | | | |
+| Warehouse + 2 pivots | 8 seeded | | |
+
+### Constraints that encode a decision
+
+- **A warehouse cannot transfer to itself.** Creator's `To_Warehouse` picklist
+  excludes the source (`Warehouse[Warehouse_Name != …]`), so it is unreachable
+  through the UI — but browser-side validation is not a boundary, so it is a CHECK.
+- **`Transaction_Type` admits `Reverse`.** That is how a stock mistake is undone,
+  the same shape as the payment reversal Accounts built for D4. Stock is never
+  edited backwards; a correction is another row. An invented type like `Wastage` is
+  rejected.
+- **A vendor can price an item once** — unique on (item, vendor).
+- **`Chef_Master.Status`** is `{Active, Inactive}` and nothing else.
+- **Every counter is positive.** `EKO/F&BOrder/0` would look plausible in a report.
+
+### Why Booking and Expenses are absent
+
+**`fb.Booking`** (46 fields) is the **stay-booking master for the whole business** —
+check-in, check-out, guest, villa. F&B reads it; it does not own it. Modelling it
+here would put the booking engine's core entity under an F&B prefix. Referenced by
+`booking_no` as a string throughout until the app that owns it is rebuilt.
+
+**`fb.Expenses`** (38 fields) — Accounts already has an `expenses` table from the
+other developer's work, and the F&B expense rows are created by
+`accounts.FB.Accounts()` posting into that ledger (§4.1). Two tables would be two
+answers. Needs a conversation about whether F&B expenses are rows in Accounts'
+ledger with a source flag, or a separate table that posts into it — the same
+question §5.2 asks about `Expenses_Bills`.
+
+### What is still open
+
+| | |
+|---|---|
+| **No importer** | 288k rows across five exports. Tables and arithmetic proven first. |
+| **No UI** | 19 tables, zero screens. Creator's reports are the spec; four screenshots exist. |
+| **TODO-FNB-6** | Should a recipe be able to name a FRUITS or BAKERY item? |
+| **Block_Booking_Date enforcement** | Accounts found the equivalent is enforced nowhere server-side. Expected to be the same here; not assumed. |
