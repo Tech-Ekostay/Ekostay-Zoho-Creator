@@ -24,8 +24,8 @@
 # Vendor_Master.csv — 8,063 real vendors: PANs, GST registrations, phone numbers,
 # free-text bank details. The other master-data exports are tracked; these two are
 # categorically different and stay out.
-master-data/Vendor_Master.csv
-**/master-data/Vendor_Master.csv
+master-data/Vendor_Master.csv*
+**/master-data/Vendor_Master.csv*
 **/master-data/*.csv.orig.csv
 
 # All_Employee_Masters.csv — 475 real employees with Name, DOB, Email and Phone.
@@ -33,6 +33,37 @@ master-data/Vendor_Master.csv
 # only looked for the vendor file. Worth remembering that "is it PII?" has to be
 # asked per file, not per pattern.
 **/master-data/All_Employee_Masters.csv
+
+# The same two exports arrive from Creator under their REPORT names, with a
+# download counter in parentheses. Added 29-Aug-2026 after 'All Vendor Masters (6).csv'
+# — 8,156 real vendors — landed untracked but perfectly committable, because the
+# patterns above only matched the renamed copies. Match the source names too.
+**/master-data/All Vendor Masters*.csv
+# And the FORM export, whose name uses a space rather than an underscore:
+# 'Vendor Master.csv'. Third near-miss on this one file — the pattern has to
+# match every name Creator and a human can produce, not just the canonical one.
+**/master-data/Vendor Master*.csv
+
+# Transactional exports, added 31-Aug-2026. Not PANs or bank details, but 11,205
+# real orders naming vendors, villas and GUEST STAY DATES (Checked In / Check Out).
+# Business data plus an occupancy record — not source, and regenerable from Creator.
+**/master-data/All Vendor Order Bookings*.csv
+**/master-data/All Raw Material Requests*.csv
+**/master-data/All Expenses*.csv
+**/master-data/All Bookings*.csv
+
+# Blanket rule for master-data, added 31-Aug-2026 after the FOURTH near-miss.
+# Naming each export by hand kept failing — the file arrives under whatever Creator
+# called the report, and three of four new exports slipped through. Invert the
+# default: ignore every CSV/JSON here, then re-allow the two small F&B masters that
+# are genuinely safe to track. A new export is private until someone decides
+# otherwise, which is the right way round for a folder holding production data.
+**/master-data/*.csv
+**/master-data/*.json
+!**/master-data/All Item Masters.csv
+!**/master-data/UOM Report.csv
+!**/master-data/_index.json
+**/master-data/All Employee Masters*.csv
 
 # ------------------------------------------------- exported production data
 # ~251 MB of real payments, expense legs and vendors pulled from Zoho Analytics.
@@ -68,3 +99,17 @@ Thumbs.db
 # directory itself is tracked via its .gitkeep.
 /accounts/docs/screenshots/*
 !/accounts/docs/screenshots/.gitkeep
+
+# ------------------------------------------------------- live Creator session
+# .auth/creator.json is a LIVE Zoho session: full read AND write access to the
+# production Creator cluster. Same class of secret as a refresh token. Deleted
+# after each screenshot run; ignored so it can never be committed even briefly.
+.auth/
+**/.auth/
+
+# Screenshots of the running app and of live Creator. accounts/.gitignore already
+# excludes accounts/docs/screenshots/*, but fnb/ has its own now, and a rendered
+# screen carries whatever data was on it — live-app.png shows real vendors and
+# villas. Working material, not source.
+**/docs/screenshots/*.png
+**/docs/screenshots/*.jpg

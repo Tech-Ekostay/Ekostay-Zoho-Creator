@@ -137,7 +137,11 @@ final class ZohoViews
             'id' => '443703000002007229',
             'workspace' => 'accounts',
             'label' => 'F&B / kitchen',
-            'note' => 'F&B is not a future concern — Bills carries an F&B lookup today.',
+            'large' => true,
+            'note' => 'F&B is not a future concern — Bills carries an F&B lookup today. '
+                .'MEASURED 27-Aug-2026: 27,950 rows, 57 columns, 11.5s. It was NOT flagged '
+                .'large, so it took the JSON path and exhausted a 128MB limit in decode() — '
+                .'the exact §7.4 failure, on a view nobody had run. Flagged now.',
         ],
         'all_payments' => [
             'id' => '443703000001659807',

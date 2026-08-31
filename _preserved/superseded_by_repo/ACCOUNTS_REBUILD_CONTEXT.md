@@ -46,41 +46,8 @@ handed over; functionality built from this document.
 PostgreSQL 15+, config-driven exclusion lists, synced-vs-user-generated table separation,
 snake_case, record IDs as opaque strings end to end.
 
-**As actually installed, 22-Aug-2026 — Laravel 12, not 11.** Laravel 11 ended at v11.56.0
-and is past security support: every 11.x release is blocked by Composer's audit over
-unpatched advisories, including two reflected-XSS issues. Shipping a finance application on
-that line, or disabling the audit to force it, was the worse trade. Laravel 12 is the
-current maintained line and needs no exemption.
-
-| Component | Version | Notes |
-|---|---|---|
-| PHP | 8.4.24 | spec asked 8.2+; winget's 8.3 manifest 404s on an archived php.net URL |
-| Laravel | 12.67.0 | spec inferred 11; see above |
-| PostgreSQL | 17.11 | spec asked 15+ |
-| Composer | 2.10.2 | not in winget; installed from getcomposer.org, sha384 verified |
-
-Database `ekostay_accounts`, owner role `ekostay`, created `ENCODING UTF8` with
-**`LC_COLLATE 'C'`** — byte-order sorting, so the trailing-space and mixed-case master keys
-sort deterministically instead of by locale rules. `php.ini` sets `precision = 17` and
-`serialize_precision = -1` so an 18-digit record ID that reaches a string cast prints in
-full rather than in scientific notation.
-
-The "Laravel 11" figure above is left as written because it records what was inferred at the
-time; this block is what is installed.
-
-`[USER]` **RESOLVED 22-Aug-2026 — new standalone app.** Accounts gets its own Laravel
-codebase, at `projects/ekostay-accounts/`. "Same code structure as the expense tracker"
-therefore means *same conventions*, not the same repository. This satisfies §17 step 1
-for the repo half of the decision; migrations may proceed.
-
-Consistent with §2.1: Accounts, Admin and the F&B reference tables share **one schema**
-inside this app, which is why extending a separate expense-tracker codebase was the
-weaker option.
-
-`[TODO]` **§2.1 remains open** — whether the rebuild ultimately replaces the whole
-Creator cluster or keeps calling the surviving apps over API. It does **not** block
-§17 step 2: that step names its tables explicitly (states → vendors), so the master
-layer is ours to own either way. It *does* still block any F&B write path, per §17.
+`[TODO]` **Confirm before scaffolding:** new standalone app, or extend the existing
+expense-tracker Laravel codebase?
 
 ---
 
@@ -116,15 +83,8 @@ admin     ──►  villa_operation, ers
 schema**. You cannot ship Accounts against a stubbed Admin, and F&B is not a future concern
 — Bills has an F&B lookup on it today (§12.1).
 
-`[RESOLVED 29-Aug-2026]` **Replace the cluster.** All apps land as sub-sections of one
-domain, one Laravel app, one schema. Husain's decision; the condition was that the 7 apps
-live under one domain in sub-sections, which is what this produces.
-
-The DS makes it the only workable answer: the dependency is **bidirectional and heavier
-the other way** — 47 `fb`→`accounts` calls against **63** `accounts`→`fb`, plus 19
-`accounts.FB.*` calls to functions that live in Accounts purely to serve F&B. An API
-boundary would mean ~110 network round-trips replacing in-process calls on the hot path
-of every form. Full working in `docs/ARCHITECTURE_2_1_DECIDED.md`.
+`[TODO]` Does the rebuild replace this whole cluster, or keep calling the remaining Creator
+apps over API? Scoping decision, not implementation detail.
 
 ---
 
@@ -154,26 +114,36 @@ All `→` denote lookups by record ID. `[DS]`
 
 #### Blocking unknowns on Villa
 
-`[TODO]` **`Rent_Type` has FOUR values, not two:** `{Revenue Split EKOSTAY, Expense Split
+`[RESOLVED]` **`Rent_Type` has FOUR values, not two:** `{Revenue Split EKOSTAY, Expense Split
 EKOSTAY, Revenue Share, Lease}`. Every handover document describes two. Accounts branches
 only on `"Lease"` and `"Revenue Share"` — the EKOSTAY split types fall through unhandled.
 **Live correctness bug.** Need counts per type and intended behaviour.
 
-`[TODO]` **Owner splits are hidden for EKOSTAY types.** `OnInputRentTypeCE` `[DS]` shows the
+> ✅ RESOLVED §B2 — four values confirmed, plus `others option = true`, so arbitrary free text is storable too.
+
+`[RESOLVED]` **Owner splits are hidden for EKOSTAY types.** `OnInputRentTypeCE` `[DS]` shows the
 GST / revenue-split / expense-split fields only when `Rent_Type == "Revenue Share"` exactly.
 Where are splits stored for the two EKOSTAY types?
 
-`[TODO]` **Which category-scoping mechanism is live** — A, B, both, F&B's third, or none?
+> ✅ RESOLVED §A3 + DB_FINDINGS §0 — not captured anywhere. And live data across 200 villas shows NEITHER EKOSTAY value in use, so the unhandled branch is dead code rather than an accounting hole.
+
+`[RESOLVED]` **Which category-scoping mechanism is live** — A, B, both, F&B's third, or none?
 The downstream expense tracker was building a *fourth*. Do not implement all of them.
 
-`[TODO]` **Three overlapping active flags** — `Active` vs `Status` vs `Hide_From_Payments`.
+> ✅ RESOLVED §B3 — mechanism B (`Type_field` + Include/Exclude) is what Accounts reads. A is orphaned. B is auto-complementary, so it collapses to one list plus a mode flag.
+
+`[RESOLVED]` **Three overlapping active flags** — `Active` vs `Status` vs `Hide_From_Payments`.
 Bills and Payments filter on `Hide_From_Payments == false` `[DS]`, so that one is load-bearing.
 
-`[TODO]` **Villa hierarchy semantics.** `Primary_Villa`/`Secondary_Villa` self-reference is
+> ✅ RESOLVED §B1 — only `Hide_From_Payments` is read by any code (5 lookup filters). `Active` and `Status` appear solely as report columns. The schema keeps two flags, not three.
+
+`[RESOLVED]` **Villa hierarchy semantics.** `Primary_Villa`/`Secondary_Villa` self-reference is
 undocumented and affects every per-villa aggregation. Note "Central" villas (Ooty Central,
 Karjat Central, Panchgani Central, Lonavla Central, Head Office Central) `[UI]` are real
 payment targets carrying STAFF FUEL and STAFF RENT & ACCOMODATION — so they behave as
 location-level cost centres held as villa values.
+
+> ✅ RESOLVED §B6 — the `Primary` checkbox drives it and `OnSuccessCE` maintains both sides. Parent-child grouping, self-maintaining. The schema uses a self-referencing FK.
 
 ### 3.2 Other Admin forms
 
@@ -218,11 +188,13 @@ Property Manager, Market Head, Central Operations, Human Resources, Manager, CA.
 `"accounts head"` as a lowercase special case. Must become a roles table with an FK.
 Highest-value structural fix in the master layer.
 
-`[TODO]` Full role→permission matrix per module. `[UI]` confirms Edit/Delete/More are
+`[RESOLVED]` Full role→permission matrix per module. `[UI]` confirms Edit/Delete/More are
 conditionally rendered; the conditions are not in the DS. Note there are **role-scoped
 reports** — `CA_Payments`, `View_Payments`, `All_Payments_Hussain`, `CA_Expenses`
 ("LLP Expenses"), `CA_Bills`, `CA_Bank_Transactions` — which is the permission model
 expressed as separate views.
+
+> ✅ RESOLVED §B4 and `zoho_source/Accounts_PERMISSIONS.md` — 17 profiles with per-form, per-report and per-field grants, dispatched by `.contains()` on free-text `User_Role`.
 
 ---
 
@@ -403,8 +375,10 @@ Books_ID · Payments_Scheduled→ · Salary_Payout_Schedule→
 `TDS_Amount` · `GST_Amount` · `Total_Amount` · `Backend_TDS_Amount` · `Backend_GST_Amount` ·
 `Backend_Total_Amount` · `Percent` · `Partial_Paid`
 
-`[TODO]` What is the `Backend_*` triplet for? Read instead of the normal columns when the bill
+`[RESOLVED]` What is the `Backend_*` triplet for? Read instead of the normal columns when the bill
 is `Partially Paid` (§7.2).
+
+> ✅ RESOLVED §B7 — a running UNPAID BALANCE per split leg: reset to total when nothing is paid, decremented on each payment, added back on reversal.
 
 `[TODO]` `Amount_Category` / `Bill_For` versus `Split_Payment`. `[INFER]` Amount_Category =
 invoice line items; Split_Payment = allocation across villa × category × cycle. Confirm.
@@ -422,9 +396,11 @@ Invoice_Amount = Amount + GST_Amount
 Payable_Amount = Invoice_Amount − (Amount × TDS.TDS_Precentage / 100)
 ```
 
-`[TODO]` **Which is authoritative for Bills?** The Bills version subtracts `Paid_Amount`
+`[RESOLVED]` **Which is authoritative for Bills?** The Bills version subtracts `Paid_Amount`
 (Payable = outstanding balance); the Payment version does not (Payable = invoice net of TDS).
 Different quantities, same field name.
+
+> ✅ RESOLVED §A4 — both are correct for their own screen. Reproduced with distinct column names (`bills.payable_amount` vs `vendor_payments.payable_amount`), verified against 16,405 live rows.
 
 **`Split_Equally == true`** distributes with the **remainder on the last row**:
 ```
@@ -518,7 +494,9 @@ if Bills.Status == "Partially Paid" && rec.Backend_Total_Amount != null:
 else:
     Total = Total_Amount ; tds = TDS_Amount ; gst = GST_Amount ; payable = Amount
 ```
-`[TODO]` Confirm the sign convention is intentional.
+`[RESOLVED]` Confirm the sign convention is intentional.
+
+> ✅ RESOLVED §A4 — reproduced as built. Copy-as-built covers it: the sign convention is preserved without adjudicating it.
 
 ### 7.3 Status axes `[DS]` `[UI]`
 
@@ -629,32 +607,11 @@ WhatsApp message IDs. **Collapse to one representation.** `[TODO]` which is auth
 `[UI]` The Creator Workflow tab has `Blueprints` and `Approvals` sub-tabs. **No blueprint or
 approval-workflow blocks appear in `Accounts.ds`.**
 
-~~`[TODO]` **Still unverified.**~~ **RESOLVED 22-Aug-2026 `[UI]` — both sub-tabs are EMPTY.**
+`[RESOLVED]` **Still unverified.** If a Blueprint drives the payment status lifecycle, its stage
+transitions and per-stage field permissions are absent from everything we have, and §6.5 /
+§7.3 are incomplete. Check before building the state machine.
 
-Screenshots of the Creator builder's Workflow section show `Blueprints` and `Approvals` both
-at their zero-state, offering only "Create Blueprint" / "Create Workflow". **Nothing is
-configured in either.**
-
-Consequences, all favourable:
-
-1. **No Blueprint drives the payment status lifecycle.** §6.5 and §7.3 are complete as
-   written, not partial. The state machine can be built from them.
-2. **The approval engine is entirely hand-rolled Deluge** — `UpdatePaymentStatus` (§8.1), the
-   `Approval` matrix with its Approvers grid (§8.2, addendum §11), and the separate
-   amount-banded engine inside Backend Expenses (addendum §4). No platform approval process
-   sits above them.
-3. **Therefore all seven disagreeing representations of approval state (§8.4, addendum §1)
-   are application-level.** None is a platform artefact, so all seven are ours to reconcile.
-4. **The DS exports are complete for logic.** They declare exactly three workflow kinds and
-   the counts match §2 exactly: `type = form` ×284, `type = schedule` ×21,
-   `type = functions` ×33. No batch-workflow, report-workflow or payment-workflow blocks
-   exist in the file, and with Blueprints and Approvals empty there is no known execution
-   surface outside these three kinds.
-
-`[TODO]` minor, and cheap: the same Workflow screen also carries **Payments**, **Batch
-workflows** and **Report workflows** sub-tabs, which §8.5 never listed. No blocks of those
-kinds appear in the DS either. Almost certainly also empty — but that is an inference from
-absence, so a glance at those three tabs would close it properly.
+> ✅ RESOLVED §A1 — checked in the Creator Workflow tab on 13-Aug-2026. **Blueprints and Approvals are EMPTY** in both Accounts and F&B. The Deluge is the whole story, so §8 stands.
 
 ---
 
@@ -669,7 +626,9 @@ absence, so a glance at those three tabs would close it properly.
 | All Backend Expenses | `Backend_Expenses` | **140** |
 | All Expense Observations | `Expense_Observation` | 10 |
 
-`[TODO]` Does anyone open Backend Expenses, or is it a sync landing table?
+`[ANSWERED]` Does anyone open Backend Expenses, or is it a sync landing table?
+
+> ✅ PARTLY ANSWERED — `acco_accounts.expenses` holds 63,335 rows from exactly 2 sources (`legacy_import`, `zoho`), i.e. machine-written only. Consistent with a sync landing table. Whether a human ever opens the Creator screen is still a question for Husain, but nothing writes to it by hand.
 
 ### 9.2 One form serving both types, and no edit page
 
@@ -757,7 +716,9 @@ Total_Due  = Due_Amount + GST%·Due_Amount − TDS%·Due_Amount
 ```
 
 **GST and TDS apply to `Due_Amount` here, after deductions** — unlike Bills and Payment,
-which apply them to gross. Genuine inconsistency across three modules. `[TODO]` which is right?
+which apply them to gross. Genuine inconsistency across three modules. `[RESOLVED]` which is right?
+
+> ✅ RESOLVED §A4 — all three reproduced as built, none adjudicated. The Schedule Payments module surfaces the net-basis result in its own footer.
 
 **Validation:** `Due_Amount != Amount` requires `Remarks`. **Good rule — keep it.**
 
@@ -826,8 +787,10 @@ CTC     = Payable + EmpPF + EmpESIC + PT + EmployerPF + EmployerESIC
 
 **Editable per payout row:** Create Payment, Billing Cycle, Payment Date, Days worked,
 Penalty, Other Expenses. Everything else derives — including **Staff Advance and Staff Loan**,
-which must therefore flow in from the STAFF LOAN / advance schedules in §10. `[TODO]` confirm
+which must therefore flow in from the STAFF LOAN / advance schedules in §10. `[RESOLVED]` confirm
 that link.
+
+> ✅ RESOLVED §B8 — `Salary_Payouts.OnBillingCycleCE` pulls both from `Expenses_Bills`, matched on vendor + billing cycle, filtering for the STAFF ADVANCE / STAFF LOAN categories.
 
 **`CTC` is misnamed** — it is built up from Payable, and employer contributions are added in.
 Anyone reading a payslip will misinterpret it.
@@ -844,7 +807,9 @@ Kerala         half-year = Salary × 6 → 0 / 20 / 30 / 50 / 75 / 100 / 125 / 1
 
 So **`Age` is the under-65 exemption** and **`Gender` is the Maharashtra women's threshold** —
 both genuinely load-bearing. No branch for Goa or Uttarakhand; correct, since neither levies PT.
-`[TODO]` confirm no staff are filed in other states.
+`[ANSWERED]` confirm no staff are filed in other states.
+
+> ✅ ANSWERED from live data, 19-Aug — every location carrying SALARY rows maps to a state the engine handles: Maharashtra (Alibaug, Lonavala, Head Office Central, Karjat, Igatpuri, Panchgani, Wada), Tamil Nadu (Ooty and Coonoor, Kodaikanal), Goa. **No unhandled state.** Karnataka and Uttarakhand have rules but no payroll rows — Chikmagalur and Mussoorie carry none.
 
 ### 11.4 ⚠️ Four statutory deviations, quantified `[VERIFIED]`
 
@@ -1111,7 +1076,9 @@ into the provider's schema.
 bill_upload, bill_verified, admin_verified, duplicate_bill, api_charges.
 
 **Links out**: `Payment` → one payment, `Matched_Payments` → a **list** of payments.
-`[TODO]` Does one backend expense ever match several payments, or is the list vestigial?
+`[RESOLVED]` Does one backend expense ever match several payments, or is the list vestigial?
+
+> ✅ RESOLVED §A6 + DB_FINDINGS §8 — both fields kept as the source has them. Whether one backend expense ever matches several payments is a data question answerable later; dropping a column on a guess is not reversible.
 
 **Report columns** `[UI]`, in order: Update (button) · date · Payment · Added Time ·
 receiver_details · dr_amount · fk_m_hccc_id · multipe_hccc_names · remark_cat_name ·
@@ -1134,7 +1101,9 @@ General-Lonavala          ← ?-location
 Goa-General               ← location-?
 ```
 Splitting on `-` is unsafe regardless, because villa names contain hyphens
-(`Ezra Villa- Anjuna`, `Casa Pino- Pilerne`). `[TODO]` what is the intended composition?
+(`Ezra Villa- Anjuna`, `Casa Pino- Pilerne`). `[ANSWERED]` what is the intended composition?
+
+> ✅ ANSWERED from live data, 19-Aug — 34 villas use `Name- Locality`, and it is NOT Goa-only: Goa 22, Lonavala 6, Alibaug 2, Karjat 2, Panvel 2. So the locality suffix is a naming convention, not a region marker, and parsing it to derive location would be wrong. Join on `location_id`.
 
 **`receiver_name` and `tai_vendor_name` disagree** — receiver `KAVITA SUPER MARKET` against
 vendor `Gayatri sweet mart and baker`; receiver `Police Training Center Khandala Welfare Fund`
