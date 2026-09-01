@@ -170,6 +170,54 @@ final class ZohoViews
             'note' => 'Only 2 fields in the DS, but staging tables often carry a blob or a '
                 .'long path. Check the column shape before assuming it is cheap.',
         ],
+        'master_category' => [
+            'id' => '443703000000062587',
+            'workspace' => 'accounts',
+            'label' => 'Master Categories',
+            'note' => '10 rows. Carries `F_B`, the scoping flag the whole F&B app depends '
+                .'on — `master_categories.fb` is true on `F&B` alone, and it lives on the '
+                .'ACCOUNTS side. Small table, load-bearing.',
+        ],
+        /*
+         * ⚠️ PII. `.gitignore` excludes `master-data/Vendor_Master.csv*` by name — twice —
+         * because these rows carry PANs and free-text bank details. Syncing into local
+         * Postgres is fine; EXPOSING it is not. §3.3's authorisation matrix is extracted
+         * and tested but still not wired to a gate, so any endpoint reading this table
+         * would be open. Do not add one until that gate exists.
+         *
+         * Merge semantics also apply: §13A.1 is settled, and a merge is NEVER resolved
+         * through `main_primary`. The Creator form's own lookup filters on
+         * `Vendor_Master[Main_Primary.Main_Primary is not null]`, which is the trap.
+         */
+        'vendor_master' => [
+            'id' => '443703000000062659',
+            'workspace' => 'accounts',
+            'label' => 'Vendor Master',
+            'note' => '8,161 vendors, 55 fields. PII: PANs and bank details. 6,957 are '
+                .'selectable as trade payees. Unmeasured for export size.',
+        ],
+        'tax' => [
+            'id' => '443703000001623380',
+            'workspace' => 'accounts',
+            'label' => 'Tax',
+            'note' => 'Creator filters this as `Tax[Tax_Type == "tax_group"]` for the F&B '
+                .'cross-app read, so tax_type matters and must survive the import.',
+        ],
+        'tds' => [
+            'id' => '443703000001623164',
+            'workspace' => 'accounts',
+            'label' => 'TDS',
+            'note' => '35 rows seeded locally as `tds_rates`. Creator filters '
+                .'`TDS[Status == "Active"]` on the Bills form, so Status must come across.',
+        ],
+        'salary_payouts' => [
+            'id' => '443703000008244411',
+            'workspace' => 'accounts',
+            'label' => 'Salary Payouts',
+            'note' => 'Same 4437030000082443xx series as the Eko_RS six. Salary Payouts is '
+                .'GATED in the rebuild — §11 versioned payroll config does not exist — so '
+                .'this syncs for understanding, not to power a screen.',
+        ],
         'coa' => [
             'id' => '443703000001623452',
             'workspace' => 'accounts',
