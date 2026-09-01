@@ -5,6 +5,7 @@ import FilterBar from '../components/FilterBar';
 import RecordDetail from '../components/RecordDetail';
 import { ddMmmYyyy, rupees } from '../lib/format';
 import usePagedReport from '../lib/usePagedReport';
+import useOverlayZ from '../lib/useOverlayZ';
 
 /**
  * All Pending Approvals — 24 columns, and the first screen here that MOVES money.
@@ -54,6 +55,7 @@ const DATE = new Set(['Payment Date']);
 
 /** A tiny prompt for the fields there is no session to supply. */
 function ActionDialog({ action, row, onCancel, onConfirm }) {
+  const overlayZ = useOverlayZ();
   const [approver, setApprover] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -64,7 +66,7 @@ function ActionDialog({ action, row, onCancel, onConfirm }) {
     && (!needsReason || reason.trim().length >= 3);
 
   return (
-    <div className="zc-overlay" role="dialog" aria-modal="true">
+    <div className="zc-overlay" style={{ zIndex: overlayZ }} role="dialog" aria-modal="true">
       <div className="zc-overlay-head">
         {action === 'approve' ? 'Approve' : action === 'reject' ? 'Reject' : 'Mark paid'}
         {' '}{row['Payment No'] || `#${row.id}`}

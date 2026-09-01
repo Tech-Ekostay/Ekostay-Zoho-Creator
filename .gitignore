@@ -133,3 +133,6 @@ _preserved/
 # (All_Villas.csv, COA_Report.json, All_Item_Categories.json, _index.json and the
 # rest). Deleting another developer's committed fixtures would break
 # migrate:fresh --seed for everyone. Worth a conversation, not a unilateral rm.
+
+# Python bytecode from the docs/ DS parsers.
+__pycache__/

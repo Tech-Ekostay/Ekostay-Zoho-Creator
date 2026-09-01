@@ -252,7 +252,17 @@ export default function PaymentsModule() {
         />
       )}
 
-      {payment && (
+      {/*
+        * `!editing` IS LOad-BEARING. The form above and this detail are both
+        * `position: fixed` at `z-index: 50` and cover the same rect, and the form
+        * renders FIRST in the DOM. Equal z-index means later-in-DOM paints on top,
+        * so leaving the detail mounted buries the form completely: Edit opens it,
+        * nothing appears to happen, and the click reads as a dead button. Bills
+        * avoids this by closing the detail inside `onEdit`; Payments needs the
+        * guard here because `payment` is derived from the row, not from a
+        * `viewing` flag that `onEdit` could clear.
+        */}
+      {payment && !editing && (
         <RecordDetail
           title={data?.title ?? 'All Payments'}
           subtitle={payment['Payment No']}

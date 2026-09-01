@@ -1,4 +1,5 @@
 import { multi as splitMulti } from '../lib/format';
+import useOverlayZ from '../lib/useOverlayZ';
 
 /**
  * The record detail view — Creator's row-click destination, and now the ONE flow
@@ -53,10 +54,11 @@ export default function RecordDetail({
   /** True where a screenshot of THIS report's detail panel settled the field order. */
   orderVerified = false,
 }) {
+  const overlayZ = useOverlayZ();
   const editable = typeof onEdit === 'function';
 
   return (
-    <div className="zc-overlay" role="dialog" aria-modal="true" aria-label={`${title} — record`}>
+    <div className="zc-overlay" style={{ zIndex: overlayZ }} role="dialog" aria-modal="true" aria-label={`${title} — record`}>
       <div className="zc-overlay-head">
         {title}
         {subtitle && <strong style={{ marginLeft: 10 }}>{subtitle}</strong>}

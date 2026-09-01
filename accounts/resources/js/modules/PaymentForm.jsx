@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import VendorPicker from '../components/VendorPicker';
 import { inr } from '../lib/format';
+import useOverlayZ from '../lib/useOverlayZ';
 
 /**
  * The direct Payment form — a payment entered on its own, not from a bill.
@@ -50,6 +51,7 @@ import { inr } from '../lib/format';
  * opened and saved. One form serves both, as Creator's does.
  */
 export default function PaymentForm({ options, onClose, onSaved, payment = null }) {
+  const overlayZ = useOverlayZ();
   const editing = payment !== null;
 
   const [form, setForm] = useState({
@@ -418,7 +420,7 @@ export default function PaymentForm({ options, onClose, onSaved, payment = null 
     c.map((leg, j) => (j === i ? { ...leg, [key]: value } : leg)));
 
   return (
-    <div className="zc-overlay" role="dialog" aria-modal="true"
+    <div className="zc-overlay" style={{ zIndex: overlayZ }} role="dialog" aria-modal="true"
       aria-label={editing ? 'Update Payment' : 'Add Payment'}>
       <div className="zc-overlay-head">
         Payment

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import useOverlayZ from '../lib/useOverlayZ';
 
 /**
  * The add / edit form — a near-full-screen OVERLAY, not a centred modal.
@@ -49,6 +50,7 @@ export default function RecordForm({
   onClose,
   onSaved,
 }) {
+  const overlayZ = useOverlayZ();
   const isNew = values === null;
 
   const initial = useMemo(() => {
@@ -121,7 +123,7 @@ export default function RecordForm({
   };
 
   return (
-    <div className="zc-overlay" role="dialog" aria-modal="true" aria-label={`${isNew ? 'Add' : 'Edit'} ${title}`}>
+    <div className="zc-overlay" style={{ zIndex: overlayZ }} role="dialog" aria-modal="true" aria-label={`${isNew ? 'Add' : 'Edit'} ${title}`}>
       <div className="zc-overlay-head">
         {isNew ? `Add ${title}` : `Edit ${title}`}
       </div>

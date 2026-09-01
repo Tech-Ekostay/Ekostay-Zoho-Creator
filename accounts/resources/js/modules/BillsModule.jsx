@@ -207,7 +207,14 @@ export default function BillsModule({ onCreatePayment }) {
         />
       )}
 
-      {selected && (
+      {/*
+        * The strip sits UNDER the detail and form overlays, which are `position: fixed`
+        * and cover it. Left mounted, its `Edit` and `Create Payment` stay visible and
+        * enabled behind the modal and swallow clicks that never reach them — the button
+        * looks live and does nothing. The overlay carries both actions itself (`onEdit`
+        * and `extras`), so the strip has no job while one is open.
+        */}
+      {selected && viewing === null && editing === null && (
         <div style={{ borderTop: '1px solid var(--line)', padding: '9px 14px', display: 'flex', gap: 8, alignItems: 'center' }}>
           <strong>{selected['Bill No']}</strong>
           <span style={{ color: 'var(--ink3)', fontSize: 12 }}>{selected['Status']}</span>

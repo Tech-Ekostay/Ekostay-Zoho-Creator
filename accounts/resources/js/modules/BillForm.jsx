@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import VendorPicker from '../components/VendorPicker';
 import { inr } from '../lib/format';
+import useOverlayZ from '../lib/useOverlayZ';
 
 /**
  * The Bill form — §6.2, and the split grid that makes it consequential.
@@ -48,6 +49,7 @@ const EMPTY = {
 };
 
 export default function BillForm({ options, detail, onClose, onSaved }) {
+  const overlayZ = useOverlayZ();
   const isNew = detail === null;
 
   const [form, setForm] = useState(() => (isNew ? EMPTY : { ...EMPTY, ...detail.values }));
@@ -245,7 +247,7 @@ export default function BillForm({ options, detail, onClose, onSaved }) {
   );
 
   return (
-    <div className="zc-overlay" role="dialog" aria-modal="true" aria-label={isNew ? 'Add Bill' : 'Edit Bill'}>
+    <div className="zc-overlay" style={{ zIndex: overlayZ }} role="dialog" aria-modal="true" aria-label={isNew ? 'Add Bill' : 'Edit Bill'}>
       <div className="zc-overlay-head">{isNew ? 'Add Bill' : `Edit Bill — ${detail.bill['Bill No']}`}</div>
 
       <div className="zc-overlay-body">
