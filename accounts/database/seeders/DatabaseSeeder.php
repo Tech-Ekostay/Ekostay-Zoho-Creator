@@ -38,6 +38,26 @@ class DatabaseSeeder extends Seeder
             // The payment-number counter (§7.2). Must be real: it is at 20938, and
             // starting fresh would re-issue numbers that already exist.
             AutoNumberSeeder::class,
+
+            // F&B masters. Last, because fnb_item_masters resolves its categories
+            // against Accounts' item_categories and its UOMs against fnb_uoms —
+            // both must already exist. It creates NO master rows of its own.
+            // billing_cycles, recovered from the F&B order export — the only source
+            // for them, and they must exist BEFORE any order references one (§6.4:
+            // Creator auto-creates a missing cycle, which is how a junk "9-2026"
+            // cycle reached live accounting).
+            FnbBillingCycleSeeder::class,
+            FnbMasterSeeder::class,
+
+            // Warehouses and inventory. AFTER FnbMasterSeeder: it resolves items
+            // against fnb_item_masters and UOMs against fnb_uoms, and creates
+            // neither if a name is unknown.
+            FnbInventorySeeder::class,
+
+            // F&B's own four counters, separate from Accounts' auto_numbers. The
+            // values are the REAL live maximums; starting at 1 would re-mint
+            // numbers that already belong to orders.
+            FnbAutoNumberSeeder::class,
         ]);
     }
 }

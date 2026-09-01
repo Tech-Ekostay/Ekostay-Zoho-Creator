@@ -137,8 +137,179 @@ final class ZohoViews
             'id' => '443703000002007229',
             'workspace' => 'accounts',
             'label' => 'F&B / kitchen',
-            'note' => 'F&B is not a future concern — Bills carries an F&B lookup today.',
+            'large' => true,
+            'note' => 'F&B is not a future concern — Bills carries an F&B lookup today. '
+                .'MEASURED 27-Aug-2026: 27,950 rows, 57 columns, 11.5s. It was NOT flagged '
+                .'large, so it took the JSON path and exhausted a 128MB limit in decode() — '
+                .'the exact §7.4 failure, on a view nobody had run. Flagged now.',
         ],
+        /*
+         * ---- F&B raw tables, found 31-Aug-2026 -------------------------------
+         *
+         * Discovered by LISTING the workspace rather than by asking: 665 views live
+         * there, and every F&B source table carries the suffix "(Zoho Creator-F&B)".
+         *
+         * They are viewType **Table** — a plain projection of the Creator form — not
+         * QueryTable. That matters: §6 records that a heavy-join QueryTable is what
+         * times out on bulk export (all_payments is flagged avoid for exactly that),
+         * and the "(F&B)" QueryTables sitting beside these are reporting joins. Prefer
+         * the Tables.
+         *
+         * NOTE the existing 'fnb' entry above (443703000002007229) is
+         * "All Expenses (F&B)" — an expense-shaped join, NOT one of these form
+         * tables. Both are kept; they answer different questions.
+         */
+        /*
+         * Two Accounts/Admin masters F&B references BY RECORD ID. Registered here
+         * because the F&B order view returns `State: "292482000000169003"` and
+         * `Billing Cycle: "292482000004887880"` — ids, not names — and our rows
+         * were recovered from CSV names with no creator_id at all. Without these
+         * two views, 10,762 of 10,765 orders resolved neither.
+         */
+        'states' => [
+            'id' => '443703000001635097',
+            'workspace' => 'accounts',
+            'label' => 'State (Zoho Creator)',
+        ],
+        'billing_cycles' => [
+            'id' => '443703000001623110',
+            'workspace' => 'accounts',
+            'label' => 'Billing Cycles',
+            'note' => 'The cycle master CLAUDE.md lists under "no export exists". It '
+                .'does exist here. Note BOTH February spellings are live keys - '
+                .'`Feburary` carries 847 orders against 34 for `February`.',
+        ],
+
+        'fnb_transaction_items' => [
+            'id' => '443703000001635845',
+            'workspace' => 'accounts',
+            'label' => 'Transaction Items (Zoho Creator-F&B)',
+            'note' => 'THE STOCK LEDGER. Every movement in/out/transfer/damaged/'
+                .'misplaced/reverse. The only view that can prove available_qty is right.',
+        ],
+        'fnb_vendor_order_bookings' => [
+            'id' => '443703000001635899',
+            'workspace' => 'accounts',
+            'label' => 'Vendor Order Booking (Zoho Creator-F&B)',
+            'large' => true,
+            'note' => '11,205 rows in the CSV export of the same report.',
+        ],
+        'fnb_vendor_order_booking_items' => [
+            'id' => '443703000001635917',
+            'workspace' => 'accounts',
+            'label' => 'Vendor Order Booking_Items Ordered (Zoho Creator-F&B)',
+            'large' => true,
+            'note' => '110,510 rows in the CSV. THE GRID, not the standalone form: '
+                .'Creator exposes both a Vendor Order Booking Item view (...935) and '
+                .'this Items Ordered subform. This one holds the child rows.',
+        ],
+        'fnb_raw_material_requests' => [
+            'id' => '443703000001635737',
+            'workspace' => 'accounts',
+            'label' => 'Raw Material Request (Zoho Creator-F&B)',
+            'large' => true,
+            'note' => '160,995 rows in the CSV - the second largest F&B table.',
+        ],
+        'fnb_request_stock_for_foods' => [
+            'id' => '443703000001635755',
+            'workspace' => 'accounts',
+            'label' => 'Request Stock for Food (Zoho Creator-F&B)',
+            'note' => 'CARRIES GUEST NAMES. Real PII beside villa and stay dates - '
+                .'needs authorisation on any endpoint that reads it.',
+        ],
+        'fnb_inventory_stocks' => [
+            'id' => '443703000001635683',
+            'workspace' => 'accounts',
+            'label' => 'Inventory_Stock (Zoho Creator-F&B)',
+            'note' => 'The dated child rows. NOT "Inventory Stock (...647)", which is '
+                .'the parent-shaped view - the underscore is the whole difference.',
+        ],
+        'fnb_vendor_price_lists' => [
+            'id' => '443703000001635575',
+            'workspace' => 'accounts',
+            'label' => 'Vendor Price List (Zoho Creator-F&B)',
+        ],
+        'fnb_transfer_items' => [
+            'id' => '443703000001635863',
+            'workspace' => 'accounts',
+            'label' => 'Transfer Items (Zoho Creator-F&B)',
+        ],
+        'fnb_monthly_checks' => [
+            'id' => '443703000001635701',
+            'workspace' => 'accounts',
+            'label' => 'Monthly Check (Zoho Creator-F&B)',
+        ],
+        'fnb_monthly_check_items' => [
+            'id' => '443703000001635719',
+            'workspace' => 'accounts',
+            'label' => 'Monthly Check_Items List (Zoho Creator-F&B)',
+        ],
+        'fnb_chef_masters' => [
+            'id' => '443703000001635449',
+            'workspace' => 'accounts',
+            'label' => 'Chef Master (Zoho Creator-F&B)',
+            'note' => 'PII: name, phone, email, address.',
+        ],
+        'fnb_recipe_masters' => [
+            'id' => '443703000006354913',
+            'workspace' => 'accounts',
+            'label' => 'Recipe Master (Zoho Creator-F&B)',
+        ],
+        'fnb_recipe_requirements' => [
+            'id' => '443703000006354877',
+            'workspace' => 'accounts',
+            'label' => 'Requirements of Recipe (Zoho Creator-F&B)',
+            'note' => 'The PARENT. Creator also exposes four category-shaped children - '
+                .'KIRANA ...868, DAIRY ...904, VEGETABLE ...886, MEAT ...931 - which are '
+                .'the four hardcoded grids of findings 13.2. Our table is '
+                .'category-agnostic, so import the parent and the four become queries.',
+        ],
+        'fnb_food_order_details' => [
+            'id' => '443703000006354922',
+            'workspace' => 'accounts',
+            'label' => 'Food Order Details (Zoho Creator-F&B)',
+        ],
+        'fnb_block_booking_dates' => [
+            'id' => '443703000006354895',
+            'workspace' => 'accounts',
+            'label' => 'Block Booking Date (Zoho Creator-F&B)',
+        ],
+        'fnb_auto_numbers' => [
+            'id' => '443703000001635428',
+            'workspace' => 'accounts',
+            'label' => 'Auto Numbers (Zoho Creator-F&B)',
+            'note' => 'ONE ROW, and what matters is the counter RIGHT NOW. '
+                .'FnbNumber::allocate() refuses while our counter is behind this, so a '
+                .'fresh reading re-arms the guard.',
+        ],
+        'fnb_warehouses' => [
+            'id' => '443703000001635611',
+            'workspace' => 'accounts',
+            'label' => 'Warehouse (Zoho Creator-F&B)',
+            'note' => 'Holds the Location and Villa_Name multi-value fields that the CSV '
+                .'export flattened to nothing (spec 12). Worth re-checking here.',
+        ],
+        'fnb_warehouse_items' => [
+            'id' => '443703000001635629',
+            'workspace' => 'accounts',
+            'label' => 'Warehouse_Inventory Items (Zoho Creator-F&B)',
+        ],
+        'fnb_item_masters' => [
+            'id' => '443703000001635539',
+            'workspace' => 'accounts',
+            'label' => 'Item Master (Zoho Creator-F&B)',
+        ],
+        'fnb_uoms' => [
+            'id' => '443703000001635521',
+            'workspace' => 'accounts',
+            'label' => 'UOM (Zoho Creator-F&B)',
+        ],
+        'fnb_inventories' => [
+            'id' => '443703000001635665',
+            'workspace' => 'accounts',
+            'label' => 'Inventory (Zoho Creator-F&B)',
+        ],
+
         'all_payments' => [
             'id' => '443703000001659807',
             'workspace' => 'accounts',

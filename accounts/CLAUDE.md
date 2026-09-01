@@ -174,10 +174,11 @@ synced-vs-user-generated table separation, IDs as opaque strings.
 as §17 step 1 requires. "Same code structure as the expense tracker" means same
 conventions, not the same repository. Migrations may proceed.
 
-**§2.1 still open** — whether the rebuild replaces the whole Creator cluster or
-keeps calling the surviving apps over API. This does *not* block §17 step 2, which
-names its tables explicitly, so the master layer is ours either way. It does still
-block any F&B write path.
+**§2.1 RESOLVED 29-Aug-2026 — replace the cluster.** All apps become sub-sections of
+one domain, one Laravel app, one schema. **The F&B write-path gate is lifted.**
+Measured from the DS: the dependency is bidirectional and heavier the other way (63
+`accounts`→`fb` against 47 the other), so an API seam was never viable. See
+`docs/ARCHITECTURE_2_1_DECIDED.md`.
 
 Either way the apps call each other bidirectionally by direct function reference,
 so **Accounts, Admin and the F&B reference tables live in one schema** here.

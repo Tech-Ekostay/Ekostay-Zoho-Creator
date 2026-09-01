@@ -116,8 +116,15 @@ admin     ──►  villa_operation, ers
 schema**. You cannot ship Accounts against a stubbed Admin, and F&B is not a future concern
 — Bills has an F&B lookup on it today (§12.1).
 
-`[TODO]` Does the rebuild replace this whole cluster, or keep calling the remaining Creator
-apps over API? Scoping decision, not implementation detail.
+`[RESOLVED 29-Aug-2026]` **Replace the cluster.** All apps land as sub-sections of one
+domain, one Laravel app, one schema. Husain's decision; the condition was that the 7 apps
+live under one domain in sub-sections, which is what this produces.
+
+The DS makes it the only workable answer: the dependency is **bidirectional and heavier
+the other way** — 47 `fb`→`accounts` calls against **63** `accounts`→`fb`, plus 19
+`accounts.FB.*` calls to functions that live in Accounts purely to serve F&B. An API
+boundary would mean ~110 network round-trips replacing in-process calls on the hot path
+of every form. Full working in `docs/ARCHITECTURE_2_1_DECIDED.md`.
 
 ---
 

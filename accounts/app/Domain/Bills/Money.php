@@ -102,6 +102,18 @@ final class Money
         return bccomp(self::roundToRupees($a), self::roundToRupees($b), 0) === 0;
     }
 
+    /**
+     * quantity x unit price, at full scale.
+     *
+     * Added for F&B: a line amount is `received_quantity x price` (findings §9.1).
+     * Bills never needed it — it SPLITS a total that already exists rather than
+     * deriving one — which is why this is the first multiplication in Money.
+     */
+    public static function mul(?string $a, ?string $b): string
+    {
+        return bcmul(self::normalise($a), self::normalise($b), self::SCALE);
+    }
+
     /** Half-up to whole rupees, matching Deluge's round(0). */
     public static function roundToRupees(?string $value): string
     {

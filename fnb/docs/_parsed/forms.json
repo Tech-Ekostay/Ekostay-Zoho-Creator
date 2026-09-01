@@ -1,0 +1,1940 @@
+[
+ {
+  "name": "Auto_Numbers",
+  "line": 15,
+  "fields": [
+   {
+    "name": "Booking",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Booking_Series",
+    "type": "text",
+    "label": "Booking Series",
+    "mand": false
+   },
+   {
+    "name": "Booking_No",
+    "type": "number",
+    "label": "Booking No",
+    "mand": false
+   },
+   {
+    "name": "Stock_Request",
+    "type": "section",
+    "label": "Stock Request",
+    "mand": false
+   },
+   {
+    "name": "Request_Series",
+    "type": "text",
+    "label": "Request Series",
+    "mand": false
+   },
+   {
+    "name": "Request_No",
+    "type": "number",
+    "label": "Request No",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Booking",
+    "type": "section",
+    "label": "Vendor Booking",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Booking_Series",
+    "type": "text",
+    "label": "Vendor Booking Series",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Booking_No",
+    "type": "number",
+    "label": "Vendor Booking No.",
+    "mand": false
+   },
+   {
+    "name": "Warehouse_Transfer",
+    "type": "section",
+    "label": "Warehouse Transfer ",
+    "mand": false
+   },
+   {
+    "name": "Transfer_Series",
+    "type": "text",
+    "label": "Transfer Series",
+    "mand": false
+   },
+   {
+    "name": "Transfer_No",
+    "type": "number",
+    "label": "Transfer No.",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Block_Booking_Date",
+  "line": 149,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Date_field",
+    "type": "date",
+    "label": "Date",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Booking",
+  "line": 195,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Booking_No",
+    "type": "text",
+    "label": "Booking No.",
+    "mand": false
+   },
+   {
+    "name": "Guest_Name",
+    "type": "text",
+    "label": "Guest Name",
+    "mand": false
+   },
+   {
+    "name": "Phone_Number",
+    "type": "phonenumber",
+    "label": "Phone",
+    "mand": false
+   },
+   {
+    "name": "Checked_In_Date",
+    "type": "date",
+    "label": "Checked In Date",
+    "mand": false
+   },
+   {
+    "name": "Sales_Person",
+    "type": "picklist",
+    "label": "Request",
+    "values": "admin.Employee_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Food_Sales_Person",
+    "type": "picklist",
+    "label": "Food Sales Person",
+    "values": "admin.Employee_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Food_Sales_Person1",
+    "type": "picklist",
+    "label": "Food Sales Person",
+    "values": "Chef_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Ekostay_ID",
+    "type": "number",
+    "label": "Ekostay ID",
+    "mand": false
+   },
+   {
+    "name": "No_of_Days",
+    "type": "number",
+    "label": "No of Days",
+    "mand": false
+   },
+   {
+    "name": "Status",
+    "type": "picklist",
+    "values": "{\"Confirmed\",\"Cancelled\",\"Maintaince\",\"Maintenance\",\"Functionality\"}",
+    "mand": false
+   },
+   {
+    "name": "Email",
+    "type": "email",
+    "mand": false
+   },
+   {
+    "name": "Check_Out_Date",
+    "type": "date",
+    "label": "Check Out Date",
+    "mand": false
+   },
+   {
+    "name": "Commission",
+    "type": "INR",
+    "mand": false
+   },
+   {
+    "name": "Villa_Details",
+    "type": "section",
+    "label": "Villa Details",
+    "mand": false
+   },
+   {
+    "name": "Villa_Name",
+    "type": "picklist",
+    "label": "Villa Name",
+    "values": "admin.Villa.ID",
+    "mand": false
+   },
+   {
+    "name": "Villa_Name1",
+    "type": "text",
+    "label": "Villa Name",
+    "mand": false
+   },
+   {
+    "name": "Location",
+    "type": "picklist",
+    "values": "admin.Location.ID",
+    "mand": false
+   },
+   {
+    "name": "Staff_Food",
+    "type": "list",
+    "label": "Staff Food",
+    "values": "Chef_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Booking_Source",
+    "type": "text",
+    "label": "Booking Source",
+    "mand": false
+   },
+   {
+    "name": "State",
+    "type": "picklist",
+    "values": "admin.State.ID",
+    "mand": false
+   },
+   {
+    "name": "Net_Stay_Tariff",
+    "type": "INR",
+    "label": "Net Stay Tariff",
+    "mand": false
+   },
+   {
+    "name": "Damage_Recovery",
+    "type": "INR",
+    "label": "Damage Recovery",
+    "mand": false
+   },
+   {
+    "name": "Maintenance_Mandatory",
+    "type": "checkbox",
+    "label": "Maintenance Mandatory",
+    "mand": false
+   },
+   {
+    "name": "Chef",
+    "type": "checkbox",
+    "mand": false
+   },
+   {
+    "name": "Order_Type",
+    "type": "picklist",
+    "label": "Order Type",
+    "values": "{\"Standard\",\"Deluxe\",\"Chef\",\"Chef Services\"}",
+    "mand": false
+   },
+   {
+    "name": "Guest_Details",
+    "type": "section",
+    "label": "Guest Details",
+    "mand": false
+   },
+   {
+    "name": "No_of_Children",
+    "type": "number",
+    "label": "No of Children",
+    "mand": false
+   },
+   {
+    "name": "No_of_People",
+    "type": "number",
+    "label": "No of People",
+    "mand": false
+   },
+   {
+    "name": "No_of_Adults",
+    "type": "number",
+    "label": "No of Adults",
+    "mand": false
+   },
+   {
+    "name": "Guest_Proof",
+    "type": "upload file",
+    "label": "Guest Proof",
+    "mand": false
+   },
+   {
+    "name": "Food_Booking4",
+    "type": "section",
+    "label": "Food Booking ",
+    "mand": false
+   },
+   {
+    "name": "Guest_Menu_Ordered",
+    "type": "checkbox",
+    "label": "Guest Menu Ordered",
+    "mand": false
+   },
+   {
+    "name": "Net_Food_Tariff",
+    "type": "INR",
+    "label": "Net Food Tariff",
+    "mand": false
+   },
+   {
+    "name": "Indirect_Expense",
+    "type": "INR",
+    "label": "Indirect Expense",
+    "mand": false
+   },
+   {
+    "name": "Food_Booking",
+    "type": "text",
+    "label": "Food Booking",
+    "mand": false
+   },
+   {
+    "name": "Food_Booking1",
+    "type": "url",
+    "label": "Food Booking ",
+    "mand": false
+   },
+   {
+    "name": "Food_Remarks",
+    "type": "textarea",
+    "label": "Food Remarks",
+    "mand": false
+   },
+   {
+    "name": "Food_Remarks_Zoho",
+    "type": "textarea",
+    "label": "Food Remarks Zoho ",
+    "mand": false
+   },
+   {
+    "name": "Chef_Name",
+    "type": "picklist",
+    "label": "Chef Name",
+    "values": "Chef_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Guest_Order_Finalized",
+    "type": "checkbox",
+    "label": "Guest Order Finalized",
+    "mand": false
+   },
+   {
+    "name": "Direct_Expense",
+    "type": "INR",
+    "label": "Direct Expense",
+    "mand": false
+   },
+   {
+    "name": "Profit",
+    "type": "INR",
+    "mand": false
+   },
+   {
+    "name": "Profit1",
+    "type": "percentage",
+    "label": "Profit%",
+    "mand": false
+   },
+   {
+    "name": "Order_Date",
+    "type": "text",
+    "label": "Order Date",
+    "mand": false
+   },
+   {
+    "name": "Raw_Material_Status",
+    "type": "picklist",
+    "label": " Raw Material Status",
+    "values": "{\"Not Ordered\",\"Ordered\",\"Pending\",\"Partially Processed\",\"Processed\"}",
+    "mand": false
+   },
+   {
+    "name": "Raw_Materials3",
+    "type": "section",
+    "label": "Raw Materials",
+    "mand": false
+   },
+   {
+    "name": "Raw_Materials1",
+    "type": "richtext",
+    "label": "Raw Materials",
+    "mand": false
+   },
+   {
+    "name": "Section1",
+    "type": "section",
+    "label": "Section",
+    "mand": false
+   },
+   {
+    "name": "Add_Automaticlly",
+    "type": "checkbox",
+    "label": "Add Automaticlly",
+    "mand": false
+   },
+   {
+    "name": "Raw_Materials",
+    "type": "grid",
+    "label": "Raw Materials",
+    "values": "Raw_Material_Request.ID",
+    "mand": false
+   },
+   {
+    "name": "Booking_Expense",
+    "type": "grid",
+    "label": "Booking Expense",
+    "values": "{\"Direct\",\"Indirect\"}",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Chef_Master",
+  "line": 777,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Name",
+    "type": "text",
+    "mand": false
+   },
+   {
+    "name": "Chef_ID",
+    "type": "text",
+    "label": "Chef ID",
+    "mand": false
+   },
+   {
+    "name": "Phone_Number",
+    "type": "phonenumber",
+    "label": "Phone",
+    "mand": false
+   },
+   {
+    "name": "Email",
+    "type": "email",
+    "mand": false
+   },
+   {
+    "name": "Address",
+    "type": "address",
+    "label": "Address Line 1",
+    "mand": false
+   },
+   {
+    "name": "Location",
+    "type": "picklist",
+    "values": "admin.Location.ID",
+    "mand": false
+   },
+   {
+    "name": "State",
+    "type": "picklist",
+    "values": "admin.State.ID",
+    "mand": false
+   },
+   {
+    "name": "Ekostay_ID",
+    "type": "number",
+    "label": "Ekostay ID",
+    "mand": false
+   },
+   {
+    "name": "Status",
+    "type": "picklist",
+    "values": "{\"Active\",\"Inactive\"}",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Expenses",
+  "line": 941,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Payment_No1",
+    "type": "picklist",
+    "label": "Payment No",
+    "values": "accounts.Payment.ID",
+    "mand": false
+   },
+   {
+    "name": "Expenses_Bills",
+    "type": "picklist",
+    "label": "Expenses & Bills",
+    "values": "accounts.Expenses_Bills.ID",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Order_No",
+    "type": "picklist",
+    "label": "Vendor Order No.",
+    "values": "Vendor_Order_Booking.ID",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Order_No1",
+    "type": "list",
+    "label": "Vendor Order No.",
+    "values": "Vendor_Order_Booking.ID",
+    "mand": false
+   },
+   {
+    "name": "Request_Stock_for_Food_No",
+    "type": "picklist",
+    "label": "Request Stock for Food No.",
+    "values": "Request_Stock_for_Food.ID",
+    "mand": false
+   },
+   {
+    "name": "Date_field",
+    "type": "date",
+    "label": "Date",
+    "mand": false
+   },
+   {
+    "name": "Booking_No",
+    "type": "picklist",
+    "label": "Booking No.",
+    "values": "Booking[Villa_Name.ID == input.Villa_Name && Status != \"Cancelled\"].ID",
+    "mand": false
+   },
+   {
+    "name": "Expense_Category",
+    "type": "picklist",
+    "label": "Expense Category",
+    "values": "accounts.Item_Category.ID",
+    "mand": false
+   },
+   {
+    "name": "Expense_Category1",
+    "type": "list",
+    "label": "Expense Category",
+    "values": "accounts.Item_Category.ID",
+    "mand": false
+   },
+   {
+    "name": "Bank_Name",
+    "type": "picklist",
+    "label": "Bank Name",
+    "values": "accounts.COA[Bank == true].ID",
+    "mand": false
+   },
+   {
+    "name": "COA",
+    "type": "picklist",
+    "values": "accounts.COA.ID",
+    "mand": false
+   },
+   {
+    "name": "Bill_Link",
+    "type": "url",
+    "label": "Bill Link",
+    "mand": false
+   },
+   {
+    "name": "Status",
+    "type": "picklist",
+    "values": "{\"Draft\",\"Open\",\"Partially paid\",\"Paid\",\"Overdue\",\"Reversed\"}",
+    "mand": false
+   },
+   {
+    "name": "Villa_Name",
+    "type": "picklist",
+    "label": "Villa Name",
+    "values": "admin.Villa.ID",
+    "mand": false
+   },
+   {
+    "name": "Villa_Name1",
+    "type": "list",
+    "label": "Villa Name",
+    "values": "admin.Villa.ID",
+    "mand": false
+   },
+   {
+    "name": "Billing_Cycle",
+    "type": "picklist",
+    "label": "Billing Cycle",
+    "values": "accounts.Billing_Cycles.ID",
+    "mand": false
+   },
+   {
+    "name": "Billing_Cycle1",
+    "type": "list",
+    "label": "Billing Cycle",
+    "values": "accounts.Billing_Cycles.ID",
+    "mand": false
+   },
+   {
+    "name": "Location",
+    "type": "picklist",
+    "values": "admin.Location.ID",
+    "mand": false
+   },
+   {
+    "name": "State",
+    "type": "picklist",
+    "values": "admin.State.ID",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Name",
+    "type": "picklist",
+    "label": "Vendor Name",
+    "values": "accounts.Vendor_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Warehouse_Name",
+    "type": "picklist",
+    "label": "Warehouse Name",
+    "values": "Warehouse.ID",
+    "mand": false
+   },
+   {
+    "name": "Payment_Source",
+    "type": "text",
+    "label": "Payment Source",
+    "mand": false
+   },
+   {
+    "name": "Remarks",
+    "type": "textarea",
+    "mand": false
+   },
+   {
+    "name": "Particulars",
+    "type": "textarea",
+    "mand": false
+   },
+   {
+    "name": "Bills_Attachment",
+    "type": "upload file",
+    "label": "Bills Attachment",
+    "mand": false
+   },
+   {
+    "name": "Bills",
+    "type": "grid",
+    "label": "Bill Link",
+    "mand": false
+   },
+   {
+    "name": "Commercials",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Gross_Amount",
+    "type": "INR",
+    "label": "Gross Amount",
+    "mand": false
+   },
+   {
+    "name": "Expense_Updated",
+    "type": "checkbox",
+    "label": "Expense Updated",
+    "mand": false
+   },
+   {
+    "name": "Split_Equally",
+    "type": "checkbox",
+    "label": "Split Equally",
+    "mand": false
+   },
+   {
+    "name": "GST_Amount",
+    "type": "INR",
+    "label": "GST Amount",
+    "mand": false
+   },
+   {
+    "name": "Invoice_Amount",
+    "type": "INR",
+    "label": "Invoice Amount",
+    "mand": false
+   },
+   {
+    "name": "Adjustment_Amount",
+    "type": "INR",
+    "label": "Adjustment Amount",
+    "mand": false
+   },
+   {
+    "name": "discount",
+    "type": "INR",
+    "mand": false
+   },
+   {
+    "name": "Grand_Total",
+    "type": "INR",
+    "label": "Grand Total",
+    "mand": false
+   },
+   {
+    "name": "Previous_Adjustment_Amount",
+    "type": "INR",
+    "mand": false
+   },
+   {
+    "name": "Split_Payment",
+    "type": "grid",
+    "label": "Split Payment",
+    "values": "Item_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Section1",
+    "type": "section",
+    "label": "Section",
+    "mand": false
+   },
+   {
+    "name": "Books_ID",
+    "type": "number",
+    "label": "Books ID",
+    "mand": false
+   },
+   {
+    "name": "Validate",
+    "type": "checkbox",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Food_Order_Details",
+  "line": 1432,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Booking_No",
+    "type": "picklist",
+    "label": "Booking No.",
+    "values": "Booking.ID",
+    "mand": false
+   },
+   {
+    "name": "Meal_Name",
+    "type": "text",
+    "label": "Meal Name",
+    "mand": false
+   },
+   {
+    "name": "Guest_Count",
+    "type": "number",
+    "label": "Guest Count",
+    "mand": false
+   },
+   {
+    "name": "Meal_Details",
+    "type": "textarea",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Inventory",
+  "line": 1504,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Warehouse_Name",
+    "type": "picklist",
+    "label": "Warehouse Name",
+    "values": "Warehouse.ID",
+    "mand": false
+   },
+   {
+    "name": "Item_Category",
+    "type": "picklist",
+    "label": "Item Category",
+    "values": "accounts.Item_Category[Master_Category.F_B == true].ID",
+    "mand": false
+   },
+   {
+    "name": "Item_Name",
+    "type": "picklist",
+    "label": "Item Name",
+    "values": "Item_Master[Item_Category.ID == input.Item_Category].ID",
+    "mand": false
+   },
+   {
+    "name": "UOM",
+    "type": "picklist",
+    "values": "UOM.ID",
+    "mand": false
+   },
+   {
+    "name": "Available_Qty",
+    "type": "decimal",
+    "label": "Available Qty",
+    "mand": false
+   },
+   {
+    "name": "Price",
+    "type": "INR",
+    "label": "Base Price",
+    "mand": false
+   },
+   {
+    "name": "Stock",
+    "type": "grid",
+    "values": "Inventory_Stock.ID",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Inventory_Stock",
+  "line": 1615,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Date_field",
+    "type": "date",
+    "label": "Date",
+    "mand": false
+   },
+   {
+    "name": "Quantity",
+    "type": "decimal",
+    "mand": false
+   },
+   {
+    "name": "UOM",
+    "type": "picklist",
+    "values": "UOM.ID",
+    "mand": false
+   },
+   {
+    "name": "Price",
+    "type": "INR",
+    "mand": false
+   },
+   {
+    "name": "Inventory",
+    "type": "picklist",
+    "values": "Inventory.ID",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Item_Master",
+  "line": 1702,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Item_Name",
+    "type": "text",
+    "label": "Item Name",
+    "mand": false
+   },
+   {
+    "name": "Item_Category",
+    "type": "picklist",
+    "label": "Item Category",
+    "values": "accounts.Item_Category[Master_Category.F_B == true].ID",
+    "mand": false
+   },
+   {
+    "name": "UOM",
+    "type": "picklist",
+    "values": "UOM.ID",
+    "mand": false
+   },
+   {
+    "name": "Base_Price",
+    "type": "INR",
+    "label": "Base Price",
+    "mand": false
+   },
+   {
+    "name": "Variance",
+    "type": "percentage",
+    "label": "Variance ",
+    "mand": false
+   },
+   {
+    "name": "No_Decimal_Values",
+    "type": "checkbox",
+    "label": "No Decimal Values",
+    "mand": false
+   },
+   {
+    "name": "Price_List",
+    "type": "grid",
+    "label": "Price List",
+    "values": "Vendor_Price_List.ID",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Monthly_Check",
+  "line": 1809,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Checked_By",
+    "type": "picklist",
+    "label": "Checked By",
+    "values": "admin.Employee_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Warehouse",
+    "type": "picklist",
+    "values": "Warehouse.ID",
+    "mand": false
+   },
+   {
+    "name": "Status",
+    "type": "picklist",
+    "values": "{\"Draft\",\"Submitted\",\"Finalized\"}",
+    "mand": false
+   },
+   {
+    "name": "Date_field",
+    "type": "date",
+    "label": "Date",
+    "mand": false
+   },
+   {
+    "name": "Location",
+    "type": "picklist",
+    "values": "admin.Location.ID",
+    "mand": false
+   },
+   {
+    "name": "Items_List",
+    "type": "grid",
+    "label": "Items List",
+    "values": "Item_Master.ID",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Raw_Material_Request",
+  "line": 1966,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Item_Name",
+    "type": "picklist",
+    "label": "request n",
+    "values": "Item_Master.ID",
+    "mand": true
+   },
+   {
+    "name": "Item_Category",
+    "type": "picklist",
+    "label": "Item Category",
+    "values": "accounts.Item_Category[Master_Category.F_B == true].ID",
+    "mand": false
+   },
+   {
+    "name": "UOM",
+    "type": "text",
+    "mand": false
+   },
+   {
+    "name": "Original_Requested_Quantity",
+    "type": "decimal",
+    "label": "Original Requested Quantity",
+    "mand": false
+   },
+   {
+    "name": "Requested_Quantity",
+    "type": "decimal",
+    "label": "Requested Quantity",
+    "mand": true
+   },
+   {
+    "name": "Delivered_Quantity",
+    "type": "decimal",
+    "label": "Delivered Quantity",
+    "mand": false
+   },
+   {
+    "name": "Pending_Quantity",
+    "type": "decimal",
+    "label": "Pending Quantity",
+    "mand": false
+   },
+   {
+    "name": "Request_From",
+    "type": "list",
+    "label": "Request From",
+    "values": "{\"Warehouse\",\"Order from Vendor\"}",
+    "mand": false
+   },
+   {
+    "name": "Request_No",
+    "type": "picklist",
+    "label": "Request No.",
+    "values": "Request_Stock_for_Food.ID",
+    "mand": false
+   },
+   {
+    "name": "Warehouse_Name",
+    "type": "picklist",
+    "label": "Warehouse Name",
+    "values": "Warehouse.ID",
+    "mand": false
+   },
+   {
+    "name": "Warehouse_Name1",
+    "type": "picklist",
+    "label": "Warehouse Name",
+    "values": "Warehouse.ID",
+    "mand": false
+   },
+   {
+    "name": "Available_Quantity",
+    "type": "decimal",
+    "label": "Available Quantity",
+    "mand": false
+   },
+   {
+    "name": "Warehouse_Quantity",
+    "type": "decimal",
+    "label": "Warehouse Quantity",
+    "mand": false
+   },
+   {
+    "name": "Backend_Warehouse_Quantity",
+    "type": "decimal",
+    "label": "Backend Warehouse Quantity",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Name",
+    "type": "picklist",
+    "label": "Vendor Name",
+    "values": "accounts.Vendor_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Name1",
+    "type": "picklist",
+    "label": "Vendor Name",
+    "values": "accounts.Vendor_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Order_Quantity",
+    "type": "decimal",
+    "label": "Order Quantity",
+    "mand": false
+   },
+   {
+    "name": "All_Vendors",
+    "type": "checkbox",
+    "label": "All Vendors",
+    "mand": false
+   },
+   {
+    "name": "Warehouse_Updated",
+    "type": "checkbox",
+    "label": "Warehouse Updated",
+    "mand": false
+   },
+   {
+    "name": "Booking_No",
+    "type": "picklist",
+    "label": "Booking No.",
+    "values": "Booking.ID",
+    "mand": false
+   },
+   {
+    "name": "plain",
+    "type": "plaintext",
+    "mand": false
+   },
+   {
+    "name": "Request_No_Partial",
+    "type": "picklist",
+    "label": "Request No Partial",
+    "values": "Request_Stock_for_Food.ID",
+    "mand": false
+   },
+   {
+    "name": "Request_No_Completed",
+    "type": "picklist",
+    "label": "Request No Completed",
+    "values": "Request_Stock_for_Food.ID",
+    "mand": false
+   },
+   {
+    "name": "Request_Raised",
+    "type": "checkbox",
+    "label": "Request Raised",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Recipe_Master",
+  "line": 2238,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Recipe_Name",
+    "type": "text",
+    "label": "Recipe Name",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Request_Stock_for_Food",
+  "line": 2283,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Request_No",
+    "type": "text",
+    "label": "Request No.",
+    "mand": false
+   },
+   {
+    "name": "Order_No",
+    "type": "picklist",
+    "label": "Booking Number",
+    "values": "Booking.ID",
+    "mand": false
+   },
+   {
+    "name": "Chef_Name",
+    "type": "picklist",
+    "label": "Chef Name",
+    "values": "Chef_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Request_From",
+    "type": "picklist",
+    "label": "Request From",
+    "values": "{\"Order from Vendor\",\"Warehouse\"}",
+    "mand": false
+   },
+   {
+    "name": "Warehouse",
+    "type": "picklist",
+    "values": "Warehouse.ID",
+    "mand": false
+   },
+   {
+    "name": "Request_Raised",
+    "type": "picklist",
+    "label": "Request Raised",
+    "values": "{\"Yes\",\"No\",\"Ready to Request\"}",
+    "mand": false
+   },
+   {
+    "name": "Status",
+    "type": "picklist",
+    "values": "{\"Processed\",\"Partially Processed\",\"Pending\"}",
+    "mand": false
+   },
+   {
+    "name": "Booking_No",
+    "type": "picklist",
+    "label": "Booking No.",
+    "values": "Booking.ID",
+    "mand": false
+   },
+   {
+    "name": "Villa",
+    "type": "picklist",
+    "values": "admin.Villa.ID",
+    "mand": false
+   },
+   {
+    "name": "Location",
+    "type": "picklist",
+    "values": "admin.Location.ID",
+    "mand": false
+   },
+   {
+    "name": "Checkin_Date",
+    "type": "date",
+    "label": "Checkin Date",
+    "mand": false
+   },
+   {
+    "name": "Checkout_Date",
+    "type": "date",
+    "label": "Checkout Date",
+    "mand": false
+   },
+   {
+    "name": "Remarks",
+    "type": "textarea",
+    "mand": false
+   },
+   {
+    "name": "RowHighlighter",
+    "type": "plaintext",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Item",
+    "type": "grid",
+    "label": "Vendor Item",
+    "values": "accounts.Vendor_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Raw_Materials",
+    "type": "grid",
+    "label": "Raw Materials Pending",
+    "values": "Raw_Material_Request.ID",
+    "mand": false
+   },
+   {
+    "name": "Raw_Materials_Partial",
+    "type": "grid",
+    "label": "Raw Materials Partial",
+    "values": "Raw_Material_Request.ID",
+    "mand": false
+   },
+   {
+    "name": "Raw_Materials_Completed",
+    "type": "grid",
+    "label": "Raw Materials Completed",
+    "values": "Raw_Material_Request.ID",
+    "mand": false
+   },
+   {
+    "name": "Admin",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Redirect_From",
+    "type": "text",
+    "label": "Redirect From",
+    "mand": false
+   },
+   {
+    "name": "WarehouseID",
+    "type": "number",
+    "mand": false
+   },
+   {
+    "name": "Finalized",
+    "type": "checkbox",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Requirements_of_Recipe",
+  "line": 2547,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Recipe_Name",
+    "type": "picklist",
+    "label": "Recipe Name",
+    "values": "Recipe_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "KIRANA_REQUIREMENTS",
+    "type": "grid",
+    "label": "KIRANA  REQUIREMENTS",
+    "values": "Item_Master[Item_Category.Item_Category == \"KIRANA\"].ID",
+    "mand": false
+   },
+   {
+    "name": "DAIRY_REQUIREMENTS",
+    "type": "grid",
+    "label": "DAIRY REQUIREMENTS",
+    "values": "Item_Master[Item_Category.Item_Category == \"DAIRY\"].ID",
+    "mand": false
+   },
+   {
+    "name": "VEGETABLE_REQUIREMENTS",
+    "type": "grid",
+    "label": "VEGETABLE REQUIREMENTS",
+    "values": "Item_Master[Item_Category.Item_Category == \"VEGETABLES\"].ID",
+    "mand": false
+   },
+   {
+    "name": "MEAT_REQUIREMENTS",
+    "type": "grid",
+    "label": "MEAT REQUIREMENTS",
+    "values": "Item_Master[Item_Category.Item_Category == \"MEAT\"].ID",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Transaction_Items",
+  "line": 2755,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Item_Name",
+    "type": "picklist",
+    "label": "Item Name",
+    "values": "Item_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Warehouse_Name",
+    "type": "picklist",
+    "label": "Warehouse Name",
+    "values": "Warehouse.ID",
+    "mand": false
+   },
+   {
+    "name": "Transaction_Type",
+    "type": "picklist",
+    "label": "Transaction Type",
+    "values": "{\"In\",\"Out\",\"Transfer\",\"Damaged\",\"Misplaced\",\"Reverse\"}",
+    "mand": false
+   },
+   {
+    "name": "Order_No",
+    "type": "picklist",
+    "label": "Order No.",
+    "values": "Booking.ID",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Order_Booking",
+    "type": "picklist",
+    "label": "Vendor Order Booking",
+    "values": "Vendor_Order_Booking.ID",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Order_Booking_Item",
+    "type": "picklist",
+    "label": "Vendor Order Booking Item",
+    "values": "Vendor_Order_Booking_Item.ID",
+    "mand": false
+   },
+   {
+    "name": "Transfer_to_Warehouse",
+    "type": "picklist",
+    "label": "Transfer to Warehouse",
+    "values": "Warehouse[Warehouse_Name != \"Transfer_to_Warehouse\"].ID",
+    "mand": false
+   },
+   {
+    "name": "Available_Quantity",
+    "type": "decimal",
+    "label": "Available Quantity",
+    "mand": false
+   },
+   {
+    "name": "Quantity",
+    "type": "decimal",
+    "mand": false
+   },
+   {
+    "name": "Total_Quantity",
+    "type": "decimal",
+    "label": "Total Quantity",
+    "mand": false
+   },
+   {
+    "name": "Price",
+    "type": "INR",
+    "mand": false
+   },
+   {
+    "name": "Amount",
+    "type": "INR",
+    "mand": false
+   },
+   {
+    "name": "Transfer_Items",
+    "type": "picklist",
+    "label": "Transfer Items",
+    "values": "Transfer_Items.ID",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Transfer_Items",
+  "line": 2923,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "From_Warehouse",
+    "type": "picklist",
+    "label": "From Warehouse",
+    "values": "Warehouse.ID",
+    "mand": false
+   },
+   {
+    "name": "Transfer_ID",
+    "type": "text",
+    "label": "Transfer ID",
+    "mand": false
+   },
+   {
+    "name": "To_Warehouse",
+    "type": "picklist",
+    "label": "To Warehouse",
+    "values": "Warehouse.ID",
+    "mand": false
+   },
+   {
+    "name": "Status",
+    "type": "picklist",
+    "values": "{\"Draft\",\"Transfer Initiated\",\"Transit\",\"Received\"}",
+    "mand": false
+   },
+   {
+    "name": "Items",
+    "type": "grid",
+    "label": "Item Name",
+    "values": "Item_Master.ID",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "UOM",
+  "line": 3040,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "UOM",
+    "type": "text",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Vendor_Order_Booking",
+  "line": 3088,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Name",
+    "type": "picklist",
+    "label": "Vendor Name",
+    "values": "accounts.Vendor_Master[Master_Category.F_B == true].ID",
+    "mand": true
+   },
+   {
+    "name": "Vendor_Category",
+    "type": "list",
+    "label": "Vendor Category",
+    "values": "accounts.Item_Category[Master_Category.F_B == true].ID",
+    "mand": false
+   },
+   {
+    "name": "Order_for",
+    "type": "picklist",
+    "label": "Order for",
+    "values": "{\"Warehouse\",\"Against Booking\",\"Location\"}",
+    "mand": true
+   },
+   {
+    "name": "Booking_No",
+    "type": "picklist",
+    "label": "Booking No.",
+    "values": "Booking.ID",
+    "mand": false
+   },
+   {
+    "name": "Request_No",
+    "type": "picklist",
+    "label": "Request No.",
+    "values": "Request_Stock_for_Food.ID",
+    "mand": false
+   },
+   {
+    "name": "Warehouse_Name",
+    "type": "picklist",
+    "label": "Warehouse Name",
+    "values": "Warehouse.ID",
+    "mand": false
+   },
+   {
+    "name": "Payment_Status",
+    "type": "picklist",
+    "label": "Payment Status",
+    "values": "{\"Paid\",\"Unpaid\",\"Payment Inprogress\",\"Partially Paid\",\"Overpaid\"}",
+    "mand": false
+   },
+   {
+    "name": "Update_Fulfilled_Qty",
+    "type": "checkbox",
+    "label": "Update Fulfilled Qty",
+    "mand": false
+   },
+   {
+    "name": "Update_Received_Qty",
+    "type": "checkbox",
+    "label": "Update Received Qty",
+    "mand": false
+   },
+   {
+    "name": "Expense_Updated",
+    "type": "checkbox",
+    "label": "Expense Updated",
+    "mand": false
+   },
+   {
+    "name": "Order_No",
+    "type": "text",
+    "label": "Order No.",
+    "mand": false
+   },
+   {
+    "name": "Order_Date",
+    "type": "date",
+    "label": "Order Date",
+    "mand": false
+   },
+   {
+    "name": "Billing_year",
+    "type": "number",
+    "label": "Billing year",
+    "mand": false
+   },
+   {
+    "name": "Billing_Month",
+    "type": "picklist",
+    "label": "Billing Month",
+    "values": "{\"January\",\"February\",\"March\",\"April\",\"May\",\"June\",\"July\",\"August\",\"September\",\"October\",\"November\",\"December\"}",
+    "mand": false
+   },
+   {
+    "name": "Billing_Cycle",
+    "type": "picklist",
+    "label": "Billing Cycle",
+    "values": "accounts.Billing_Cycles.ID",
+    "mand": false
+   },
+   {
+    "name": "Villa_Name",
+    "type": "picklist",
+    "label": "Villa Name",
+    "values": "admin.Villa.ID",
+    "mand": false
+   },
+   {
+    "name": "Location",
+    "type": "picklist",
+    "values": "admin.Location.ID",
+    "mand": false
+   },
+   {
+    "name": "State",
+    "type": "picklist",
+    "values": "admin.State.ID",
+    "mand": false
+   },
+   {
+    "name": "Status",
+    "type": "picklist",
+    "values": "{\"Order Placed\",\"Vendor Fulfilled\",\"Order Received\"}",
+    "mand": false
+   },
+   {
+    "name": "Payment_Due_Date",
+    "type": "date",
+    "label": "Payment Due Date",
+    "mand": false
+   },
+   {
+    "name": "plain",
+    "type": "plaintext",
+    "mand": false
+   },
+   {
+    "name": "Particulars",
+    "type": "textarea",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Bills",
+    "type": "upload file",
+    "label": "Vendor Bills",
+    "mand": false
+   },
+   {
+    "name": "Items_Ordered",
+    "type": "grid",
+    "label": "Items Ordered",
+    "values": "Vendor_Order_Booking_Item.ID",
+    "mand": false
+   },
+   {
+    "name": "Section2",
+    "type": "section",
+    "label": "",
+    "mand": false
+   },
+   {
+    "name": "Total_Quantity",
+    "type": "decimal",
+    "label": "Total Quantity",
+    "mand": false
+   },
+   {
+    "name": "Amount",
+    "type": "INR",
+    "mand": false
+   },
+   {
+    "name": "GST_Amount",
+    "type": "INR",
+    "label": "GST Amount",
+    "mand": false
+   },
+   {
+    "name": "Discount",
+    "type": "INR",
+    "label": "Discount ",
+    "mand": false
+   },
+   {
+    "name": "Grand_Total",
+    "type": "INR",
+    "label": "Grand Total",
+    "mand": false
+   },
+   {
+    "name": "Adjusted_Amount",
+    "type": "decimal",
+    "label": "Adjusted Amount",
+    "mand": false
+   },
+   {
+    "name": "Books_ID",
+    "type": "number",
+    "label": "Books ID",
+    "mand": false
+   },
+   {
+    "name": "Paid_Amount",
+    "type": "INR",
+    "label": "Paid Amount",
+    "mand": false
+   },
+   {
+    "name": "Payable_Amount",
+    "type": "INR",
+    "label": "Payable Amount",
+    "mand": false
+   },
+   {
+    "name": "Order_recived",
+    "type": "checkbox",
+    "label": "Order recived",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Vendor_Order_Booking_Item",
+  "line": 3469,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Item_Name",
+    "type": "picklist",
+    "label": "Item Name",
+    "values": "Item_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Item_Category",
+    "type": "picklist",
+    "label": "Item Category",
+    "values": "accounts.Item_Category[Master_Category.F_B == true].ID",
+    "mand": false
+   },
+   {
+    "name": "Ordered_Quantity",
+    "type": "decimal",
+    "label": "Ordered Quantity",
+    "mand": false
+   },
+   {
+    "name": "UOM",
+    "type": "picklist",
+    "values": "UOM.ID",
+    "mand": false
+   },
+   {
+    "name": "Fulfilled_Quantity",
+    "type": "decimal",
+    "label": "Fulfilled Quantity",
+    "mand": false
+   },
+   {
+    "name": "Received_Quantity",
+    "type": "decimal",
+    "label": "Received Quantity",
+    "mand": false
+   },
+   {
+    "name": "Price",
+    "type": "INR",
+    "mand": false
+   },
+   {
+    "name": "Amount",
+    "type": "INR",
+    "mand": false
+   },
+   {
+    "name": "GST",
+    "type": "picklist",
+    "values": "accounts.Tax.ID",
+    "mand": false
+   },
+   {
+    "name": "GST_Amount",
+    "type": "INR",
+    "label": "GST Amount",
+    "mand": false
+   },
+   {
+    "name": "Total_Amount",
+    "type": "INR",
+    "label": "Total Amount",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Order_Booking",
+    "type": "picklist",
+    "label": "Vendor Order Booking",
+    "values": "Vendor_Order_Booking.ID",
+    "mand": false
+   },
+   {
+    "name": "Villa",
+    "type": "picklist",
+    "values": "admin.Villa.ID",
+    "mand": false
+   },
+   {
+    "name": "Date_field",
+    "type": "date",
+    "label": "Date",
+    "mand": false
+   },
+   {
+    "name": "Raw_Material_Request",
+    "type": "picklist",
+    "label": "Raw Material Request",
+    "values": "Raw_Material_Request.ID",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Vendor_Price_List",
+  "line": 3653,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Item_Name",
+    "type": "picklist",
+    "label": "Item Name",
+    "values": "Item_Master.ID",
+    "mand": false
+   },
+   {
+    "name": "Item_Category",
+    "type": "picklist",
+    "label": "Item Category",
+    "values": "accounts.Item_Category.ID",
+    "mand": false
+   },
+   {
+    "name": "Vendor_Name",
+    "type": "picklist",
+    "label": "Vendor Name",
+    "values": "accounts.Vendor_Master[Vendor_Category.ID == input.Item_Category].ID",
+    "mand": false
+   },
+   {
+    "name": "Price",
+    "type": "INR",
+    "mand": false
+   },
+   {
+    "name": "Deviation",
+    "type": "percentage",
+    "label": "Deviation%",
+    "mand": false
+   },
+   {
+    "name": "plain",
+    "type": "plaintext",
+    "mand": false
+   },
+   {
+    "name": "Price_Log",
+    "type": "richtext",
+    "label": "Price Log",
+    "mand": false
+   },
+   {
+    "name": "Price_Logs",
+    "type": "grid",
+    "label": "Price Logs",
+    "mand": false
+   }
+  ]
+ },
+ {
+  "name": "Warehouse",
+  "line": 3798,
+  "fields": [
+   {
+    "name": "Section",
+    "type": "section",
+    "mand": false
+   },
+   {
+    "name": "Warehouse_Name",
+    "type": "text",
+    "label": "Warehouse Name",
+    "mand": false
+   },
+   {
+    "name": "Location",
+    "type": "list",
+    "values": "admin.Location.ID",
+    "mand": false
+   },
+   {
+    "name": "Villa_Name",
+    "type": "list",
+    "label": "Villa Name",
+    "values": "admin.Villa.ID",
+    "mand": false
+   },
+   {
+    "name": "State",
+    "type": "picklist",
+    "values": "admin.State.ID",
+    "mand": false
+   },
+   {
+    "name": "Inventory_Items",
+    "type": "grid",
+    "label": "Inventory Items",
+    "values": "Inventory.ID",
+    "mand": false
+   }
+  ]
+ }
+]

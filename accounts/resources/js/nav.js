@@ -79,4 +79,17 @@ export const NAV = [
   { key: 'backend_payments', label: 'Backbend Payments', built: false, note: 'rail spells it Backbend; the form says Backend' },
   { key: 'preferred_approver', label: 'Preferred Approver', built: false },
   { key: 'ekostay', label: 'Ekostay …', built: false, truncated: true },
+
+  /*
+   * F&B — NOT a Creator rail item. Creator has a SEPARATE F&B app with its own
+   * sidebar (Dashboard, Bookings, Request Stock for Food, Inventories, Vendor
+   * Bills, Monthly Checks, Expenses, Transfer Items, Masters, Settings), so this
+   * entry does not replicate anything: it is a way into the 22 F&B tables that now
+   * share this schema per the §2.1 decision.
+   *
+   * When F&B gets its own screens it becomes a section rather than one report, and
+   * the labels come from that sidebar — note the nav there reads **Vendor Bills**,
+   * not "Vendor Order Booking" (findings §8.7).
+   */
+  { key: 'fnb', label: 'F&B', built: true, note: 'inspection surface over the F&B schema, not a Creator replica' },
 ];

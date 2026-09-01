@@ -24,8 +24,8 @@
 # Vendor_Master.csv — 8,063 real vendors: PANs, GST registrations, phone numbers,
 # free-text bank details. The other master-data exports are tracked; these two are
 # categorically different and stay out.
-master-data/Vendor_Master.csv
-**/master-data/Vendor_Master.csv
+master-data/Vendor_Master.csv*
+**/master-data/Vendor_Master.csv*
 **/master-data/*.csv.orig.csv
 
 # All_Employee_Masters.csv — 475 real employees with Name, DOB, Email and Phone.
@@ -33,6 +33,34 @@ master-data/Vendor_Master.csv
 # only looked for the vendor file. Worth remembering that "is it PII?" has to be
 # asked per file, not per pattern.
 **/master-data/All_Employee_Masters.csv
+
+# The same two exports arrive from Creator under their REPORT names, with a
+# download counter in parentheses. Added 29-Aug-2026 after 'All Vendor Masters (6).csv'
+# — 8,156 real vendors — landed untracked but perfectly committable, because the
+# patterns above only matched the renamed copies. Match the source names too.
+**/master-data/All Vendor Masters*.csv
+# And the FORM export, whose name uses a space rather than an underscore:
+# 'Vendor Master.csv'. Third near-miss on this one file — the pattern has to
+# match every name Creator and a human can produce, not just the canonical one.
+**/master-data/Vendor Master*.csv
+
+# Transactional exports, added 31-Aug-2026. Not PANs or bank details, but 11,205
+# real orders naming vendors, villas and GUEST STAY DATES (Checked In / Check Out).
+# Business data plus an occupancy record — not source, and regenerable from Creator.
+**/master-data/All Vendor Order Bookings*.csv
+**/master-data/All Raw Material Requests*.csv
+**/master-data/All Expenses*.csv
+**/master-data/All Bookings*.csv
+
+# Blanket rule for master-data, added 31-Aug-2026 after the FOURTH near-miss.
+# Naming each export by hand kept failing — the file arrives under whatever Creator
+# called the report, and three of four new exports slipped through. Invert the
+# default: ignore every CSV/JSON here, then re-allow the two small F&B masters that
+# are genuinely safe to track. A new export is private until someone decides
+# otherwise, which is the right way round for a folder holding production data.
+**/master-data/*.csv
+**/master-data/*.json
+**/master-data/All Employee Masters*.csv
 
 # ------------------------------------------------- exported production data
 # ~251 MB of real payments, expense legs and vendors pulled from Zoho Analytics.
@@ -68,3 +96,40 @@ Thumbs.db
 # directory itself is tracked via its .gitkeep.
 /accounts/docs/screenshots/*
 !/accounts/docs/screenshots/.gitkeep
+
+# ------------------------------------------------------- live Creator session
+# .auth/creator.json is a LIVE Zoho session: full read AND write access to the
+# production Creator cluster. Same class of secret as a refresh token. Deleted
+# after each screenshot run; ignored so it can never be committed even briefly.
+.auth/
+**/.auth/
+
+# Screenshots of OUR running app. Deliberately NOT a blanket rule: Amaan's
+# accounts/.gitignore line 31 un-ignores docs/screenshots/*.png on purpose, and
+# nested rules win, so Creator reference screenshots stay trackable for them.
+# These two are ours and show real seeded vendors and villas, so they stay out
+# by name rather than by widening a rule someone else set deliberately.
+# Moved OUT of accounts/docs/screenshots/ entirely. That path is un-ignored by
+# accounts/.gitignore line 31 (deliberately, for Creator reference shots), and a
+# nested rule wins — so `git add -A` re-staged our two on every commit. Keeping
+# them somewhere git never looks is more reliable than a rule that loses.
+.local-screenshots/
+fnb/docs/screenshots/*.png
+
+# ---------------------------------------------------------------- local only
+# _preserved/ is the prior React session's documentation, its SQL schema and the
+# payroll engine. Kept on disk because DB_FINDINGS.md is the only record of the
+# live MySQL server, but it is history rather than source and the owner asked on
+# 31-Aug-2026 for it to stay out of the shared repo.
+_preserved/
+
+# No NEW data files in git, per the owner's instruction of 31-Aug-2026.
+# master-data/ holds Creator exports — vendors with PANs, employees, guest names,
+# stay dates. Even the harmless-looking ones (item names, units) stay out:
+# deciding per file is what produced four near-misses, so the rule is "none".
+#
+# TWELVE FILES REMAIN TRACKED and are deliberately NOT removed here: Amaan
+# committed them in 2973d88 and the master-layer seeders read them
+# (All_Villas.csv, COA_Report.json, All_Item_Categories.json, _index.json and the
+# rest). Deleting another developer's committed fixtures would break
+# migrate:fresh --seed for everyone. Worth a conversation, not a unilateral rm.

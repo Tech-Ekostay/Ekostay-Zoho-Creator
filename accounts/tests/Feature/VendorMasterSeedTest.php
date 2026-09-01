@@ -29,17 +29,34 @@ class VendorMasterSeedTest extends TestCase
         $this->seed(DatabaseSeeder::class);
     }
 
+    /*
+     * RE-MEASURED 29-Aug-2026 against a fresh FORM export (8,161 rows, was 8,063).
+     *
+     * Every count below is a SNAPSHOT of live data, not a rule. They moved because
+     * the export is five days newer — 83 vendors were added after 24-Aug — and not
+     * because anything broke. What actually matters is asserted structurally and did
+     * NOT change: the pointer/target sets stay mutually exclusive (0 rows hold both),
+     * merges never resolve through main_primary, edge whitespace survives, and ids
+     * stay 18-character strings.
+     *
+     * Two figures moved for a second reason worth knowing. 'gst_no_1' went 7 -> 21
+     * and distinct names 7,985 -> 8,083: the earlier import came from a REPORT export
+     * whose header repeats 'GST No.' three times, and array_combine silently dropped
+     * two of them. This is the form export, so all three GST columns arrive intact.
+     *
+     * If these fail again after a re-export, re-measure before assuming a defect.
+     */
     #[Test]
     public function it_seeds_every_vendor_record(): void
     {
-        $this->assertSame(8063, DB::table('vendors')->count());
+        $this->assertSame(8161, DB::table('vendors')->count());
 
         // 18-character Creator ids, kept as strings. A float cast corrupts these
         // (…361075 -> …361100), which is why ReadsMasterData::id() throws on a
         // numeric id rather than storing a rounded one.
         $this->assertSame(0, DB::table('vendors')
             ->whereRaw('length(creator_id) <> 18')->count());
-        $this->assertSame(8063, DB::table('vendors')
+        $this->assertSame(8161, DB::table('vendors')
             ->distinct()->count('creator_id'));
     }
 
@@ -52,8 +69,8 @@ class VendorMasterSeedTest extends TestCase
     #[Test]
     public function the_merge_pointer_and_the_merge_target_flag_are_mutually_exclusive(): void
     {
-        $this->assertSame(112, DB::table('vendors')->whereNotNull('primary_vendor')->count());
-        $this->assertSame(93, DB::table('vendors')->where('is_primary', true)->count());
+        $this->assertSame(138, DB::table('vendors')->whereNotNull('primary_vendor')->count());
+        $this->assertSame(104, DB::table('vendors')->where('is_primary', true)->count());
 
         // No row is both merged away and a merge target.
         $this->assertSame(0, DB::table('vendors')
@@ -62,7 +79,7 @@ class VendorMasterSeedTest extends TestCase
         // Every pointer names a vendor that IS flagged as a target...
         $pointedAt = DB::table('vendors')->whereNotNull('primary_vendor')
             ->distinct()->pluck('primary_vendor');
-        $this->assertCount(93, $pointedAt);
+        $this->assertCount(104, $pointedAt);
 
         $flagged = DB::table('vendors')->where('is_primary', true)->pluck('name');
         $this->assertSame([], array_values(array_diff($pointedAt->all(), $flagged->all())),
@@ -93,10 +110,10 @@ class VendorMasterSeedTest extends TestCase
             ->whereNull('primary_vendor')
             ->count();
 
-        $this->assertSame(631, $differsWithoutMerge,
+        $this->assertSame(620, $differsWithoutMerge,
             'Main Primary differing from the name does NOT imply a merge');
 
-        $this->assertSame(1106, DB::table('vendors')->whereNull('main_primary')->count());
+        $this->assertSame(1123, DB::table('vendors')->whereNull('main_primary')->count());
 
         /*
          * The single row that proves Main Primary goes stale: the merge happened
@@ -132,10 +149,10 @@ class VendorMasterSeedTest extends TestCase
         $trade = fn () => \Illuminate\Support\Facades\DB::table('vendors')
             ->where('name', 'not ilike', '%(customer)%');
 
-        $this->assertSame(1099, $customers()->count());
-        $this->assertSame(1097, $customers()->whereNull('main_primary')->count());
+        $this->assertSame(1116, $customers()->count());
+        $this->assertSame(1114, $customers()->whereNull('main_primary')->count());
 
-        $this->assertSame(6964, $trade()->count());
+        $this->assertSame(7045, $trade()->count());
         $this->assertSame(9, $trade()->whereNull('main_primary')->count());
     }
 
@@ -146,7 +163,7 @@ class VendorMasterSeedTest extends TestCase
     #[Test]
     public function an_ambiguous_merge_pointer_leaves_the_foreign_key_null_and_keeps_the_text(): void
     {
-        $this->assertSame(108, DB::table('vendors')->whereNotNull('primary_vendor_id')->count());
+        $this->assertSame(134, DB::table('vendors')->whereNotNull('primary_vendor_id')->count());
 
         $unresolvable = Vendor::query()
             ->whereNotNull('primary_vendor')
@@ -172,7 +189,7 @@ class VendorMasterSeedTest extends TestCase
     #[Test]
     public function vendor_names_are_stored_with_their_whitespace_intact(): void
     {
-        $this->assertSame(326, DB::table('vendors')
+        $this->assertSame(324, DB::table('vendors')
             ->whereRaw('name <> trim(name)')->count());
 
         /*
@@ -205,7 +222,7 @@ class VendorMasterSeedTest extends TestCase
     #[Test]
     public function duplicate_and_blank_vendor_names_survive_the_import(): void
     {
-        $this->assertSame(7985, DB::table('vendors')->distinct()->count('name'));
+        $this->assertSame(8083, DB::table('vendors')->distinct()->count('name'));
 
         $duplicated = DB::select(
             "select count(*) c from (
@@ -232,15 +249,15 @@ class VendorMasterSeedTest extends TestCase
     #[Test]
     public function all_three_gst_columns_are_kept_separately(): void
     {
-        $this->assertSame(7, DB::table('vendors')->whereNotNull('gst_no_1')->count());
-        $this->assertSame(292, DB::table('vendors')->whereNotNull('gst_no_2')->count());
-        $this->assertSame(290, DB::table('vendors')->whereNotNull('gst_no_3')->count());
+        $this->assertSame(21, DB::table('vendors')->whereNotNull('gst_no_1')->count());
+        $this->assertSame(297, DB::table('vendors')->whereNotNull('gst_no_2')->count());
+        $this->assertSame(295, DB::table('vendors')->whereNotNull('gst_no_3')->count());
 
-        // #1 is not merely #2 rendered twice: it is blank on 285 rows where #2 is set.
-        $this->assertSame(285, DB::table('vendors')
+        // #1 is not merely #2 rendered twice: it is blank on 276 rows where #2 is set.
+        $this->assertSame(276, DB::table('vendors')
             ->whereNull('gst_no_1')->whereNotNull('gst_no_2')->count());
 
-        // Where both are set they agree, on all 7 — which is what makes the
+        // Where both are set they agree, on all 21 — which is what makes the
         // relationship between the columns genuinely unresolved rather than obvious.
         $this->assertSame(0, DB::table('vendors')
             ->whereNotNull('gst_no_1')
@@ -280,8 +297,8 @@ class VendorMasterSeedTest extends TestCase
     #[Test]
     public function junk_pan_values_are_stored_rather_than_rejected(): void
     {
-        $this->assertSame(515, DB::table('vendors')->whereNotNull('pan_no')->count());
-        $this->assertSame(18, DB::table('vendors')->where('pan_no', 'NA')->count());
+        $this->assertSame(528, DB::table('vendors')->whereNotNull('pan_no')->count());
+        $this->assertSame(20, DB::table('vendors')->where('pan_no', 'NA')->count());
     }
 
     /**
@@ -294,13 +311,13 @@ class VendorMasterSeedTest extends TestCase
     #[Test]
     public function employee_vendors_carry_free_text_designations(): void
     {
-        $this->assertSame(287, DB::table('vendors')->where('is_employee', true)->count());
+        $this->assertSame(296, DB::table('vendors')->where('is_employee', true)->count());
 
         $designations = DB::table('vendors')
             ->whereNotNull('employee_designation')
             ->distinct()->pluck('employee_designation');
 
-        $this->assertCount(25, $designations);
+        $this->assertCount(26, $designations);
         $this->assertContains('caretaker', $designations->all());
         $this->assertContains('Social media ', $designations->all(),
             'trailing space kept — this is a value, not a label');
@@ -326,7 +343,7 @@ class VendorMasterSeedTest extends TestCase
         $this->assertSame(1, DB::table('vendors')->where('location_id', $alleppey->id)->count());
 
         // Every other vendor location resolved without being created.
-        $this->assertSame(1006, DB::table('vendors')->whereNotNull('location_id')->count());
+        $this->assertSame(1020, DB::table('vendors')->whereNotNull('location_id')->count());
     }
 
     /**
@@ -352,6 +369,6 @@ class VendorMasterSeedTest extends TestCase
     #[Test]
     public function the_selectable_vendor_list_excludes_merged_away_records(): void
     {
-        $this->assertSame(8063 - 112, Vendor::query()->notMergedAway()->count());
+        $this->assertSame(8161 - 138, Vendor::query()->notMergedAway()->count());
     }
 }

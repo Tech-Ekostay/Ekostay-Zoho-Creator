@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\BillController;
 use App\Http\Controllers\Api\ExpenseController;
+use App\Http\Controllers\Api\FnbReportController;
 use App\Http\Controllers\Api\PendingApprovalController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\SettingsRecordController;
@@ -24,6 +25,17 @@ use Illuminate\Support\Facades\Route;
  * stored and 25 trimmed, and trimming it on save would break every join that
  * matches on it, silently.
  */
+/*
+ * F&B — READ ONLY, and there is no write route on purpose. §17 says do not
+ * implement an F&B write path in the first pass; these exist so the 22 tables and
+ * the seeded data can be inspected in a browser rather than in psql.
+ *
+ * No authorisation on them, like everything else here. One of these reports will
+ * carry guest names once Request Stock for Food is imported.
+ */
+Route::get('/fnb/reports', [FnbReportController::class, 'index']);
+Route::get('/fnb/reports/{report}', [FnbReportController::class, 'show']);
+
 Route::get('/settings/reports', [SettingsReportController::class, 'index']);
 Route::get('/settings/reports/{report}', [SettingsReportController::class, 'show']);
 Route::post('/settings/reports/{report}', [SettingsRecordController::class, 'store']);
