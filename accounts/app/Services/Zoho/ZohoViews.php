@@ -93,6 +93,27 @@ final class ZohoViews
                 .'multi-value fields get flattened (§12). Headers, probably not legs. '
                 .'LARGE: exhausted a 512MB limit as JSON, so it streams as CSV.',
         ],
+        /*
+         * Supplied by Husain, 01-Sep-2026, as a workspace/view URL rather than a bare
+         * id — which is the right way to give one, because the id alone resolves
+         * against the DEFAULT workspace and fails for the wrong reason if it belongs
+         * to `live`. Its workspace matches ZOHO_WORKSPACE_ACCOUNTS exactly.
+         *
+         * This is the FIRST sync path these masters have ever had. Until now
+         * `item_categories` came only from `master-data/All_Item_Categories.json`, a
+         * hand-export dated 22-Aug-2026, and nothing in `app/` ever wrote the table.
+         * The importers only ever read it to resolve foreign keys, counting misses in
+         * `item_category_unresolved` — so a category added in Creator silently failed
+         * to resolve and no one was told.
+         */
+        'item_category' => [
+            'id' => '443703000000062605',
+            'workspace' => 'accounts',
+            'label' => 'Item Categories',
+            'note' => '135 rows as of the 22-Aug CSV. Carries `Exclude for Profit` and '
+                .'`Exclude for Observation` as booleans, and the Creator report renders '
+                .'them as the text true/false, NOT as checkboxes.',
+        ],
         'coa' => [
             'id' => '443703000001623452',
             'workspace' => 'accounts',
