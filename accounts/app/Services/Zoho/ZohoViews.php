@@ -114,6 +114,62 @@ final class ZohoViews
                 .'`Exclude for Observation` as booleans, and the Creator report renders '
                 .'them as the text true/false, NOT as checkboxes.',
         ],
+        /*
+         * ---- Eko_RS_* : the statement/reconciliation subsystem -----------------
+         *
+         * Six views, all supplied by Husain on 01-Sep-2026 and all in `accounts`.
+         * Supplying them settles the scope question: this subsystem IS part of the
+         * rebuild, not Tushar's.
+         *
+         * Their ids share the `4437030000082443xx` block, which is a much later
+         * series than the rest of this registry (`44370300000xxxxxx`) — so they were
+         * created together, long after the original workspace. Treat them as one
+         * unit: a partial sync of a statement subsystem is worse than none, because
+         * a `Send_Log` without its `Statements` reads as "nothing was ever sent".
+         *
+         * NONE of the six is measured for row count yet. §7.2's rule is that an
+         * unmeasured view is potentially `large`, so measure before the first bulk
+         * export rather than discovering it in a slot-holding pile-up.
+         */
+        'eko_rs_statements' => [
+            'id' => '443703000008244323',
+            'workspace' => 'accounts',
+            'label' => 'Eko RS Statements',
+            'note' => '17 fields in the DS — the largest of the six and the parent of the '
+                .'subsystem. Unmeasured; may be large.',
+        ],
+        'eko_rs_app_config' => [
+            'id' => '443703000008244356',
+            'workspace' => 'accounts',
+            'label' => 'Eko RS App Config',
+            'note' => 'Configuration, expected small. 14 fields.',
+        ],
+        'eko_rs_flags' => [
+            'id' => '443703000008244301',
+            'workspace' => 'accounts',
+            'label' => 'Eko RS Flags',
+            'note' => '13 fields.',
+        ],
+        'eko_rs_send_log' => [
+            'id' => '443703000008244470',
+            'workspace' => 'accounts',
+            'label' => 'Eko RS Send Log',
+            'note' => 'A log table: the one most likely to be large, and the one whose row '
+                .'count grows without bound. Measure first. 11 fields.',
+        ],
+        'eko_rs_settings' => [
+            'id' => '443703000008244257',
+            'workspace' => 'accounts',
+            'label' => 'Eko RS Settings',
+            'note' => 'Configuration, expected small. 10 fields.',
+        ],
+        'eko_rs_pdf_staging' => [
+            'id' => '443703000008244459',
+            'workspace' => 'accounts',
+            'label' => 'Eko RS Pdf Staging',
+            'note' => 'Only 2 fields in the DS, but staging tables often carry a blob or a '
+                .'long path. Check the column shape before assuming it is cheap.',
+        ],
         'coa' => [
             'id' => '443703000001623452',
             'workspace' => 'accounts',
