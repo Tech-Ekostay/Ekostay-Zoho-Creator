@@ -313,6 +313,53 @@ final class ZohoViews
             'note' => 'Appears in the nav rail with its label truncated. Quarter-scoped; '
                 .'confirm whether it is live or historical before scheduling it.',
         ],
+        /*
+         * These three complete the Admin app: 10 of 10 mapped. All in `accounts`,
+         * all in the 44370300000163xxxx block with the rest of the Admin masters.
+         *
+         * Two of them close gaps CLAUDE.md records as open, and one settles a
+         * question about our own schema rather than merely feeding it.
+         */
+        /*
+         * `ca_masters` currently holds 2 rows DERIVED from the COA `CA Name` column,
+         * not imported. So this view is the first real source, and the derivation is
+         * a hypothesis this can now falsify: if the real master has a different row
+         * count or names a CA that no COA row mentions, the derived table was wrong.
+         */
+        'ca_master' => [
+            'id' => '443703000001635205',
+            'workspace' => 'accounts',
+            'label' => 'CA Master',
+            'note' => 'Compare against the 2 derived rows before replacing them.',
+        ],
+        /*
+         * CLAUDE.md lists employee_designations under "not seeded, no export
+         * exists", alongside employee_departments (now also mapped). Both lines are
+         * stale as of today.
+         */
+        'employee_designation' => [
+            'id' => '443703000001635223',
+            'workspace' => 'accounts',
+            'label' => 'Employee Designation',
+            'note' => 'Pairs with `employee_department`. Both were "no export exists".',
+        ],
+        /*
+         * This one is a CHECK-constraint question, not just data. `villas.rent_type`
+         * is constrained to four values and only two are live — Lease 180, Revenue
+         * Share 65, 9 unset, and ZERO of either EKOSTAY split type. §3.1 called the
+         * unhandled branch a live correctness bug; measurement showed it latent.
+         *
+         * This view is the AUTHORITATIVE domain for that column. If it lists values
+         * the CHECK does not admit, the constraint is too narrow and villas will
+         * fail to import. Read it before the first villa sync, not after.
+         */
+        'property_rent_type' => [
+            'id' => '443703000001635187',
+            'workspace' => 'accounts',
+            'label' => 'Property Rent Type',
+            'note' => 'The real domain behind villas.rent_type. Do not narrow the CHECK to '
+                .'the two live values on the strength of this rebuild alone.',
+        ],
         'coa' => [
             'id' => '443703000001623452',
             'workspace' => 'accounts',
