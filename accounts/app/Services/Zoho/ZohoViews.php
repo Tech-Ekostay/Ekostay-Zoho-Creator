@@ -271,6 +271,48 @@ final class ZohoViews
             'note' => 'Listed in CLAUDE.md as "not seeded, no export exists". This id is '
                 .'that export.',
         ],
+        /*
+         * Both scheduling tables. BOTH SCREENS ARE GATED in the rebuild and these
+         * ids do not ungate them: §17 stops before Schedule Payments and Salary
+         * Payouts until §11's versioned payroll configuration exists, because
+         * re-running a month without effective-dated config silently re-decides old
+         * payslips. So these sync for understanding and for measuring against live
+         * data, not to power a screen.
+         *
+         * Note the two different id eras: Schedule_Payment sits in the old
+         * 44370300000162xxxx block with coa/tax/tds, Salary_Payout_Schedule in the
+         * recent 4437030000082444xx block with salary_payouts and the Eko_RS six.
+         * They were built years apart, which is worth knowing before assuming one
+         * schema convention covers both.
+         */
+        'schedule_payment' => [
+            'id' => '443703000001623218',
+            'workspace' => 'accounts',
+            'label' => 'Schedule Payment',
+            'note' => '10 fields. Gated screen — reference data only until §11 lands.',
+        ],
+        'salary_payout_schedule' => [
+            'id' => '443703000008244448',
+            'workspace' => 'accounts',
+            'label' => 'Salary Payout Schedule',
+            'note' => '14 fields. Pairs with `salary_payouts`. Gated on §11 payroll config; '
+                .'the payroll ENGINE already exists and is known good, the versioned '
+                .'configuration under it does not.',
+        ],
+        /*
+         * A quarter-scoped table: the name pins it to Apr-Jun and ends `_1`, which
+         * reads as a one-off migration or reconciliation pointer rather than a
+         * standing master. 13 fields. Inspect before importing — if it is a frozen
+         * historical artefact it wants loading once, not syncing on a schedule, and
+         * a scheduled job against a dead table burns a shared export slot forever.
+         */
+        'zoho_app_pointers_payment_apr_jun_1' => [
+            'id' => '443703000001623146',
+            'workspace' => 'accounts',
+            'label' => 'Zoho app pointers - Payment Apr Jun 1',
+            'note' => 'Appears in the nav rail with its label truncated. Quarter-scoped; '
+                .'confirm whether it is live or historical before scheduling it.',
+        ],
         'coa' => [
             'id' => '443703000001623452',
             'workspace' => 'accounts',
