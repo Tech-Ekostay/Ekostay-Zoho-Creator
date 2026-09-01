@@ -218,6 +218,59 @@ final class ZohoViews
                 .'GATED in the rebuild — §11 versioned payroll config does not exist — so '
                 .'this syncs for understanding, not to power a screen.',
         ],
+        /*
+         * ---- Admin app masters ------------------------------------------------
+         *
+         * Supplied by Husain, 01-Sep-2026. Note the WORKSPACE: these are Admin-app
+         * tables and they live in `accounts`, not in a workspace of their own. Their
+         * ids sit in the same 44370300000163xxxx block as `location`, `coa`, `tax`
+         * and `tds`, so the Admin masters were created alongside the Accounts ones
+         * and share a home. Do not go looking for an `admin` workspace; §6 lists two
+         * and neither is that.
+         *
+         * This matches how the rebuild already treats them: §2.1 put Accounts, Admin
+         * and the F&B reference tables in ONE schema, because Accounts cannot ship
+         * against a stubbed Admin.
+         */
+        /*
+         * PII, on the same footing as `vendor_master`. 475 employees, and approval
+         * routing resolves all three approver slots against this table BY EMAIL, so
+         * it is both sensitive and load-bearing. `.gitignore` excludes the CSV
+         * (a blanket rule over `master-data/All_Employee_Masters.csv`) for that reason.
+         * No endpoint reads it until §3.3's authorisation matrix is wired to a gate.
+         *
+         * Known gap this may close: only 81 of 475 employees carry a phone number,
+         * so an approver drawn from the other 394 is routed to correctly and never
+         * notified. Worth re-measuring against live data once this syncs.
+         */
+        'employee_master' => [
+            'id' => '443703000001635169',
+            'workspace' => 'accounts',
+            'label' => 'Employee Master',
+            'note' => '475 rows, 16 fields. PII. Seeded today from a git-ignored CSV; this '
+                .'is its first sync path.',
+        ],
+        'head_office' => [
+            'id' => '443703000001635115',
+            'workspace' => 'accounts',
+            'label' => 'Head Office',
+            'note' => 'Small master. Bills and Payment both carry a Head_Office picklist '
+                .'reading `admin.Head_Office.ID`.',
+        ],
+        'admin_settings' => [
+            'id' => '443703000001635241',
+            'workspace' => 'accounts',
+            'label' => 'Admin Settings',
+            'note' => '2 fields — configuration, not transactional. Inspect before assuming '
+                .'it is a simple key/value pair.',
+        ],
+        'employee_department' => [
+            'id' => '443703000001635058',
+            'workspace' => 'accounts',
+            'label' => 'Employee Department',
+            'note' => 'Listed in CLAUDE.md as "not seeded, no export exists". This id is '
+                .'that export.',
+        ],
         'coa' => [
             'id' => '443703000001623452',
             'workspace' => 'accounts',
