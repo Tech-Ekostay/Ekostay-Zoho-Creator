@@ -360,6 +360,64 @@ final class ZohoViews
             'note' => 'The real domain behind villas.rent_type. Do not narrow the CHECK to '
                 .'the two live values on the strength of this rebuild alone.',
         ],
+        /*
+         * ---- the last three, 02-Sep-2026: the registry is now complete ----------
+         *
+         * Accounts 46 of 46, Admin 10 of 10, F&B 21 of 21. All three sit in a
+         * 4437030000082870xx block, newer than every other id here including the
+         * Eko_RS six -- so these views were created most recently of all, which is
+         * worth knowing when their column shape does not match older siblings.
+         */
+        /*
+         * THE TRASH BIN, and it is the one table here whose live contents already
+         * contradict a documented conclusion. 982 archived payments with a
+         * deleted-by stamp and their split grid.
+         *
+         * `Accounts.ds:31027` guards archiving with `COA != "Accounts Payable"`. The
+         * first reading of that concluded the bin sat empty; wrong, because §7.2
+         * forces Accounts Payable only on payments made FROM A BILL, and that is
+         * 2,571 of 52,639. The other 91 percent are on Expense and archive fine.
+         *
+         * So the defect is narrower and worse than "the bin is broken": the
+         * exception covers exactly the bill-derived TRADE PAYABLES, the payments
+         * with a supplier invoice behind them. A bin holding salary reversals but
+         * not settled supplier payments looks reliable and is not.
+         *
+         * Three further losses when it does fire -- Status overwritten to Draft,
+         * Expense_By reassigned to the deleter, Payable_Amount recomputed -- plus a
+         * one-token bug at :31022 where Deleted_By_User is assigned without its
+         * prefix, so a SECOND deletion records the time and nobody.
+         *
+         * This view is how those claims get measured against live rows instead of
+         * re-read from Deluge. Import the child split grid separately: §12 flattens
+         * multi-value fields and a one-row-per-payment view loses the legs.
+         */
+        'deleted_payments' => [
+            'id' => '443703000008287037',
+            'workspace' => 'accounts',
+            'label' => 'Deleted Payments',
+            'note' => '982 rows, 73 fields -- the largest unmapped table until now. Carries '
+                .'real payment data, so PII rules apply as for payment_master.',
+        ],
+        'flagged_payments' => [
+            'id' => '443703000008287081',
+            'workspace' => 'accounts',
+            'label' => 'Flagged Payments',
+            'note' => '13 fields. What flags a payment, and by whom, is not established '
+                .'from the DS yet -- inspect before assuming it relates to approvals.',
+        ],
+        /*
+         * A person-named module, which usually means scope that never got
+         * generalised. 22 fields and no rail item that obviously belongs to it.
+         * Inspect before modelling: this is the most likely of the 83 to be
+         * something the rebuild should NOT reproduce.
+         */
+        'husain_office_module' => [
+            'id' => '443703000008287059',
+            'workspace' => 'accounts',
+            'label' => 'Husain Office Module',
+            'note' => '22 fields. Purpose unestablished. Ask before building a screen.',
+        ],
         'coa' => [
             'id' => '443703000001623452',
             'workspace' => 'accounts',
